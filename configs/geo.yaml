@@ -1,0 +1,198 @@
+# City referential — blueprint/06-CONFIG.md §5, blueprint/wp/WP01-core.md §2.
+# Loaded by core.geo.load_geo_index(). Aliases are case-insensitive.
+#
+# `ambiguous` lists the homonym traps: cities that exist under the same name
+# in more than one country. Resolution uses the hiring company's
+# `hq_country` first; `default_country` is the fallback when no company hint
+# is available or matches. Traps with no listed default stay unresolved
+# rather than guess — see interdit "jamais une invention".
+
+cities:
+  # --- EMEA ---
+  - city: London
+    country: GB
+    region: emea
+  - city: London
+    country: CA
+    region: amer
+    aliases: ["London Ontario", "London, Ontario"]
+  - city: Cambridge
+    country: GB
+    region: emea
+  - city: Cambridge
+    country: US
+    region: amer
+    aliases: ["Cambridge MA", "Cambridge, Massachusetts"]
+  - city: Birmingham
+    country: GB
+    region: emea
+  - city: Birmingham
+    country: US
+    region: amer
+    aliases: ["Birmingham AL", "Birmingham, Alabama"]
+  - city: Saint Petersburg
+    country: RU
+    region: emea
+    aliases: ["St Petersburg", "St. Petersburg", "Saint-Pétersbourg"]
+  - city: Saint Petersburg
+    country: US
+    region: amer
+    aliases: ["St Petersburg FL", "Saint Petersburg, Florida"]
+  - city: Edinburgh
+    country: GB
+    region: emea
+  - city: Manchester
+    country: GB
+    region: emea
+  - city: Paris
+    country: FR
+    region: emea
+  - city: Amsterdam
+    country: NL
+    region: emea
+  - city: Frankfurt
+    country: DE
+    region: emea
+    aliases: ["Frankfurt am Main"]
+  - city: Munich
+    country: DE
+    region: emea
+    aliases: ["München"]
+  - city: Berlin
+    country: DE
+    region: emea
+  - city: Zurich
+    country: CH
+    region: emea
+    aliases: ["Zürich"]
+  - city: Geneva
+    country: CH
+    region: emea
+    aliases: ["Genève"]
+  - city: Dublin
+    country: IE
+    region: emea
+  - city: Luxembourg
+    country: LU
+    region: emea
+  - city: Madrid
+    country: ES
+    region: emea
+  - city: Milan
+    country: IT
+    region: emea
+    aliases: ["Milano"]
+  - city: Stockholm
+    country: SE
+    region: emea
+  - city: Copenhagen
+    country: DK
+    region: emea
+    aliases: ["København"]
+  - city: Warsaw
+    country: PL
+    region: emea
+    aliases: ["Warszawa"]
+  - city: Prague
+    country: CZ
+    region: emea
+    aliases: ["Praha"]
+  - city: Vienna
+    country: AT
+    region: emea
+    aliases: ["Wien"]
+  - city: Brussels
+    country: BE
+    region: emea
+    aliases: ["Bruxelles"]
+  - city: Moscow
+    country: RU
+    region: emea
+    aliases: ["Moskva"]
+  - city: Dubai
+    country: AE
+    region: emea
+  - city: Tel Aviv
+    country: IL
+    region: emea
+    aliases: ["Tel Aviv-Yafo"]
+  # --- AMER ---
+  - city: New York
+    country: US
+    region: amer
+    aliases: ["NYC", "New York City", "NY"]
+  - city: Chicago
+    country: US
+    region: amer
+  - city: Boston
+    country: US
+    region: amer
+  - city: San Francisco
+    country: US
+    region: amer
+    aliases: ["SF"]
+  - city: Austin
+    country: US
+    region: amer
+  - city: Greenwich
+    country: US
+    region: amer
+    aliases: ["Greenwich CT"]
+  - city: Stamford
+    country: US
+    region: amer
+    aliases: ["Stamford CT"]
+  - city: Toronto
+    country: CA
+    region: amer
+  - city: Montreal
+    country: CA
+    region: amer
+    aliases: ["Montréal"]
+  # --- APAC ---
+  - city: Hong Kong
+    country: HK
+    region: apac
+    aliases: ["HK"]
+  - city: Singapore
+    country: SG
+    region: apac
+  - city: Tokyo
+    country: JP
+    region: apac
+  - city: Shanghai
+    country: CN
+    region: apac
+  - city: Beijing
+    country: CN
+    region: apac
+  - city: Shenzhen
+    country: CN
+    region: apac
+  - city: Sydney
+    country: AU
+    region: apac
+  - city: Melbourne
+    country: AU
+    region: apac
+  - city: Mumbai
+    country: IN
+    region: apac
+  - city: Bangalore
+    country: IN
+    region: apac
+    aliases: ["Bengaluru"]
+  - city: Gurgaon
+    country: IN
+    region: apac
+    aliases: ["Gurugram"]
+  - city: Seoul
+    country: KR
+    region: apac
+
+ambiguous:
+  london:
+    default_country: GB   # UK by default in our sector context — see blueprint/06-CONFIG.md §5
+  cambridge: {}
+  birmingham: {}
+  "saint petersburg": {}
