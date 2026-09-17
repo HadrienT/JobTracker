@@ -1,8 +1,8 @@
 """Frozen DTOs shared across packages — see blueprint/03-INTERFACES.md §2.
 
-Every stage produces a new object; none mutates its input. Only the DTOs
-defined by that contract live here — ``Company`` and ``SourceRun`` are left
-for the packages that pin their shape (WP02/WP07) rather than guessed now.
+Every stage produces a new object; none mutates its input. ``Company`` and
+``SourceRun`` mirror blueprint/04-DATA-MODEL.md §2 rows (WP02); they were not
+guessed ahead of that lot pinning their shape.
 """
 
 from collections.abc import Mapping
@@ -34,6 +34,50 @@ class Board(BaseModel, frozen=True):
     hq_country: str
     priority: int
     enabled: bool
+
+
+class Company(BaseModel, frozen=True):
+    """A `companies` row: the registry, materialized with its running health.
+
+    blueprint/04-DATA-MODEL.md §2: the config file stays the source of truth
+    for everything but `last_ok_at`/`last_count`, which only a real collection
+    run can produce — the P3 counter.
+    """
+
+    company_slug: str
+    company_name: str
+    source: Source
+    token: str
+    sector: str
+    hq_country: str
+    priority: int
+    enabled: bool
+    last_ok_at: datetime | None
+    last_count: int | None
+
+
+class SourceRun(BaseModel, frozen=True):
+    """A `source_runs` row — blueprint/04-DATA-MODEL.md §2.
+
+    `company_slug=None` marks an aggregate run rather than a per-company one.
+    `status='empty'` is distinct from `'ok'`: a run with zero postings is the
+    event the reversed watchdog (blueprint/07-ERRORS-AND-LOGGING.md §4) exists
+    to catch, not a quiet success.
+    """
+
+    run_id: str
+    source: Source
+    company_slug: str | None
+    started_at: datetime
+    ended_at: datetime
+    fetched: int
+    new: int
+    updated: int
+    aliased: int
+    rejected: int
+    requests_made: int
+    status: str  # "ok" | "empty" | "error" | "blocked" | "skipped"
+    error_kind: str | None  # a core.errors class name, when status is "error"/"blocked"
 
 
 class RawPosting(BaseModel, frozen=True):
@@ -81,6 +125,7 @@ class Posting(BaseModel, frozen=True):
     url: str
     # normalized content
     title: str
+    title_raw: str  # kept alongside `title`: cleanup is a hypothesis, not a fact
     role_family: RoleFamily
     seniority: Seniority
     min_years: int | None
@@ -88,6 +133,7 @@ class Posting(BaseModel, frozen=True):
     locations: tuple[Location, ...]
     compensation: Compensation
     visa_sponsorship: VisaStatus
+    visa_evidence: str | None  # the excerpt that justifies visa_sponsorship, from parse_visa
     tech: frozenset[str]
     languages_required: frozenset[str]
     # dates — see blueprint/09-CONVENTIONS.md §3
@@ -96,6 +142,7 @@ class Posting(BaseModel, frozen=True):
     last_seen_at: datetime
     closes_at: datetime | None
     # traceability
+    content_hash: str  # from the source RawPosting: detects a re-fetch with no real change
     resolver_stage: str
     normalize_version: int
 
