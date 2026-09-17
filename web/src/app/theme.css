@@ -1,0 +1,78 @@
+/*
+ * Design tokens — dark by default, [data-theme="light"] overrides.
+ * See blueprint/wp/WP09-web-foundations.md §3 and blueprint/12-WEB-UI.md.
+ */
+
+:root {
+  --background: #0b0d10;
+  --surface: #14171c;
+  --surface-elevated: #1c2027;
+  --border: #2a2f38;
+
+  --text-primary: #e8eaed;
+  --text-secondary: #a8aeb8;
+  --text-tertiary: #6b7280;
+
+  --tier-strong: #34d399;
+  --tier-possible: #5b9dff;
+  --tier-stretch: #f5a623;
+  --tier-rejected: #b06a70;
+  --warning: #f5a623;
+  --danger: #ef4444;
+
+  --visa-sponsors: #34d399;
+  --visa-unknown: #9ca3af;
+  --visa-no: #ef4444;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-tabular:
+    ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+:root[data-theme='light'] {
+  --background: #f7f8fa;
+  --surface: #ffffff;
+  --surface-elevated: #eef0f3;
+  --border: #d8dce2;
+
+  --text-primary: #14171c;
+  --text-secondary: #4b5160;
+  --text-tertiary: #6b7280;
+
+  --tier-strong: #0f9d58;
+  --tier-possible: #1d4ed8;
+  --tier-stretch: #b45309;
+  --tier-rejected: #9f4d54;
+  --warning: #b45309;
+  --danger: #dc2626;
+
+  --visa-sponsors: #0f9d58;
+  --visa-unknown: #6b7280;
+  --visa-no: #dc2626;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+
+  --color-tier-strong: var(--tier-strong);
+  --color-tier-possible: var(--tier-possible);
+  --color-tier-stretch: var(--tier-stretch);
+  --color-tier-rejected: var(--tier-rejected);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --color-visa-sponsors: var(--visa-sponsors);
+  --color-visa-unknown: var(--visa-unknown);
+  --color-visa-no: var(--visa-no);
+
+  --font-sans: var(--font-sans);
+  --font-tabular: var(--font-tabular);
+}

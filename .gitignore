@@ -25,6 +25,7 @@ docs/reports/
 node_modules/
 web/dist/
 web/.vite/
+web/coverage/
 playwright-report/
 test-results/
 

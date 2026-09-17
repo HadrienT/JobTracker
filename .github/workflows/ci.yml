@@ -34,14 +34,16 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      - run: npx tsc --noEmit
+      - run: npm run typecheck
       - run: npm run lint
       - run: npm run test -- --run
       - run: npm run build
 
   api-contract:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('web/package.json') != '' }}
+    # gated on tools/gen_openapi.py too: WP09 (this front) has no dependency on WP07
+    # (the API), so this job must stay a no-op until WP07 actually ships the generator.
+    if: ${{ hashFiles('web/package.json') != '' && hashFiles('tools/gen_openapi.py') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
