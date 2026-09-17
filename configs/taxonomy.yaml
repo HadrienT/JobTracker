@@ -1,0 +1,284 @@
+# Extraction patterns for the normalizer — blueprint/06-CONFIG.md §5,
+# blueprint/wp/WP03-normalize.md, blueprint/10-PROFILE-TARGET.md §2-4.
+#
+# `version` follows rule C4: bump it and every posting gets rescored next
+# cycle, no migration needed. All strings are matched lowercase.
+
+version: 1
+
+# --- role family — blueprint/10-PROFILE-TARGET.md §2 ------------------------
+#
+# `other` is checked first (a "Tax Manager" or "Mechanical Design Engineer"
+# must never fall through to the generic engineering bucket just because it
+# contains "engineer"). Within the engineering track, `context_keywords`
+# decide quant_dev vs swe_platform for a generic "Engineer"/"Developer" title
+# — a bare "Software Engineer" is swe_platform per the primer's own example
+# ("chez un Jane Street ou un Optiver, c'est souvent le même poste sous un
+# autre nom"); it only becomes quant_dev when the title itself names the
+# trading/research context.
+role_families:
+  other:
+    keywords:
+      - sales
+      - recruiter
+      - talent acquisition
+      - compliance
+      - "audit"
+      - hr business partner
+      - human resources
+      - account manager
+      - client relationship
+      - marketing
+      - tax manager
+      - executive assistant
+      - office manager
+      - facilities manager
+      - legal counsel
+      - paralegal
+      - financial systems specialist
+      - mechanical design engineer
+      - mechanical engineer
+      - civil engineer
+      - electrical engineer
+      - business development manager
+      - business developer manager
+      - procurement
+      - receptionist
+      - people operations
+      - employee experience
+
+  quant_trading:
+    keywords:
+      - trader
+      - sales trader
+      - trading analyst
+      - trading operations
+      - trading automation
+
+  quant_research:
+    # "quantitative research" also matches "quantitative researcher" (substring)
+    # and "Quantitative Research Intern" alike — one phrase, both title shapes.
+    keywords:
+      - quantitative research
+      - quant research
+      - quantitative analyst
+      - quant analyst
+
+  data_eng:
+    keywords:
+      - data engineer
+      - business intelligence
+      - market data engineer
+      - data pipeline
+
+  risk:
+    keywords:
+      - risk analyst
+      - risk manager
+      - model validation
+
+  quant_dev:
+    # a generic engineer/developer title becomes quant_dev when it also names
+    # the trading/research/hardware-alpha context, not swe_platform.
+    strong_keywords:
+      - quantitative developer
+      - quant developer
+      - quant software engineer
+      - quantitative software engineer
+      - core developer
+      - trading systems engineer
+      - algorithmic trading
+      - critical engineering
+    context_keywords:
+      - " ai "
+      - "ai engineer"
+      - "ai research"
+      - machine learning
+      - agentic
+      - agent
+      - fpga
+      - kdb
+      - "c++"
+      - rust
+      - cuda
+      - algorithm
+      - low latency
+      - low-latency
+      - blockchain
+
+  swe_platform:
+    # infra/ops-flavored engineering: the same "Engineer" suffix, but the
+    # role builds the platform underneath the trading system, not the system
+    # itself.
+    infra_context_keywords:
+      - data center
+      - datacenter
+      - devops
+      - dev ops
+      - hpc
+      - site reliability
+      - " sre "
+      - infrastructure
+      - production engineer
+      - production system
+      - systems engineer
+      - network engineer
+      - cloud engineer
+      - shared services
+      - platform engineer
+      - technology operations
+      - reliability
+
+engineering_head_words:
+  - engineer
+  - developer
+  - " dev "
+  - ingénieur
+  - développeur
+  - développement
+
+research_head_words:
+  - researcher
+  - research scientist
+  - scientist
+  - chercheur
+  - chercheuse
+
+# --- seniority — blueprint/10-PROFILE-TARGET.md §3 --------------------------
+seniority:
+  # bare "campus" is handled separately, title-only (normalize/seniority.py):
+  # in a description it is often a disclaimer about a *different* posting.
+  program_keywords:
+    - graduate programme
+    - graduate program
+    - new grad
+    - campus hire
+    - class of
+    - analyst program
+    - rotational program
+    - graduate scheme
+    - nouvellement diplômé
+
+  # `intern` and `graduate` are resolved directly by normalize/seniority.py
+  # (the intern regex and the program_keywords/campus check above); only the
+  # remaining levels are looked up here.
+  title_keywords:
+    junior:
+      - junior
+      - entry-level
+      - entry level
+      - entry-level
+    senior:
+      - senior
+      - "sr."
+      - chevronné
+      - experienced
+    lead:
+      - lead
+      - principal
+      - staff
+      - " vp "
+      - vice president
+      - director
+      - head of
+
+  # explicit years-of-experience phrasing, checked before any title keyword —
+  # the description outranks the title (blueprint/wp/WP03-normalize.md §3).
+  years_patterns:
+    - '(\d+)\s*\+\s*years?'
+    - '(\d+)\s*years?\s*\+'
+    - 'minimum(?:\s+of)?\s+(\d+)\s+years?'
+    - 'at least\s+(\d+)\s+years?'
+    - 'more than\s+(\d+)\s+years?'
+    - '(\d+)\s*(?:-|–|to)\s*\d+\s*years?'
+    - '(\d+)\s*ans?\s+d.exp[eé]rience'
+    - 'mindestens\s+(\d+)\s+jahre'
+
+# --- visa — blueprint/10-PROFILE-TARGET.md §4 --------------------------------
+visa:
+  sponsors_phrases:
+    - visa sponsorship available
+    - visa sponsorship (?:is )?available
+    - sponsorship is available
+    - we (?:do |can |will )?sponsor
+    - we sponsor
+    - relocation support
+    - relocation assistance
+    - relocation package
+    - welcome international applicants
+    - supportive of .{0,40}immigration sponsorship
+    - sponsor work visas
+
+  no_phrases:
+    - will not sponsor
+    - does not (?:currently )?(?:offer|provide) (?:visa )?sponsorship
+    - (?:no|not eligible for) (?:visa )?sponsorship (?:is )?(?:available|provided)?
+    - unable to (?:provide|offer) sponsorship
+    - unable to sponsor
+    - sponsorship is not available
+    - must have (?:the )?(?:existing )?right to work
+    - must (?:currently )?have valid work authorization
+    - citizens? or permanent residents? only
+    - \bitar\b
+
+  restriction_phrases:
+    - remote \(([a-z ]+) only\)
+    - must be based in ([a-z ]+)
+    - candidates? must be located in ([a-z ]+)
+    - based in ([a-z ]+) only
+
+# --- tech stack — blueprint/wp/WP03-normalize.md §3 techstack.py ------------
+# single-letter/ambiguous names ("R", "Go", "C") are handled in code with a
+# word-boundary + list-context rule, not as plain aliases here.
+tech:
+  aliases:
+    cpp: ["c++", "cpp", "c/c++", "modern c++", "c++11", "c++14", "c++17", "c++20", "c++23"]
+    python: ["python", "python3"]
+    rust: ["rust"]
+    kdb: ["kdb+", "kdb", "kdb/q"]
+    ocaml: ["ocaml"]
+    cuda: ["cuda"]
+    fpga: ["fpga", "verilog", "vhdl"]
+    java: ["java"]
+    csharp: ["c#", ".net", "dotnet"]
+    sql: ["sql", "postgres", "postgresql"]
+    linux: ["linux"]
+    kubernetes: ["kubernetes", "k8s"]
+    javascript: ["javascript", "typescript"]
+  # matched only as an isolated word and only alongside another list item —
+  # "Go get the report" must not match, "Go, Python, C++" must.
+  ambiguous_single_token:
+    go: "go"
+    r: "r"
+    c: "c"
+
+# --- language detection — blueprint/wp/WP03-normalize.md §3 language.py ----
+language:
+  markers:
+    fr:
+      - nous recherchons
+      - vous serez
+      - le poste
+      - candidat
+      - compétences
+      - développeur
+      - ingénieur
+      - expérience professionnelle
+      - missions
+      - société
+      - équipe
+    de:
+      - wir suchen
+      - ihre aufgaben
+      - erfahrung mit
+      - bewerbung
+      - unternehmen
+      - kenntnisse
+      - deine aufgaben
+    nl:
+      - wij zoeken
+      - je bent
+      - het bedrijf
+      - vacature
+      - werkzaamheden
+      - ervaring met

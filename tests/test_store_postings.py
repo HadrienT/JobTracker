@@ -59,6 +59,22 @@ def test_same_identity_different_content_updates_in_place(store_conn: sqlite3.Co
     assert store_conn.execute("SELECT COUNT(*) c FROM postings").fetchone()["c"] == 1
 
 
+def test_changed_content_does_not_move_first_seen_at(store_conn: sqlite3.Connection) -> None:
+    posting_id = _upsert(
+        store_conn, content_hash="hash-a", first_seen_at=datetime(2026, 1, 1, tzinfo=UTC)
+    )
+    _upsert(
+        store_conn,
+        posting_id=posting_id,
+        content_hash="hash-b",
+        first_seen_at=datetime(2026, 6, 1, tzinfo=UTC),
+    )
+    row = store_conn.execute(
+        "SELECT first_seen_at FROM postings WHERE posting_id = ?", (posting_id,)
+    ).fetchone()
+    assert row["first_seen_at"] == "2026-01-01T00:00:00+00:00"
+
+
 def test_unchanged_content_hash_touches_last_seen_but_not_score(
     store_conn: sqlite3.Connection,
 ) -> None:

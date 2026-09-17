@@ -367,7 +367,7 @@ def _write_posting_row(
             visa_sponsorship = excluded.visa_sponsorship, visa_evidence = excluded.visa_evidence,
             salary_min = excluded.salary_min, salary_max = excluded.salary_max,
             salary_currency = excluded.salary_currency, salary_period = excluded.salary_period,
-            posted_at = excluded.posted_at, first_seen_at = excluded.first_seen_at,
+            posted_at = excluded.posted_at,
             last_seen_at = excluded.last_seen_at, closes_at = excluded.closes_at,
             content_hash = excluded.content_hash, normalize_version = excluded.normalize_version,
             is_active = excluded.is_active
