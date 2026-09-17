@@ -1,0 +1,1702 @@
+# JobTracker company registry — blueprint/06-CONFIG.md §2
+#
+# Built by WP00 (blueprint/wp/WP00-recon-registry.md) via tools/probe_ats.py.
+# Every `enabled: true` entry below was verified by a real probe against the
+# ATS endpoint on the date in its comment — no token here was guessed. Entries
+# marked [À CONFIRMER] are kept (never deleted) so they get re-probed instead of
+# silently falling off the registry.
+
+# --- Rank 1 — prop trading / market making ---
+
+- slug: citadel_securities
+  name: Citadel Securities
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "citadel-securities"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: jane_street
+  name: Jane Street
+  source: greenhouse  # verified 2026-09-17
+  token: "janestreet"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: jump_trading
+  name: Jump Trading
+  source: greenhouse  # verified 2026-09-17
+  token: "jumptrading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: hudson_river_trading
+  name: Hudson River Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "hudson-river-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: optiver
+  name: Optiver
+  source: greenhouse  # verified 2026-09-17
+  token: "optiverus"
+  sector: prop_trading
+  hq_country: NL
+  priority: 1
+  enabled: true
+
+- slug: imc_trading
+  name: IMC Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "imc-trading"
+  sector: prop_trading
+  hq_country: NL
+  priority: 1
+  enabled: false
+
+- slug: flow_traders
+  name: Flow Traders
+  source: greenhouse  # verified 2026-09-17
+  token: "flowtraders"
+  sector: prop_trading
+  hq_country: NL
+  priority: 1
+  enabled: true
+
+- slug: drw
+  name: DRW
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "drw"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: sig_susquehanna
+  name: SIG (Susquehanna)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "sig-susquehanna"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: tower_research
+  name: Tower Research Capital
+  source: greenhouse  # verified 2026-09-17
+  token: "towerresearchcapital"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: xtx_markets
+  name: XTX Markets
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "xtx-markets"
+  sector: prop_trading
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: old_mission
+  name: Old Mission
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "old-mission"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: akuna_capital
+  name: Akuna Capital
+  source: greenhouse  # verified 2026-09-17
+  token: "akunacapital"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: five_rings
+  name: Five Rings
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "five-rings"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: headlands_technologies
+  name: Headlands Technologies
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "headlands-technologies"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: belvedere_trading
+  name: Belvedere Trading
+  source: lever  # verified 2026-09-17
+  token: "belvederetrading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: wolverine_trading
+  name: Wolverine Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "wolverine-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: peak6
+  name: Peak6
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "peak6"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: quantlab
+  name: Quantlab
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "quantlab"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: virtu_financial
+  name: Virtu Financial
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "virtu-financial"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: maven_securities
+  name: Maven Securities
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "maven-securities"
+  sector: prop_trading
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: vatic_labs
+  name: Vatic Labs
+  source: greenhouse  # verified 2026-09-17
+  token: "vaticlabs"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: radix_trading
+  name: Radix Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "radix-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: grasshopper_trading
+  name: Grasshopper
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "grasshopper"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: transmarket
+  name: TransMarket Group
+  source: greenhouse  # verified 2026-09-17
+  token: "transmarketgroup"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: da_vinci_trading
+  name: Da Vinci Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "da-vinci-trading"
+  sector: prop_trading
+  hq_country: NL
+  priority: 1
+  enabled: false
+
+- slug: webb_traders
+  name: Webb Traders
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "webb-traders"
+  sector: prop_trading
+  hq_country: NL
+  priority: 1
+  enabled: false
+
+- slug: all_options
+  name: All Options
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "all-options"
+  sector: prop_trading
+  hq_country: NL
+  priority: 1
+  enabled: false
+
+- slug: gts
+  name: GTS (Global Trading Systems)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "gts-global-trading-systems"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: tibra_trading
+  name: Tibra Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "tibra-trading"
+  sector: prop_trading
+  hq_country: AU
+  priority: 1
+  enabled: false
+
+- slug: simplex_investment
+  name: Simplex Investment Advisors
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "simplex-investment-advisors"
+  sector: prop_trading
+  hq_country: JP
+  priority: 1
+  enabled: false
+
+- slug: ctc_chicago_trading
+  name: CTC (Chicago Trading Company)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "ctc-chicago-trading-company"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: eagle_seven
+  name: Eagle Seven
+  source: workable  # verified 2026-09-17
+  token: "eagle-seven"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: volant_trading
+  name: Volant Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "volant-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: three_red_trading
+  name: 3Red Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "3red-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: spot_trading
+  name: Spot Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "spot-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: dv_trading
+  name: DV Trading
+  source: greenhouse  # verified 2026-09-17
+  token: "dvtrading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: trillium_trading
+  name: Trillium Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "trillium-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: geneva_trading
+  name: Geneva Trading
+  source: greenhouse  # verified 2026-09-17
+  token: "genevatrading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: hehmeyer_trading
+  name: Hehmeyer Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "hehmeyer-trading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: rsj_algo_trading
+  name: RSJ Algorithmic Trading
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "rsj-algorithmic-trading"
+  sector: prop_trading
+  hq_country: CZ
+  priority: 1
+  enabled: false
+
+- slug: mako_trading
+  name: Mako Trading (Mako Global)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "mako-trading-mako-global"
+  sector: prop_trading
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+# --- Rank 1 — quantitative hedge funds ---
+
+- slug: two_sigma
+  name: Two Sigma
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "two-sigma"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: de_shaw
+  name: D. E. Shaw
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "d-e-shaw"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: citadel
+  name: Citadel
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "citadel"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: millennium
+  name: Millennium Management
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "millennium-management"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: point72_cubist
+  name: Point72 / Cubist
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "point72-cubist"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: balyasny
+  name: Balyasny Asset Management
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "balyasny-asset-management"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: exoduspoint
+  name: ExodusPoint
+  source: greenhouse  # verified 2026-09-17
+  token: "exoduspoint"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: schonfeld
+  name: Schonfeld
+  source: greenhouse  # verified 2026-09-17
+  token: "schonfeld"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: squarepoint
+  name: Squarepoint Capital
+  source: greenhouse  # verified 2026-09-17
+  token: "squarepointcapital"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: qube_rt
+  name: Qube Research & Technologies
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "qube-research-technologies"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: g_research
+  name: G-Research
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "g-research"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: man_group_ahl
+  name: Man Group / AHL
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "man-group-ahl"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: marshall_wace
+  name: Marshall Wace
+  source: greenhouse  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "marshallwace"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: brevan_howard
+  name: Brevan Howard
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "brevan-howard"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: capula
+  name: Capula Investment Management
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "capula-investment-management"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: winton
+  name: Winton
+  source: greenhouse  # verified 2026-09-17
+  token: "winton"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: true
+
+- slug: aspect_capital
+  name: Aspect Capital
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "aspect-capital"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: cfm
+  name: Capital Fund Management (CFM)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "capital-fund-management-cfm"
+  sector: hedge_fund
+  hq_country: FR
+  priority: 1
+  enabled: false
+
+- slug: bluecrest
+  name: BlueCrest Capital Management
+  source: greenhouse  # verified 2026-09-17
+  token: "bluecrestcapitalmanagement"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: true
+
+- slug: verition
+  name: Verition Fund Management
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "verition-fund-management"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: walleye
+  name: Walleye Capital
+  source: greenhouse  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "walleyecapital"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: aqr
+  name: AQR Capital Management
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "aqr-capital-management"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: bridgewater
+  name: Bridgewater Associates
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "bridgewater-associates"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: voleon
+  name: The Voleon Group
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "the-voleon-group"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: pdt_partners
+  name: PDT Partners
+  source: greenhouse  # verified 2026-09-17
+  token: "pdtpartners"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: renaissance_technologies
+  name: Renaissance Technologies
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "renaissance-technologies"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: worldquant
+  name: WorldQuant
+  source: greenhouse  # verified 2026-09-17
+  token: "worldquant"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: man_numeric
+  name: Man Numeric
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "man-numeric"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: engineers_gate
+  name: Engineers Gate
+  source: greenhouse  # verified 2026-09-17
+  token: "engineersgate"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: element_capital
+  name: Element Capital Management
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "element-capital-management"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: systematica
+  name: Systematica Investments
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "systematica-investments"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: capstone_investment
+  name: Capstone Investment Advisors
+  source: greenhouse  # verified 2026-09-17
+  token: "capstoneinvestmentadvisors"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: cerebellum_capital
+  name: Cerebellum Capital
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "cerebellum-capital"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: lmr_partners
+  name: LMR Partners
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "lmr-partners"
+  sector: hedge_fund
+  hq_country: GB
+  priority: 1
+  enabled: false
+
+- slug: alphadyne
+  name: Alphadyne Asset Management
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "alphadyne-asset-management"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: ellington_management
+  name: Ellington Management Group
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "ellington-management-group"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: graham_global
+  name: Graham Global Investment
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "graham-global-investment"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: false
+
+- slug: voloridge
+  name: Voloridge Investment Management
+  source: greenhouse  # verified 2026-09-17
+  token: "voloridgeinvestmentmanagement"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+# --- Rank 2 — investment banks (Workday, unconfirmed — see WP06) ---
+
+- slug: goldman_sachs
+  name: Goldman Sachs
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: morgan_stanley
+  name: Morgan Stanley
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: jpmorgan
+  name: J.P. Morgan
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: bank_of_america
+  name: Bank of America
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: citi
+  name: Citi
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: barclays
+  name: Barclays
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: hsbc
+  name: HSBC
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: bnp_paribas
+  name: BNP Paribas
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: societe_generale
+  name: Société Générale
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: natixis
+  name: Natixis
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: credit_agricole_cib
+  name: Crédit Agricole CIB
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: deutsche_bank
+  name: Deutsche Bank
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: DE
+  priority: 2
+  enabled: false
+
+- slug: ubs
+  name: UBS
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: CH
+  priority: 2
+  enabled: false
+
+- slug: nomura
+  name: Nomura
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: JP
+  priority: 2
+  enabled: false
+
+- slug: mufg
+  name: MUFG
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: JP
+  priority: 2
+  enabled: false
+
+- slug: standard_chartered
+  name: Standard Chartered
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: macquarie
+  name: Macquarie
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: AU
+  priority: 2
+  enabled: false
+
+- slug: rbc
+  name: RBC
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: CA
+  priority: 2
+  enabled: false
+
+- slug: scotiabank
+  name: Scotiabank
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: CA
+  priority: 2
+  enabled: false
+
+- slug: bmo
+  name: BMO
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: CA
+  priority: 2
+  enabled: false
+
+- slug: td_securities
+  name: TD Securities
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: CA
+  priority: 2
+  enabled: false
+
+- slug: jefferies
+  name: Jefferies
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: mizuho
+  name: Mizuho
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: JP
+  priority: 2
+  enabled: false
+
+- slug: ing
+  name: ING
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: NL
+  priority: 2
+  enabled: false
+
+- slug: rabobank
+  name: Rabobank
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: NL
+  priority: 2
+  enabled: false
+
+- slug: commerzbank
+  name: Commerzbank
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: DE
+  priority: 2
+  enabled: false
+
+- slug: abn_amro
+  name: ABN AMRO
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: NL
+  priority: 2
+  enabled: false
+
+- slug: unicredit
+  name: UniCredit
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: IT
+  priority: 2
+  enabled: false
+
+- slug: intesa_sanpaolo
+  name: Intesa Sanpaolo
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: IT
+  priority: 2
+  enabled: false
+
+- slug: santander
+  name: Santander
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: ES
+  priority: 2
+  enabled: false
+
+- slug: bbva
+  name: BBVA
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: ES
+  priority: 2
+  enabled: false
+
+- slug: dbs_bank
+  name: DBS Bank
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: SG
+  priority: 2
+  enabled: false
+
+- slug: wells_fargo
+  name: Wells Fargo
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: state_street
+  name: State Street
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: bny_mellon
+  name: BNY Mellon
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: northern_trust
+  name: Northern Trust
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: cibc
+  name: CIBC
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: CA
+  priority: 2
+  enabled: false
+
+- slug: national_australia_bank
+  name: National Australia Bank
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: bank
+  hq_country: AU
+  priority: 2
+  enabled: false
+
+# --- Rank 2 — asset managers & insurance (Workday, unconfirmed — see WP06) ---
+
+- slug: blackrock
+  name: BlackRock
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: pimco
+  name: PIMCO
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: vanguard
+  name: Vanguard
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: fidelity
+  name: Fidelity
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: wellington_management
+  name: Wellington Management
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: amundi
+  name: Amundi
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: axa_im
+  name: AXA IM
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: robeco
+  name: Robeco
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: NL
+  priority: 2
+  enabled: false
+
+- slug: apg
+  name: APG
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: NL
+  priority: 2
+  enabled: false
+
+- slug: pggm
+  name: PGGM
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: NL
+  priority: 2
+  enabled: false
+
+- slug: nuveen
+  name: Nuveen
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: schroders
+  name: Schroders
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: legal_general
+  name: Legal & General
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: allianz_gi
+  name: Allianz Global Investors
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: DE
+  priority: 2
+  enabled: false
+
+- slug: tikehau_capital
+  name: Tikehau Capital
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: ostrum
+  name: Ostrum Asset Management
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: capital_group
+  name: Capital Group
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: t_rowe_price
+  name: T. Rowe Price
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: invesco
+  name: Invesco
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: franklin_templeton
+  name: Franklin Templeton
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: neuberger_berman
+  name: Neuberger Berman
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: alliancebernstein
+  name: AllianceBernstein
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: pgim
+  name: PGIM
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: baillie_gifford
+  name: Baillie Gifford
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: mg_investments
+  name: M&G Investments
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: abrdn
+  name: abrdn
+  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  token: ""
+  sector: asset_manager
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+# --- Rank 2 — vendors & market data ---
+
+- slug: bloomberg
+  name: Bloomberg
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "bloomberg"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: sp_global
+  name: S&P Global
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "s-p-global"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: msci
+  name: MSCI
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "msci"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: factset
+  name: FactSet
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "factset"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: ice
+  name: Intercontinental Exchange (ICE)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "intercontinental-exchange-ice"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: nasdaq
+  name: Nasdaq
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "nasdaq"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: lseg
+  name: London Stock Exchange Group (LSEG)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "london-stock-exchange-group-lseg"
+  sector: vendor
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: murex
+  name: Murex
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "murex"
+  sector: vendor
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: finastra
+  name: Finastra
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "finastra"
+  sector: vendor
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: ion_group
+  name: ION Group
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "ion-group"
+  sector: vendor
+  hq_country: IE
+  priority: 2
+  enabled: false
+
+- slug: numerix
+  name: Numerix
+  source: greenhouse  # verified 2026-09-17
+  token: "numerix"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: quantifi
+  name: Quantifi
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "quantifi"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: opengamma
+  name: OpenGamma
+  source: greenhouse  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "opengamma"
+  sector: vendor
+  hq_country: GB
+  priority: 2
+  enabled: false
+
+- slug: kaiko
+  name: Kaiko
+  source: personio  # verified 2026-09-17
+  token: "kaiko"
+  sector: vendor
+  hq_country: FR
+  priority: 2
+  enabled: true
+
+- slug: databento
+  name: Databento
+  source: greenhouse  # verified 2026-09-17
+  token: "databento"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: milliman
+  name: Milliman
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "milliman"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: kepler_cheuvreux
+  name: Kepler Cheuvreux
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "kepler-cheuvreux"
+  sector: vendor
+  hq_country: FR
+  priority: 2
+  enabled: false
+
+- slug: simcorp
+  name: SimCorp
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "simcorp"
+  sector: vendor
+  hq_country: DK
+  priority: 2
+  enabled: false
+
+- slug: broadridge
+  name: Broadridge
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "broadridge"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: ssc_technologies
+  name: SS&C Technologies
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "ss-c-technologies"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: iress
+  name: Iress
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "iress"
+  sector: vendor
+  hq_country: AU
+  priority: 2
+  enabled: false
+
+- slug: temenos
+  name: Temenos
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "temenos"
+  sector: vendor
+  hq_country: CH
+  priority: 2
+  enabled: false
+
+- slug: fis
+  name: FIS
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "fis"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: nice_actimize
+  name: NICE Actimize
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "nice-actimize"
+  sector: vendor
+  hq_country: IL
+  priority: 2
+  enabled: false
+
+- slug: trading_technologies
+  name: Trading Technologies
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "trading-technologies"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: enfusion
+  name: Enfusion
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "enfusion"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: confluence_technologies
+  name: Confluence Technologies
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "confluence-technologies"
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: false
+
+- slug: n26
+  name: N26
+  source: greenhouse  # verified 2026-09-17
+  token: "n26"
+  sector: vendor
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: solarisbank
+  name: Solarisbank
+  source: greenhouse  # verified 2026-09-17
+  token: "solarisbank"
+  sector: vendor
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: trade_republic
+  name: Trade Republic
+  source: greenhouse  # verified 2026-09-17
+  token: "traderepublic"
+  sector: vendor
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: scalable_capital
+  name: Scalable Capital
+  source: personio  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "scalablecapital"
+  sector: vendor
+  hq_country: DE
+  priority: 2
+  enabled: false
+
+- slug: raisin
+  name: Raisin
+  source: greenhouse  # verified 2026-09-17
+  token: "raisin"
+  sector: vendor
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+# --- Rank 3 — crypto quant ---
+
+- slug: jump_crypto
+  name: Jump Crypto
+  source: greenhouse  # verified 2026-09-17
+  token: "jumpcrypto"
+  sector: crypto
+  hq_country: US
+  priority: 3
+  enabled: true
+
+- slug: gsr
+  name: GSR
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "gsr"
+  sector: crypto
+  hq_country: US
+  priority: 3
+  enabled: false
+
+- slug: wintermute
+  name: Wintermute
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "wintermute"
+  sector: crypto
+  hq_country: GB
+  priority: 3
+  enabled: false
+
+- slug: b2c2
+  name: B2C2
+  source: greenhouse  # verified 2026-09-17
+  token: "b2c2"
+  sector: crypto
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: amber_group
+  name: Amber Group
+  source: lever  # verified 2026-09-17
+  token: "ambergroup"
+  sector: crypto
+  hq_country: SG
+  priority: 3
+  enabled: true
+
+- slug: keyrock
+  name: Keyrock
+  source: ashby  # verified 2026-09-17
+  token: "keyrock"
+  sector: crypto
+  hq_country: BE
+  priority: 3
+  enabled: true
+
+- slug: flowdesk
+  name: Flowdesk
+  source: smartrecruiters  # verified 2026-09-17
+  token: "flowdesk"
+  sector: crypto
+  hq_country: FR
+  priority: 3
+  enabled: true
+
+- slug: cumberland
+  name: Cumberland (DRW)
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "cumberland-drw"
+  sector: crypto
+  hq_country: US
+  priority: 3
+  enabled: false
+
+- slug: galaxy_digital
+  name: Galaxy Digital
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "galaxy-digital"
+  sector: crypto
+  hq_country: US
+  priority: 3
+  enabled: false
+
+- slug: qcp_capital
+  name: QCP Capital
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "qcp-capital"
+  sector: crypto
+  hq_country: SG
+  priority: 3
+  enabled: false
+
+- slug: auros
+  name: Auros
+  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  token: "auros"
+  sector: crypto
+  hq_country: SG
+  priority: 3
+  enabled: false

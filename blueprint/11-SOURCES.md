@@ -30,11 +30,11 @@ qu'il ouvre les banques d'un coup mais demande un POST paginé.
 
 ## 2. Familles à endpoint JSON propre — WP04
 
-| Famille | Endpoint `[À CONFIRMER]` | Pagination | Notes |
+| Famille | Endpoint | Pagination | Notes |
 |---|---|---|---|
-| **Greenhouse** | `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true` | aucune, tout en un appel | `content=true` renvoie la description. Le jeton est le slug visible dans l'URL du board public |
-| **Lever** | `GET https://api.lever.co/v0/postings/{token}?mode=json` | aucune | Champs `categories.location`, `categories.commitment`, `lists` pour les sections |
-| **Ashby** | `GET https://api.ashbyhq.com/posting-api/job-board/{token}?includeCompensation=true` | aucune | `includeCompensation` donne des fourchettes réelles quand la société les publie |
+| **Greenhouse** | ✅ confirmé par sonde (WP00) : `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true` — ex. `optiverus`, `janestreet`, `jumptrading` | aucune, tout en un appel | `content=true` renvoie la description. Le jeton est le slug visible dans l'URL du board public. Réponse : `{"jobs": [...]}`, `offices: []` porte les sites multiples |
+| **Lever** | ✅ confirmé par sonde (WP00) : `GET https://api.lever.co/v0/postings/{token}?mode=json` — ex. `belvederetrading` | aucune | Champs `categories.location`, `categories.commitment`, `lists` pour les sections. Réponse : liste JSON nue (pas d'enveloppe `{...}`) |
+| **Ashby** | ✅ confirmé par sonde (WP00) : `GET https://api.ashbyhq.com/posting-api/job-board/{token}?includeCompensation=true` — ex. `keyrock` | aucune | `includeCompensation` donne des fourchettes réelles quand la société les publie |
 
 Ces trois-là sont des **API publiques documentées, destinées à l'agrégation** :
 c'est exactement l'usage prévu. Pas d'anti-bot, pas de clé, pas de zone grise.
@@ -48,10 +48,10 @@ intervalle de 3 h par board (`configs/sources.yaml`).
 | Famille | Endpoint `[À CONFIRMER]` | Difficulté |
 |---|---|---|
 | **Workday** | `POST https://{tenant}.wd{n}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs` corps `{"appliedFacets":{},"limit":20,"offset":0,"searchText":""}` | Il faut découvrir `{tenant}`, `{n}` et `{site}` par société. Pagination par `offset`. La description exige un **second appel** sur le détail de l'offre |
-| **SmartRecruiters** | `GET https://api.smartrecruiters.com/v1/companies/{id}/postings?limit=100&offset=0` | Simple. Description sur l'endpoint de détail |
-| **Workable** | `GET https://apply.workable.com/api/v1/widget/accounts/{token}?details=true` | Simple |
-| **Recruitee** | `GET https://{token}.recruitee.com/api/offers/` | Simple |
-| **Personio** | `GET https://{token}.jobs.personio.de/xml` | XML, pas JSON. Fréquent chez les sociétés allemandes |
+| **SmartRecruiters** | ✅ confirmé par sonde (WP00) : `GET https://api.smartrecruiters.com/v1/companies/{id}/postings?limit=100&offset=0` — ex. `flowdesk`. Voir l'avertissement ci-dessous | Simple. Description sur l'endpoint de détail (`.../postings/{id}`, champ `jobAd.sections`) |
+| **Workable** | ✅ confirmé par sonde (WP00) : `GET https://apply.workable.com/api/v1/widget/accounts/{token}?details=true` — ex. `eagle-seven` | Simple. Chaque offre porte déjà `experience` (`"Entry level"`, `"Mid-Senior level"`…), un signal de séniorité structuré que Greenhouse/Lever n'ont pas |
+| **Recruitee** | `[À CONFIRMER]` `GET https://{token}.recruitee.com/api/offers/` | Simple |
+| **Personio** | ✅ confirmé par sonde (WP00) : `GET https://{token}.jobs.personio.de/xml` — ex. `kaiko` | XML, pas JSON. Chaque `<position>` porte déjà `<seniority>` et `<yearsOfExperience>` en clair. Fréquent chez les sociétés allemandes — mais aussi vu chez une société française de ce registre, dont le board n'a que 3 offres de support (marketing, candidature spontanée), toutes au contenu encore en `Lorem ipsum` : un board Personio techniquement « trouvé » peut être un gabarit jamais rempli, un cas P3 à surveiller à l'usage |
 | **Teamtailor / Jobvite / iCIMS / Taleo** | variable | Souvent pas d'API publique ; à traiter comme `custom` ou à abandonner selon le nombre de sociétés concernées |
 
 **Workday mérite un avertissement.** C'est l'ATS de la plupart des grandes
@@ -59,7 +59,20 @@ banques, donc il ouvre beaucoup de portes d'un coup, mais : deux appels par
 offre, un `searchText` qui filtre mal, et des tenants introuvables sans
 inspecter le réseau d'une page carrière. Compter une demi-journée de
 reconnaissance rien que pour la banque française moyenne. C'est pourquoi il est
-en WP06 et pas en WP04.
+en WP06 et pas en WP04. **Confirmé par sonde WP00** : deviner `{tenant}`/`{site}`/`{n}`
+depuis le nom de la société échoue (`bnpparibas`/`wd3`/`BNP_Paribas_Careers` répond
+`HTTP 422`) — aucun raccourci, l'inspection réseau de WP06 est incontournable.
+Tout le registre WP00 marque donc les banques `source: workday, enabled: false,
+[À CONFIRMER]` plutôt que de deviner.
+
+**SmartRecruiters mérite le même avertissement que le piège P3 du primer, mais
+en pire : `GET .../companies/n-importe-quoi/postings` répond toujours `HTTP 200`
+avec `{"content": []}`, même pour un identifiant d'entreprise qui n'existe pas.**
+Il n'y a **aucun** moyen de distinguer un board SmartRecruiters vide d'un
+identifiant totalement inventé sans confirmation indépendante (page carrière,
+lien de candidature). `tools/probe_ats.py` traite donc **tout** succès
+SmartRecruiters comme `[À CONFIRMER]`, jamais comme vérifié — c'est le cas
+concret qui a motivé la règle « 200 avec liste vide = douteux » de ce lot.
 
 **Le collecteur `custom`.** Une fonction par société, dans un seul fichier, pour
 les sociétés qui n'ont réellement aucun ATS connu — typiquement les prop shops

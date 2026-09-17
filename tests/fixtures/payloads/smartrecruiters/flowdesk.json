@@ -1,0 +1,133 @@
+{
+  "content": [
+    {
+      "company": {
+        "identifier": "Flowdesk",
+        "name": "Flowdesk"
+      },
+      "customField": [
+        {
+          "fieldId": "COUNTRY",
+          "fieldLabel": "Country/Region",
+          "valueId": "fr",
+          "valueLabel": "France"
+        },
+        {
+          "fieldId": "6241b8cc42e0a27ac821bee8",
+          "fieldLabel": "Brands",
+          "valueId": "default",
+          "valueLabel": "Flowdesk"
+        }
+      ],
+      "defaultJobAd": true,
+      "department": {},
+      "experienceLevel": {
+        "id": "mid_senior_level",
+        "label": "Mid-Senior Level"
+      },
+      "function": {
+        "id": "business_development",
+        "label": "Business Development"
+      },
+      "id": "743999814906631",
+      "industry": {
+        "id": "computer_software",
+        "label": "Computer Software"
+      },
+      "jobAdId": "51dcf56f-6374-47e8-847e-d5bf61436714",
+      "language": {
+        "code": "en",
+        "label": "English",
+        "labelNative": "English (US)"
+      },
+      "location": {
+        "address": "8 Rue de Berri",
+        "city": "Paris",
+        "country": "fr",
+        "fullLocation": "Paris, IDF, France",
+        "hybrid": false,
+        "latitude": "48.8722454",
+        "longitude": "2.3039911",
+        "postalCode": "75008",
+        "region": "IDF",
+        "remote": false
+      },
+      "name": "Back-End Developer",
+      "ref": "https://api.smartrecruiters.com/v1/companies/flowdesk/postings/743999814906631",
+      "refNumber": "REF3D",
+      "releasedDate": "2022-03-28T13:53:03.000Z",
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "uuid": "3409109e-1fca-4099-aaf1-57eed5333062",
+      "visibility": "PUBLIC"
+    },
+    {
+      "company": {
+        "identifier": "Flowdesk",
+        "name": "Flowdesk"
+      },
+      "customField": [
+        {
+          "fieldId": "COUNTRY",
+          "fieldLabel": "Country/Region",
+          "valueId": "fr",
+          "valueLabel": "France"
+        },
+        {
+          "fieldId": "6241b8cc42e0a27ac821bee8",
+          "fieldLabel": "Brands",
+          "valueId": "default",
+          "valueLabel": "Flowdesk"
+        }
+      ],
+      "defaultJobAd": true,
+      "department": {},
+      "experienceLevel": {
+        "id": "mid_senior_level",
+        "label": "Mid-Senior Level"
+      },
+      "function": {
+        "id": "business_development",
+        "label": "Business Development"
+      },
+      "id": "743999814903312",
+      "industry": {
+        "id": "computer_software",
+        "label": "Computer Software"
+      },
+      "jobAdId": "f158bb41-a004-4eaa-b090-cd1b857f0cbe",
+      "language": {
+        "code": "en",
+        "label": "English",
+        "labelNative": "English (US)"
+      },
+      "location": {
+        "address": "8 Rue de Berri",
+        "city": "Paris",
+        "country": "fr",
+        "fullLocation": "Paris, IDF, France",
+        "hybrid": false,
+        "latitude": "48.8722454",
+        "longitude": "2.3039911",
+        "postalCode": "75008",
+        "region": "IDF",
+        "remote": false
+      },
+      "name": "Business Developer Manager",
+      "ref": "https://api.smartrecruiters.com/v1/companies/flowdesk/postings/743999814903312",
+      "refNumber": "REF2O",
+      "releasedDate": "2022-03-28T13:43:58.000Z",
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "uuid": "c6470483-5625-43a9-9216-ea568e913d28",
+      "visibility": "PUBLIC"
+    }
+  ],
+  "limit": 100,
+  "offset": 0,
+  "totalFound": 2
+}

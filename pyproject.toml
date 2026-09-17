@@ -71,6 +71,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
     "golden: cascade complète contre le corpus doré (aucun réseau)",
     "contract: collecteurs contre charges utiles figées (aucun réseau)",
