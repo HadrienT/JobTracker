@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.import_linter_cache/
+.coverage
+htmlcov/
+
+# Données
+*.db
+*.db-wal
+*.db-shm
+backups/
+docs/reports/
+
+# Secrets
+.env
+
+# Node
+node_modules/
+web/dist/
+web/.vite/
+playwright-report/
+test-results/
+
+# Divers
+.DS_Store
+.state/

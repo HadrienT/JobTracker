@@ -1,0 +1,87 @@
+# JobTracker — tâches de développement et d'exploitation
+set shell := ["bash", "-uc"]
+set dotenv-load := true
+
+# liste les tâches
+default:
+    @just --list
+
+# installe l'environnement
+sync:
+    uv sync --all-extras
+
+# lint + format check + typage
+lint:
+    uv run ruff check src tests tools
+    uv run ruff format --check src tests tools
+    uv run mypy
+
+# formate le code
+fmt:
+    uv run ruff format src tests tools
+    uv run ruff check --fix src tests tools
+
+# contrats d'architecture D1→D9
+arch:
+    uv run lint-imports
+
+# tous les tests sauf @live
+test:
+    uv run pytest
+
+# corpus doré + tableau de résolution par étage
+test-golden:
+    uv run pytest -m golden -q -s
+
+# tests de propriété (hypothesis, invariants I1→I3)
+test-property:
+    uv run pytest -m property -q
+
+# applique les migrations
+migrate:
+    uv run jobtracker migrate
+
+# un cycle de collecte sur une famille de sources
+run-once source="greenhouse":
+    uv run jobtracker run-once --source {{source}}
+
+# ordonnanceur continu
+loop:
+    uv run jobtracker loop
+
+# santé : sources muettes, fraîcheur du flux (code retour 1 si dégradé)
+status:
+    uv run jobtracker status
+
+# sonde une société pour trouver son ATS et son jeton
+probe company:
+    uv run python tools/probe_ats.py --name {{company}}
+
+# rejeu du normaliseur sur l'archive brute
+replay since:
+    uv run jobtracker replay --since {{since}} --dry-run
+
+# rapport hebdomadaire
+report:
+    uv run jobtracker report --weekly
+
+# API
+api:
+    uv run uvicorn jobtracker.api.app:app --host ${JT_API_HOST:-127.0.0.1} --port ${JT_API_PORT:-8100} --reload
+
+# front seul
+web:
+    cd web && npm run dev
+
+# régénère web/openapi.json + web/src/api/schema.gen.ts
+types:
+    uv run python tools/gen_openapi.py web/openapi.json
+    cd web && npm run api:types:local
+
+# sauvegarde de la base (jamais `cp` sur une base WAL)
+backup db="jobtracker.db":
+    mkdir -p backups
+    sqlite3 {{db}} ".backup backups/jobtracker-$(date +%Y%m%d).db"
+
+# CI locale : reproduit .github/workflows/ci.yml
+ci: lint arch test
