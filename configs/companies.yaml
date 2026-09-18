@@ -743,12 +743,13 @@
 
 - slug: morgan_stanley
   name: Morgan Stanley
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "ms"
+  extra: { wd: "5", site: External }
   sector: bank
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: jpmorgan
   name: J.P. Morgan
@@ -1022,21 +1023,23 @@
 
 - slug: wells_fargo
   name: Wells Fargo
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "wf"
+  extra: { wd: "1", site: WellsFargoJobs }
   sector: bank
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: state_street
   name: State Street
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "statestreet"
+  extra: { wd: "1", site: Global }
   sector: bank
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: bny_mellon
   name: BNY Mellon
@@ -1078,12 +1081,13 @@
 
 - slug: blackrock
   name: BlackRock
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "blackrock"
+  extra: { wd: "1", site: BlackRock_Professional }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: pimco
   name: PIMCO
@@ -1096,21 +1100,23 @@
 
 - slug: vanguard
   name: Vanguard
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "vanguard"
+  extra: { wd: "5", site: vanguard_external }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: fidelity
   name: Fidelity
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "fmr"
+  extra: { wd: "1", site: FidelityCareers }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: wellington_management
   name: Wellington Management
@@ -1231,21 +1237,23 @@
 
 - slug: t_rowe_price
   name: T. Rowe Price
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "troweprice"
+  extra: { wd: "5", site: TRowePrice }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: invesco
   name: Invesco
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "invesco"
+  extra: { wd: "1", site: IVZ }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: franklin_templeton
   name: Franklin Templeton
@@ -1258,21 +1266,23 @@
 
 - slug: neuberger_berman
   name: Neuberger Berman
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "nb"
+  extra: { wd: "1", site: NBCareers }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: alliancebernstein
   name: AllianceBernstein
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-09-18
+  token: "abglobal"
+  extra: { wd: "1", site: alliancebernsteincareers }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: pgim
   name: PGIM
@@ -1700,3 +1710,14 @@
   hq_country: SG
   priority: 3
   enabled: false
+
+# --- Discovered during WP06 recon: real Recruitee board, proprietary trading ---
+
+- slug: sfors
+  name: SFORS
+  source: recruitee  # verified 2026-09-18
+  token: "sfors"
+  sector: prop_trading
+  hq_country: AE
+  priority: 3
+  enabled: true
