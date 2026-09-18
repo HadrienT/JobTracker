@@ -5,6 +5,7 @@ The rows the reversed watchdog (blueprint/07-ERRORS-AND-LOGGING.md §4) reads:
 """
 
 import sqlite3
+from datetime import datetime
 
 from jobtracker.core.enums import Source
 from jobtracker.core.models import SourceRun
@@ -43,6 +44,21 @@ def recent_runs(conn: sqlite3.Connection, source: Source, limit: int) -> list[So
         (source.value, limit),
     ).fetchall()
     return [_row_to_run(row) for row in rows]
+
+
+def last_run_at_for_board(
+    conn: sqlite3.Connection, source: Source, company_slug: str
+) -> datetime | None:
+    """When this board was last attempted, regardless of outcome — the
+    scheduler's cadence check (blueprint/wp/WP08-runtime.md §3): a company
+    that consistently errors still counts as "looked at", so it is not
+    hammered every cycle just because it never records a success.
+    """
+    row = conn.execute(
+        "SELECT MAX(started_at) AS latest FROM source_runs WHERE source = ? AND company_slug = ?",
+        (source.value, company_slug),
+    ).fetchone()
+    return datetime.fromisoformat(row["latest"]) if row is not None and row["latest"] else None
 
 
 def _row_to_run(row: sqlite3.Row) -> SourceRun:

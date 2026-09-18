@@ -13,6 +13,7 @@ from jobtracker.store.companies import sync_companies
 from jobtracker.store.health import health_snapshot
 from jobtracker.store.postings import upsert_posting
 from jobtracker.store.runs import record_run
+from jobtracker.store.schema import MIGRATIONS_DIR
 
 pytestmark = pytest.mark.db
 
@@ -188,5 +189,6 @@ def test_a_fresh_feed_is_not_stale(store_conn: sqlite3.Connection) -> None:
 def test_schema_version_reflects_the_latest_applied_migration(
     store_conn: sqlite3.Connection,
 ) -> None:
+    latest = max(int(p.stem.split("_", 1)[0]) for p in MIGRATIONS_DIR.glob("*.sql"))
     snapshot = health_snapshot(store_conn)
-    assert snapshot.schema_version == 1
+    assert snapshot.schema_version == latest

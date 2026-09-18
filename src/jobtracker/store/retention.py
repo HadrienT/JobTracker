@@ -50,12 +50,23 @@ def purge_inactive_postings(
     now: datetime,
     retention_days: int = DEFAULT_INACTIVE_POSTING_RETENTION_DAYS,
 ) -> int:
-    """Drop postings inactive past `retention_days` (cascades to their child rows)."""
+    """Drop postings inactive past `retention_days` (cascades to their child rows).
+
+    `raw_payloads` no longer has a foreign key to `postings` (migration 0002:
+    a payload must survive a normalizer crash on a posting row that may never
+    exist), so the cascade above never touches it — the orphan sweep below
+    does, bounding how long an unreachable payload lingers past whatever is
+    left of its own retention window.
+    """
     cutoff = (now - timedelta(days=retention_days)).isoformat()
     cursor = conn.execute(
         "DELETE FROM postings WHERE is_active = 0 AND last_seen_at < ?", (cutoff,)
     )
-    return cursor.rowcount
+    removed = cursor.rowcount
+    conn.execute(
+        "DELETE FROM raw_payloads WHERE posting_id NOT IN (SELECT posting_id FROM postings)"
+    )
+    return removed
 
 
 def purge_source_runs(

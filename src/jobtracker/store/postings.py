@@ -13,6 +13,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import BaseModel
+from ulid import ULID
 
 from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import (
@@ -368,6 +369,68 @@ def _canonical_by_fingerprint(conn: sqlite3.Connection, fingerprint: str) -> sql
     return row
 
 
+def resolve_posting_id(
+    conn: sqlite3.Connection, source: Source, company_slug: str, source_job_id: str
+) -> str:
+    """The posting_id this (source, company_slug, source_job_id) already has, or a
+    freshly allocated one if it has never been seen.
+
+    blueprint/05-SEQUENCES.md §1: the pipeline archives a raw payload *before*
+    calling normalize(), so the id it archives under has to be knowable from
+    the raw posting's own identity alone — normalize() generates its own id
+    for a genuinely new posting, but by the time upsert_posting runs,
+    `_existing_by_identity` will resolve to this same row and reuse it.
+    """
+    row = conn.execute(
+        "SELECT posting_id FROM postings "
+        "WHERE source = ? AND company_slug = ? AND source_job_id = ?",
+        (source.value, company_slug, source_job_id),
+    ).fetchone()
+    return str(row["posting_id"]) if row is not None else str(ULID())
+
+
+def previous_content_hash(
+    conn: sqlite3.Connection, source: Source, company_slug: str, source_job_id: str
+) -> str | None:
+    """The stored `content_hash` for this identity, or ``None`` if it is new.
+
+    The pipeline (WP08) uses this to tell a genuinely new posting apart from
+    an unchanged republish before scoring anything — `upsert_posting` makes
+    the same distinction internally, but its own return value (a bare
+    posting_id) does not expose which branch it took.
+    """
+    row = conn.execute(
+        "SELECT content_hash FROM postings "
+        "WHERE source = ? AND company_slug = ? AND source_job_id = ?",
+        (source.value, company_slug, source_job_id),
+    ).fetchone()
+    return str(row["content_hash"]) if row is not None else None
+
+
+def resolve_dedup(conn: sqlite3.Connection, posting: Posting) -> str | None:
+    """Whether `posting` is about to become an alias, without writing anything.
+
+    Returns the existing canonical posting's id if `posting` would be
+    recorded as an alias of it (blueprint/03-INTERFACES.md §3.4's collision
+    rules), or ``None`` if it is headed for its own canonical row (new or
+    updated in place). Calling this before `match.evaluate()` is what makes
+    "dedup precedes scoring" (blueprint/wp/WP08-runtime.md §2) possible: an
+    alias never pays for a score it will never display.
+    """
+    if _existing_by_identity(conn, posting) is not None:
+        return None  # same (source, company_slug, source_job_id): always the canonical path
+    canonical = _canonical_by_fingerprint(conn, posting.fingerprint)
+    if canonical is None:
+        return None  # brand new fingerprint: canonical
+    existing_is_aggregator = Source(canonical["source"]) in AGGREGATOR_SOURCES
+    new_is_aggregator = posting.source in AGGREGATOR_SOURCES
+    if not existing_is_aggregator:
+        return str(canonical["posting_id"])  # case 2: alias of an existing ATS posting
+    if not new_is_aggregator:
+        return None  # case 3: an ATS posting takes over from an aggregator
+    return str(canonical["posting_id"])  # both aggregators: alias, the older one stays canonical
+
+
 def _write_posting_row(
     conn: sqlite3.Connection, posting: Posting, verdict: MatchVerdict, *, is_canonical: bool
 ) -> None:
@@ -707,6 +770,30 @@ def count_active_by_company(conn: sqlite3.Connection) -> dict[str, int]:
     return {row["company_slug"]: row["n"] for row in rows}
 
 
+def deactivate_missing(
+    conn: sqlite3.Connection, source: Source, company_slug: str, seen_source_job_ids: set[str]
+) -> int:
+    """Deactivate this board's postings absent from the current run's results.
+
+    blueprint/05-SEQUENCES.md §4: only ever called for a board that *did*
+    return something — a run with zero postings never deactivates anything,
+    because a zero-offer response is indistinguishable from a broken token
+    and deactivating on it would silently empty the feed. The caller is
+    responsible for that check; this function has no way to tell "empty
+    result" from "everything genuinely disappeared" apart from it.
+    """
+    if not seen_source_job_ids:
+        return 0
+    placeholders = ",".join("?" for _ in seen_source_job_ids)
+    cursor = conn.execute(
+        f"UPDATE postings SET is_active = 0 "
+        f"WHERE source = ? AND company_slug = ? AND is_active = 1 "
+        f"AND source_job_id NOT IN ({placeholders})",
+        (source.value, company_slug, *sorted(seen_source_job_ids)),
+    )
+    return cursor.rowcount
+
+
 def newest_first_seen_at(conn: sqlite3.Connection) -> str | None:
     row = conn.execute(
         "SELECT MAX(first_seen_at) AS newest FROM postings WHERE is_canonical = 1 AND is_active = 1"
@@ -722,6 +809,7 @@ __all__: Sequence[str] = (
     "SortKey",
     "count_active_by_company",
     "count_active_canonical",
+    "deactivate_missing",
     "get_posting_row",
     "get_verdict",
     "list_aliases",
@@ -729,6 +817,9 @@ __all__: Sequence[str] = (
     "mark_favorite",
     "mark_hidden",
     "newest_first_seen_at",
+    "previous_content_hash",
     "record_alias",
+    "resolve_dedup",
+    "resolve_posting_id",
     "upsert_posting",
 )

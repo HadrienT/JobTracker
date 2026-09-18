@@ -23,7 +23,8 @@ def test_current_schema_version_before_any_migration(tmp_path: Path) -> None:
 
 
 def test_current_schema_version_after_migrating(store_conn: sqlite3.Connection) -> None:
-    assert current_schema_version(store_conn) == "0001_initial"
+    latest = sorted(p.stem for p in MIGRATIONS_DIR.glob("*.sql"))[-1]
+    assert current_schema_version(store_conn) == latest
 
 
 def test_applying_migrations_twice_is_idempotent(tmp_path: Path) -> None:

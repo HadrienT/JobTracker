@@ -5,7 +5,6 @@ never a sentence, and every event is logged at a component boundary.
 """
 
 import logging
-import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import cast
@@ -15,7 +14,15 @@ from structlog.typing import FilteringBoundLogger, Processor
 
 
 def configure_logging(*, level: str = "INFO", fmt: str = "json") -> None:
-    """Configure `structlog` once, at startup."""
+    """Configure `structlog` once, at startup.
+
+    `PrintLoggerFactory()` is called with no `file=` on purpose: structlog's
+    default resolves `sys.stdout` freshly on every write instead of pinning
+    the handle open at configure time. Pinning it breaks the moment anything
+    later swaps `sys.stdout` for a different object — pytest's output
+    capture does exactly that between tests — and every subsequent log call
+    then writes to a closed file.
+    """
     processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
@@ -29,7 +36,7 @@ def configure_logging(*, level: str = "INFO", fmt: str = "json") -> None:
     structlog.configure(
         processors=processors,
         wrapper_class=structlog.make_filtering_bound_logger(getattr(logging, level.upper())),
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stdout),
+        logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
 

@@ -12,6 +12,7 @@ from jobtracker.store.postings import (
     PostingFilter,
     SortKey,
     count_active_canonical,
+    deactivate_missing,
     get_posting_row,
     get_verdict,
     list_aliases,
@@ -20,6 +21,8 @@ from jobtracker.store.postings import (
     mark_hidden,
     newest_first_seen_at,
     record_alias,
+    resolve_dedup,
+    resolve_posting_id,
     upsert_posting,
 )
 
@@ -531,3 +534,91 @@ def test_newest_first_seen_at_reflects_the_most_recent_posting(
     newest = newest_first_seen_at(store_conn)
     assert newest is not None
     assert newest.startswith("2026-03-01")
+
+
+# --- resolve_posting_id / resolve_dedup (WP08) ------------------------------
+
+
+def test_resolve_posting_id_allocates_a_fresh_id_for_an_unseen_identity(
+    store_conn: sqlite3.Connection,
+) -> None:
+    allocated = resolve_posting_id(store_conn, Source.GREENHOUSE, "acme", "job-999")
+    assert isinstance(allocated, str)
+    assert allocated != ""
+
+
+def test_resolve_posting_id_reuses_the_existing_id(store_conn: sqlite3.Connection) -> None:
+    posting_id = _upsert(store_conn)
+    posting = make_posting()
+    reused = resolve_posting_id(
+        store_conn, posting.source, posting.company_slug, posting.source_job_id
+    )
+    assert reused == posting_id
+
+
+def test_resolve_dedup_is_none_for_a_brand_new_fingerprint(store_conn: sqlite3.Connection) -> None:
+    posting = make_posting()
+    assert resolve_dedup(store_conn, posting) is None
+
+
+def test_resolve_dedup_is_none_for_an_existing_identity_update(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn)
+    updated = make_posting(content_hash="new-hash")  # same identity as _upsert's default
+    assert resolve_dedup(store_conn, updated) is None
+
+
+def test_resolve_dedup_flags_an_aggregator_republication_as_an_alias_of_an_existing_ats_posting(
+    store_conn: sqlite3.Connection,
+) -> None:
+    canonical_id = _upsert(store_conn, source=Source.GREENHOUSE, fingerprint="fp-shared")
+
+    aggregator_posting = make_posting(
+        posting_id="p-linkedin",
+        source=Source.LINKEDIN,
+        source_job_id="j-linkedin",
+        fingerprint="fp-shared",
+    )
+    assert resolve_dedup(store_conn, aggregator_posting) == canonical_id
+
+
+def test_resolve_dedup_is_none_when_an_ats_posting_takes_over_from_an_aggregator(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn, source=Source.LINKEDIN, fingerprint="fp-shared")
+    ats_posting = make_posting(
+        posting_id="p-ats", source=Source.GREENHOUSE, source_job_id="j-ats", fingerprint="fp-shared"
+    )
+    assert resolve_dedup(store_conn, ats_posting) is None
+
+
+# --- deactivate_missing (WP08) ----------------------------------------------
+
+
+def test_deactivate_missing_turns_off_a_posting_absent_from_the_run(
+    store_conn: sqlite3.Connection,
+) -> None:
+    still_there = _upsert(store_conn, posting_id="p-1", source_job_id="j-1", fingerprint="fp-1")
+    gone = _upsert(store_conn, posting_id="p-2", source_job_id="j-2", fingerprint="fp-2")
+
+    changed = deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-1"})
+    store_conn.commit()
+
+    assert changed == 1
+    rows = {
+        r["posting_id"]: r["is_active"]
+        for r in store_conn.execute("SELECT posting_id, is_active FROM postings").fetchall()
+    }
+    assert rows[still_there] == 1
+    assert rows[gone] == 0
+
+
+def test_deactivate_missing_with_an_empty_seen_set_changes_nothing(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn)
+    changed = deactivate_missing(store_conn, Source.GREENHOUSE, "acme", set())
+    assert changed == 0
+    row = store_conn.execute("SELECT is_active FROM postings").fetchone()
+    assert row["is_active"] == 1
