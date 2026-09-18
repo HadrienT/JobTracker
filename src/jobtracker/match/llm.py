@@ -18,6 +18,8 @@ Two rules govern every call here, both non-negotiable:
 
 import json as jsonlib
 import threading
+from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 import httpx
@@ -132,6 +134,74 @@ def _extract_verdict(response: httpx.Response, *, posting_id: str) -> LlmVerdict
         return None
 
 
+class LlmStatus(StrEnum):
+    OK = "ok"
+    # Busy, unreachable, timed out, or another call already in flight here: the
+    # posting should be tried again later.
+    UNAVAILABLE = "unavailable"
+    # The server answered but not with a schema-conforming verdict: retrying the
+    # same prompt is pointless, the posting is quarantined instead.
+    NON_CONFORMING = "non_conforming"
+
+
+@dataclass(frozen=True)
+class LlmOutcome:
+    status: LlmStatus
+    verdict: LlmVerdict | None = None
+
+
+def attempt_llm(
+    posting: Posting,
+    *,
+    description: str,
+    timeout_s: int,
+    base_url: str,
+    model: str,
+    client: httpx.Client | None = None,
+) -> LlmOutcome:
+    """Same call as `classify_llm`, but says *why* there was no verdict.
+
+    The queue needs the distinction `None` erases: an unavailable server means
+    "requeue and try next turn", a malformed reply means "quarantine". Never
+    raises, for the same reason `classify_llm` never does.
+    """
+    if not _concurrency_guard.acquire(blocking=False):
+        _logger.info("llm_skipped_local_concurrency", posting_id=posting.posting_id)
+        return LlmOutcome(LlmStatus.UNAVAILABLE)
+    try:
+        owned_client = client is None
+        http_client = client if client is not None else httpx.Client()
+        try:
+            payload = _build_payload(posting, description, model=model)
+            response = _post_completion(
+                http_client, base_url=base_url, payload=payload, timeout_s=timeout_s
+            )
+        except LlmUnavailable:
+            _logger.warning("llm_unavailable", posting_id=posting.posting_id, base_url=base_url)
+            return LlmOutcome(LlmStatus.UNAVAILABLE)
+        except httpx.TimeoutException:
+            _logger.info("llm_skipped_busy_timeout", posting_id=posting.posting_id)
+            return LlmOutcome(LlmStatus.UNAVAILABLE)
+        finally:
+            if owned_client:
+                http_client.close()
+
+        if response.status_code != httpx.codes.OK:
+            _logger.info(
+                "llm_skipped_busy_status",
+                posting_id=posting.posting_id,
+                status=response.status_code,
+            )
+            return LlmOutcome(LlmStatus.UNAVAILABLE)
+
+        verdict = _extract_verdict(response, posting_id=posting.posting_id)
+        if verdict is None:
+            return LlmOutcome(LlmStatus.NON_CONFORMING)
+        return LlmOutcome(LlmStatus.OK, verdict)
+    finally:
+        _concurrency_guard.release()
+
+
 def classify_llm(
     posting: Posting,
     *,
@@ -148,38 +218,14 @@ def classify_llm(
     the caller has to handle. `client` exists only for tests (a real `httpx.Client`
     is opened otherwise) — mirrors `collect.http.PolicedHttpSession`'s own seam.
     """
-    if not _concurrency_guard.acquire(blocking=False):
-        _logger.info("llm_skipped_local_concurrency", posting_id=posting.posting_id)
-        return None
-    try:
-        owned_client = client is None
-        http_client = client if client is not None else httpx.Client()
-        try:
-            payload = _build_payload(posting, description, model=model)
-            response = _post_completion(
-                http_client, base_url=base_url, payload=payload, timeout_s=timeout_s
-            )
-        except LlmUnavailable:
-            _logger.warning("llm_unavailable", posting_id=posting.posting_id, base_url=base_url)
-            return None
-        except httpx.TimeoutException:
-            _logger.info("llm_skipped_busy_timeout", posting_id=posting.posting_id)
-            return None
-        finally:
-            if owned_client:
-                http_client.close()
-
-        if response.status_code != httpx.codes.OK:
-            _logger.info(
-                "llm_skipped_busy_status",
-                posting_id=posting.posting_id,
-                status=response.status_code,
-            )
-            return None
-
-        return _extract_verdict(response, posting_id=posting.posting_id)
-    finally:
-        _concurrency_guard.release()
+    return attempt_llm(
+        posting,
+        description=description,
+        timeout_s=timeout_s,
+        base_url=base_url,
+        model=model,
+        client=client,
+    ).verdict
 
 
 def apply_llm_verdict(posting: Posting, llm_verdict: LlmVerdict) -> Posting:
@@ -199,6 +245,20 @@ def apply_llm_verdict(posting: Posting, llm_verdict: LlmVerdict) -> Posting:
             "resolver_stage": "llm",
         }
     )
+
+
+def rescore_with_llm(
+    posting: Posting, llm_verdict: LlmVerdict, *, profile: Profile
+) -> tuple[Posting, MatchVerdict] | None:
+    """Apply the LLM's fields and recompute the score — `None` if under-confident.
+
+    `None` is the quarantine: below `_CONFIDENCE_THRESHOLD` the posting keeps
+    its deterministic verdict rather than being promoted on a guess (§4.3).
+    """
+    if llm_verdict.confidence < _CONFIDENCE_THRESHOLD:
+        return None
+    updated = apply_llm_verdict(posting, llm_verdict)
+    return updated, evaluate(updated, profile=profile)
 
 
 def resolve_residual(
@@ -233,8 +293,7 @@ def resolve_residual(
         model=settings.llm_model,
         client=client,
     )
-    if llm_verdict is None or llm_verdict.confidence < _CONFIDENCE_THRESHOLD:
+    if llm_verdict is None:
         return verdict
-
-    updated_posting = apply_llm_verdict(posting, llm_verdict)
-    return evaluate(updated_posting, profile=profile)
+    rescored = rescore_with_llm(posting, llm_verdict, profile=profile)
+    return verdict if rescored is None else rescored[1]

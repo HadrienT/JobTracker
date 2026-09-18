@@ -441,9 +441,9 @@ def _write_posting_row(
             title, title_raw, score, tier, role_family, seniority, min_years, phd_required,
             visa_sponsorship, visa_evidence, salary_min, salary_max, salary_currency,
             salary_period, posted_at, first_seen_at, last_seen_at, closes_at, content_hash,
-            normalize_version, is_active
+            normalize_version, is_active, resolver_stage
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
         ON CONFLICT (posting_id) DO UPDATE SET
             fingerprint = excluded.fingerprint, is_canonical = excluded.is_canonical,
@@ -458,7 +458,7 @@ def _write_posting_row(
             posted_at = excluded.posted_at,
             last_seen_at = excluded.last_seen_at, closes_at = excluded.closes_at,
             content_hash = excluded.content_hash, normalize_version = excluded.normalize_version,
-            is_active = excluded.is_active
+            is_active = excluded.is_active, resolver_stage = excluded.resolver_stage
         """,
         (
             posting.posting_id,
@@ -493,6 +493,7 @@ def _write_posting_row(
             posting.content_hash,
             posting.normalize_version,
             1,
+            posting.resolver_stage,
         ),
     )
     conn.execute("DELETE FROM posting_locations WHERE posting_id = ?", (posting.posting_id,))
@@ -823,3 +824,92 @@ __all__: Sequence[str] = (
     "resolve_posting_id",
     "upsert_posting",
 )
+
+
+def get_posting(conn: sqlite3.Connection, posting_id: str) -> Posting | None:
+    """Rebuild the domain `Posting` from its rows — the LLM drain's only way back to one.
+
+    `languages_required` is not persisted (nothing downstream of `normalize`
+    reads it), so it comes back empty; `match` never looks at it.
+    """
+    row = conn.execute("SELECT * FROM postings WHERE posting_id = ?", (posting_id,)).fetchone()
+    if row is None:
+        return None
+    locations = tuple(
+        Location(
+            city=loc["city"],
+            country=loc["country"],
+            region=loc["region"],
+            remote_mode=RemoteMode(loc["remote_mode"]),
+            raw=loc["raw"],
+        )
+        for loc in conn.execute(
+            "SELECT city, country, region, remote_mode, raw FROM posting_locations "
+            "WHERE posting_id = ?",
+            (posting_id,),
+        ).fetchall()
+    )
+    tech = frozenset(
+        r["tech"]
+        for r in conn.execute(
+            "SELECT tech FROM posting_tech WHERE posting_id = ?", (posting_id,)
+        ).fetchall()
+    )
+    return Posting(
+        posting_id=row["posting_id"],
+        fingerprint=row["fingerprint"],
+        source=Source(row["source"]),
+        company_slug=row["company_slug"],
+        source_job_id=row["source_job_id"],
+        url=row["url"],
+        title=row["title"],
+        title_raw=row["title_raw"],
+        role_family=RoleFamily(row["role_family"]),
+        seniority=Seniority(row["seniority"]),
+        min_years=row["min_years"],
+        phd_required=bool(row["phd_required"]),
+        locations=locations,
+        compensation=Compensation(
+            amount_min=Decimal(row["salary_min"]) if row["salary_min"] is not None else None,
+            amount_max=Decimal(row["salary_max"]) if row["salary_max"] is not None else None,
+            currency=row["salary_currency"],
+            period=row["salary_period"],
+            bonus_mentioned=False,
+            equity_mentioned=False,
+            raw=None,
+        ),
+        visa_sponsorship=VisaStatus(row["visa_sponsorship"]),
+        visa_evidence=row["visa_evidence"],
+        tech=tech,
+        languages_required=frozenset(),
+        posted_at=row["posted_at"],
+        first_seen_at=row["first_seen_at"],
+        last_seen_at=row["last_seen_at"],
+        closes_at=row["closes_at"],
+        content_hash=row["content_hash"],
+        resolver_stage=row["resolver_stage"],
+        normalize_version=row["normalize_version"],
+    )
+
+
+def is_active(conn: sqlite3.Connection, posting_id: str) -> bool:
+    row = conn.execute(
+        "SELECT is_active FROM postings WHERE posting_id = ?", (posting_id,)
+    ).fetchone()
+    return row is not None and bool(row["is_active"])
+
+
+def update_resolution(conn: sqlite3.Connection, posting: Posting, verdict: MatchVerdict) -> None:
+    """Rewrite an *existing* posting's resolved fields and verdict.
+
+    `upsert_posting` deliberately does nothing for an unchanged `content_hash`
+    (WP02 §4: never rescore an identical re-fetch) — but an LLM resolution
+    changes the fields *without* changing the content, so it needs its own
+    door. Dedup state (`is_canonical`, aliases, flags) is left exactly as it is.
+    """
+    row = conn.execute(
+        "SELECT is_canonical FROM postings WHERE posting_id = ?", (posting.posting_id,)
+    ).fetchone()
+    if row is None:
+        raise StorageError(f"update_resolution: no such posting {posting.posting_id!r}")
+    _write_posting_row(conn, posting, verdict, is_canonical=bool(row["is_canonical"]))

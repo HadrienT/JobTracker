@@ -21,6 +21,7 @@ from jobtracker.core.models import Board
 from jobtracker.match.profile import load_profile
 from jobtracker.normalize.taxonomy import load_taxonomy
 from jobtracker.runtime.pipeline import ingest
+from jobtracker.runtime.residual import DRAIN_INTERVAL_MIN, LlmClientConfig, drain_queue
 from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.watchdog import full_health_snapshot
 from jobtracker.store.companies import sync_companies
@@ -56,6 +57,7 @@ def _build_context(
         geo=geo,
         profile=profile,
         user_agent=settings.user_agent,
+        llm=LlmClientConfig.from_settings(settings),
     )
     return ctx, boards
 
@@ -95,6 +97,7 @@ def cmd_loop(_args: argparse.Namespace) -> int:
     ctx, boards = _build_context(conn, settings)
     sources = sorted({b.source for b in boards}, key=lambda s: s.value)
     next_due: dict[Source, float] = dict.fromkeys(sources, 0.0)
+    next_drain = 0.0
 
     _logger.info("loop_started", sources=[s.value for s in sources])
     try:
@@ -112,12 +115,36 @@ def cmd_loop(_args: argparse.Namespace) -> int:
                     run_source_cycle(conn, source, source_boards, ctx=ctx)
                 interval_min = ctx.sources_config.interval_min.get(str(source), 180)
                 next_due[source] = now_monotonic + interval_min * 60
+            if ctx.llm is not None and next_drain <= now_monotonic:
+                with bound_run_id(str(ULID())):
+                    drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
+                next_drain = time.monotonic() + DRAIN_INTERVAL_MIN * 60
             time.sleep(_LOOP_POLL_S)
     except KeyboardInterrupt:
         _logger.info("loop_stopped")
         return 0
     finally:
         conn.close()
+
+
+def cmd_llm_drain(_args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    ctx, _boards = _build_context(conn, settings)
+    if ctx.llm is None:
+        print("JT_LLM_ENABLED=false: nothing to drain", file=sys.stderr)
+        conn.close()
+        return 0
+    with bound_run_id(str(ULID())):
+        result = drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
+    print(
+        f"resolved={result.resolved} quarantined={result.quarantined} dropped={result.dropped} "
+        f"requeued={result.requeued} remaining={result.remaining} "
+        f"server_available={result.server_available}",
+        file=sys.stderr,
+    )
+    conn.close()
+    return 0
 
 
 def cmd_status(_args: argparse.Namespace) -> int:
@@ -163,6 +190,7 @@ def cmd_probe(args: argparse.Namespace) -> int:
                 geo=ctx.geo,
                 profile=ctx.profile,
                 hq_country=board.hq_country,
+                llm=ctx.llm,
             )
             print(
                 f"  {raw.title_raw!r} -> {outcome.outcome} "
@@ -185,6 +213,10 @@ def _build_parser() -> argparse.ArgumentParser:
     run_once.set_defaults(func=cmd_run_once)
 
     subparsers.add_parser("loop", help="run continuously").set_defaults(func=cmd_loop)
+
+    subparsers.add_parser("llm-drain", help="one pass over the deferred LLM queue").set_defaults(
+        func=cmd_llm_drain
+    )
 
     status = subparsers.add_parser("status", help="health snapshot; exit 1 if degraded")
     status.set_defaults(func=cmd_status)

@@ -49,6 +49,10 @@ run-once source="greenhouse":
 loop:
     uv run jobtracker loop
 
+# un passage sur la file LLM différée (serveur occupé/éteint = tour sauté)
+llm-drain:
+    uv run jobtracker llm-drain
+
 # santé : sources muettes, fraîcheur du flux (code retour 1 si dégradé)
 status:
     uv run jobtracker status

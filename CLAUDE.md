@@ -44,6 +44,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just migrate` | applique `migrations/*.sql` |
 | `just run-once source="greenhouse"` | un cycle de collecte sur une famille de sources |
 | `just loop` | ordonnanceur continu |
+| `just llm-drain` | un passage sur la file LLM différée (le serveur est partagé et pas toujours levé) |
 | `just status` | santé : sources muettes, sources en erreur, fraîcheur du flux (code retour 1 si dégradé) |
 | `just api` | `uvicorn` sur `127.0.0.1:8100` |
 | `just web` | front seul, Vite sur `127.0.0.1:5190` |

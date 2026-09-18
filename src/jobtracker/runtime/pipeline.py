@@ -24,6 +24,7 @@ from jobtracker.match.profile import Profile
 from jobtracker.match.score import evaluate
 from jobtracker.normalize.cascade import normalize
 from jobtracker.normalize.taxonomy import Taxonomy
+from jobtracker.runtime.residual import LlmClientConfig, queue_if_ambiguous
 from jobtracker.store.archive import archive_payload
 from jobtracker.store.postings import (
     previous_content_hash,
@@ -54,6 +55,7 @@ def ingest(
     geo: GeoIndex,
     profile: Profile,
     hq_country: str | None = None,
+    llm: LlmClientConfig | None = None,
 ) -> IngestResult:
     posting_id = resolve_posting_id(conn, raw.source, raw.company_slug, raw.source_job_id)
     previous_hash = previous_content_hash(conn, raw.source, raw.company_slug, raw.source_job_id)
@@ -85,6 +87,13 @@ def ingest(
     final_id = upsert_posting(conn, posting, verdict)
     index_description(conn, final_id, raw.description_raw)
     conn.commit()
+
+    # An unchanged re-fetch keeps whatever verdict is stored — including one the
+    # LLM already produced — so only a new or changed posting can need the LLM.
+    if llm is not None and previous_hash != raw.content_hash:
+        queue_if_ambiguous(
+            conn, final_id, profile=profile, cfg=llm, description=raw.description_raw
+        )
 
     outcome: IngestOutcome = "new" if previous_hash is None else "updated"
     return IngestResult(outcome=outcome, posting_id=final_id, tier=verdict.tier)

@@ -96,7 +96,7 @@ serveur. **Aucune offre d'emploi n'est urgente à la minute** : un tour sauté
 coûte trente minutes, c'est-à-dire rien. C'est la différence avec RamTracker, où
 une enchère qui se termine justifiait un repli payant.
 
-Détection d'occupation : `[À CONFIRMER]` — sur `llama-server`, l'endpoint
+Détection d'occupation : sur `llama-server`, l'endpoint
 `/health` a renvoyé 503 quand tous les slots étaient pris selon les versions, et
 `/slots` expose l'état par slot. **Vérifier sur la version installée** plutôt que
 de supposer, et prévoir le repli : un timeout court traité comme « occupé » est
@@ -108,8 +108,9 @@ Espérer du JSON valide en le demandant poliment est une perte de temps. Le
 décodage contraint garantit une sortie conforme au schéma et rend un modèle
 local parfaitement fiable sur cette tâche précise.
 
-`[À CONFIRMER]` sur la version installée : `response_format: {"type":
-"json_schema", …}` ou grammaire GBNF côté `llama.cpp`.
+**Confirmé** sur le `llama-server` installé (Qwen3-Coder-30B-A3B, 2026-09-18) :
+`response_format: {"type": "json_schema", …}` est accepté et respecté — la
+grammaire GBNF n'est pas nécessaire.
 
 Une sortie non conforme au schéma est **rejetée** : l'offre reste sur son verdict
 déterministe et part en quarantaine. Jamais de parsing indulgent.
@@ -189,3 +190,26 @@ Un `confidence` bas laisse l'offre en quarantaine plutôt que de la promouvoir.
 - [ ] `lint-imports` : `match.llm` est le **seul** module de `match` autorisé à
       faire de l'I/O — exception documentée au contrat D4/D8.
 - [ ] `mypy --strict` passe.
+
+---
+
+## 7. Implémentation de la file (voie différée)
+
+Le `llama-server` n'est pas toujours levé (il est partagé avec OpenHands, et
+JobTracker ne le démarre jamais — pas de `sudo`, pas de repli distant). La file
+est donc le mécanisme normal, pas l'exception :
+
+| Élément | Où |
+|---|---|
+| Table `llm_queue` + colonne `postings.resolver_stage` | `migrations/0003_llm_queue.sql` |
+| Persistance de la file | `store/llm_queue.py` |
+| Traitement d'une entrée, vidage, tentative urgente | `runtime/residual.py` |
+| Appel dans `ingest` | seulement pour une offre **nouvelle ou modifiée** (un re-fetch identique conserve le verdict, LLM compris) |
+| Cadence | `jobtracker loop` vide toutes les 30 min ; `jobtracker llm-drain` à la main |
+
+Un vidage **s'arrête au premier tour refusé** (pas de martelage) : l'offre reste
+en file, `attempts += 1`, verdict déterministe intact. Une réponse non conforme
+ou sous le seuil de confiance est retirée de la file (quarantaine) plutôt que
+rejouée. `upsert_posting` ne réécrit rien pour un `content_hash` inchangé, d'où
+`store.postings.update_resolution` : une résolution LLM change les champs sans
+changer le contenu.

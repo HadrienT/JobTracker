@@ -38,6 +38,7 @@ from jobtracker.match.profile import Profile
 from jobtracker.normalize.taxonomy import Taxonomy
 from jobtracker.runtime.breaker import BreakerStatus, compute_state
 from jobtracker.runtime.pipeline import ingest
+from jobtracker.runtime.residual import LlmClientConfig
 from jobtracker.store.postings import deactivate_missing
 from jobtracker.store.runs import last_run_at_for_board, recent_runs, record_run
 
@@ -84,6 +85,7 @@ class CycleContext:
     geo: GeoIndex
     profile: Profile
     user_agent: str
+    llm: LlmClientConfig | None = None
     collectors: dict[Source, Collector] = field(default_factory=lambda: dict(DEFAULT_COLLECTORS))
 
 
@@ -197,6 +199,7 @@ def run_source_cycle(
                 geo=ctx.geo,
                 profile=ctx.profile,
                 hq_country=board.hq_country,
+                llm=ctx.llm,
             )
             board_stats.fetched += 1
             if outcome.outcome == "new":

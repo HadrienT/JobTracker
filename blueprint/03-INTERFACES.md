@@ -239,9 +239,13 @@ def resolve_residual(
 
 `description` est un paramètre à part parce que `Posting` ne porte pas le texte
 de l'annonce (il vit dans `posting_search_text`, relu par
-`store.search.get_description`). `resolve_residual` n'est pas encore branché
-dans `runtime.pipeline.ingest` : ce câblage est hors du périmètre de WP12
-(`dependencies.md` : `runtime/pipeline.py` y est en lecture seule).
+`store.search.get_description`).
+
+`resolve_residual` est le contrat complet du chemin résiduel ; `runtime` ne
+l'appelle pas tel quel, il passe par `runtime.residual` (file `llm_queue`, voie
+urgente à l'ingestion, vidage toutes les 30 min), qui s'appuie sur les mêmes
+briques : `is_ambiguous`, `is_urgent`, `attempt_llm` (comme `classify_llm` mais
+distingue « indisponible » de « réponse non conforme »), `rescore_with_llm`.
 
 `classify_llm` retourne `None` quand le serveur est occupé ou indisponible :
 **ce n'est pas une erreur**, c'est un tour sauté. L'offre repart en file

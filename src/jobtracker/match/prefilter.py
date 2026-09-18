@@ -87,3 +87,18 @@ def _is_confidently_resolved(posting: Posting, verdict: MatchVerdict, *, profile
 
 def _has_eu_location(posting: Posting) -> bool:
     return any(location.country in _EU_COUNTRIES for location in posting.locations)
+
+
+def is_urgent(posting: Posting, verdict: MatchVerdict, *, profile: Profile) -> bool:
+    """Worth an immediate, short-timeout attempt instead of waiting for the next drain.
+
+    "Potentiellement strong chez une société de rang 1" (blueprint/wp/WP12-match-llm.md
+    §4.1): a rank-1 company where the deterministic verdict is already close, or
+    where a `not_quant` rejection is exactly what the LLM exists to overturn.
+    Urgent only changes *when* the call is made, never how the server treats it.
+    """
+    if profile.company_tiers.get(posting.company_slug) != 1:
+        return False
+    if verdict.rejection_reason == "not_quant":
+        return True
+    return verdict.tier != Tier.REJECTED and verdict.score >= profile.tiers.possible
