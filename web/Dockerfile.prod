@@ -1,0 +1,26 @@
+# Front image: Vite build, served by nginx (blueprint/wp/WP15-deploy.md §2-3).
+#
+# There is deliberately NO `ARG VITE_*` / `ENV VITE_*` anywhere in this file: those
+# variables are inlined into the bundle at build time. The API base URL is read at
+# runtime from /config.js, written by 40-jt-config.sh. tests/test_deploy_discipline.py
+# fails the build if a VITE_ variable ever appears here.
+
+### ── Stage 1: build ────────────────────────────────────────────
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ ./
+# `npm run build` = tsc -b && vite build && the 200 KiB bundle-budget check.
+RUN npm run build
+
+### ── Stage 2: serve ────────────────────────────────────────────
+# The unprivileged variant: nginx runs as a non-root user and listens on 8080.
+FROM nginxinc/nginx-unprivileged:1.27-alpine
+COPY web/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY web/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY web/40-jt-config.sh /docker-entrypoint.d/40-jt-config.sh
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

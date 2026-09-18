@@ -47,6 +47,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just discover-employers` | employeurs vus chez les agrégateurs et absents de `companies.yaml` (alimente WP00) |
 | `just replay <date>` | rejeu du normaliseur sur les entrées archivées, **dry-run** : delta par étage, régression signalée |
 | `just report` | rapport hebdomadaire markdown dans `docs/reports/` |
+| `./scripts/deploy.sh` · `backup.sh` · `restore.sh` | déploiement de la stack de prod, sauvegarde à chaud, restauration — voir `deploy/RUNBOOK.md` |
 | `just llm-drain` | un passage sur la file LLM différée (le serveur est partagé et pas toujours levé) |
 | `just status` | santé : sources muettes, sources en erreur, fraîcheur du flux (code retour 1 si dégradé) |
 | `just api` | `uvicorn` sur `127.0.0.1:8100` |

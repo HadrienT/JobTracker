@@ -1,0 +1,29 @@
+# Brings the production stack up on boot and keeps it defined across reboots. The
+# containers carry `restart: unless-stopped`, so this unit is belt-and-braces.
+#
+# Install:
+#   sudo cp deploy/jobtracker.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now jobtracker.service
+#
+# WorkingDirectory must be the checkout that holds .env and docker-compose.prod.yml.
+
+[Unit]
+Description=JobTracker production stack (docker compose)
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/hadriensuper/JobTracker
+User=hadriensuper
+SupplementaryGroups=docker
+# deploy.sh is idempotent: it rebuilds (layer cache makes that fast), brings the stack
+# up — including the tunnel profile when CLOUDFLARE_TUNNEL_TOKEN is set — and gates on it.
+ExecStart=/bin/bash scripts/deploy.sh
+ExecStop=/usr/bin/docker compose -f docker-compose.prod.yml --profile tunnel down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

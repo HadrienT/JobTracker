@@ -20,6 +20,21 @@ just web        # front sur 127.0.0.1:5190
 Tâches de développement : `just lint`, `just arch`, `just test`,
 `just test-golden`, `just ci`.
 
+## Déploiement
+
+Stack `docker compose` auto-hébergée (collecteur, API, nginx) derrière un tunnel
+Cloudflare, sans port ouvert :
+
+```bash
+cp .env.example .env && $EDITOR .env
+./scripts/deploy.sh          # build + up + attente que ça réponde
+./scripts/backup.sh          # sauvegarde à chaud, vérifiée
+./scripts/restore.sh <fichier>
+```
+
+Procédures complètes (installation, mise à jour, pannes, restauration, rotation des
+secrets, **protection d'accès**) : [`deploy/RUNBOOK.md`](deploy/RUNBOOK.md).
+
 ## Architecture
 
 Sept packages sous `src/jobtracker/`, contrats d'import vérifiés par

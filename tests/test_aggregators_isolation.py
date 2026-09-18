@@ -62,10 +62,19 @@ def test_a_missing_third_party_dependency_is_not_swallowed(monkeypatch: pytest.M
 
 def test_the_project_runs_and_its_tests_pass_with_the_package_deleted(tmp_path: Path) -> None:
     ignore = shutil.ignore_patterns("__pycache__")
-    for name in ("src", "tests", "configs", "blueprint", "tools"):
+    for name in ("src", "tests", "configs", "blueprint", "tools", "deploy", "scripts"):
         shutil.copytree(REPO_ROOT / name, tmp_path / name, ignore=ignore)
     shutil.copytree(REPO_ROOT / "migrations", tmp_path / "migrations")
-    shutil.copy(REPO_ROOT / "pyproject.toml", tmp_path / "pyproject.toml")
+    for name in ("pyproject.toml", "docker-compose.prod.yml", ".env.example"):
+        shutil.copy(REPO_ROOT / name, tmp_path / name)
+    (tmp_path / "web").mkdir()
+    for name in (
+        "Dockerfile.prod",
+        "nginx.conf.template",
+        "security-headers.conf",
+        "40-jt-config.sh",
+    ):
+        shutil.copy(REPO_ROOT / "web" / name, tmp_path / "web" / name)  # not node_modules
     shutil.rmtree(tmp_path / "src" / "jobtracker" / "collect" / "aggregators")
     # This very test would recurse. The tests of the deleted package must simply
     # not be collected (tests/conftest.py) — everything else must pass untouched.

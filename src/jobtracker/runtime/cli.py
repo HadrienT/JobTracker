@@ -29,6 +29,7 @@ from jobtracker.runtime.report import build_weekly_report
 from jobtracker.runtime.residual import DRAIN_INTERVAL_MIN, LlmClientConfig, drain_queue
 from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.watchdog import full_health_snapshot
+from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_database
 from jobtracker.store.companies import list_discovered, sync_companies
 from jobtracker.store.retention import run_retention
 from jobtracker.store.schema import MIGRATIONS_DIR
@@ -226,6 +227,15 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backup(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    path = backup_database(conn, Path(args.dest), now=utc_now(), keep_days=args.keep_days)
+    conn.close()
+    print(f"backup written: {path}", file=sys.stderr)
+    return 0
+
+
 def cmd_status(_args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
@@ -314,6 +324,11 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument("--weekly", action="store_true", required=True)
     report.add_argument("--out-dir", default=str(REPO_ROOT / "docs" / "reports"))
     report.set_defaults(func=cmd_report)
+
+    backup = subparsers.add_parser("backup", help="online SQLite backup, integrity-checked")
+    backup.add_argument("--dest", required=True, help="directory to write the backup into")
+    backup.add_argument("--keep-days", type=int, default=DEFAULT_KEEP_DAYS)
+    backup.set_defaults(func=cmd_backup)
 
     status = subparsers.add_parser("status", help="health snapshot; exit 1 if degraded")
     status.set_defaults(func=cmd_status)

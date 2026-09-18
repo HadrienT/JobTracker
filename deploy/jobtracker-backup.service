@@ -1,0 +1,21 @@
+# One-shot backup of jobtracker.db, driven by jobtracker-backup.timer.
+#
+# Install:
+#   sudo cp deploy/jobtracker-backup.service deploy/jobtracker-backup.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now jobtracker-backup.timer
+#
+# Point JT_BACKUP_DIR (in .env) at an OFF-machine mount — a backup on the same disk as
+# the database survives a bad migration, not a dead drive.
+
+[Unit]
+Description=JobTracker database backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/hadriensuper/JobTracker
+User=hadriensuper
+SupplementaryGroups=docker
+ExecStart=/bin/bash scripts/backup.sh

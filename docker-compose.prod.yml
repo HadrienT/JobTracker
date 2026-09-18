@@ -1,0 +1,123 @@
+# Production stack — blueprint/wp/WP15-deploy.md. Self-hosted, reached from the
+# internet only through a Cloudflare Tunnel: no port is opened on the router.
+#
+#   cp .env.example .env       # then edit (JT_LLM_ENABLED, keys, tunnel token)
+#   ./scripts/deploy.sh        # build + up + health gate
+#
+# Host ports are bound to 127.0.0.1 and parametrable, because several projects
+# share this machine (quant-modeling already uses 8091).
+#
+# Three services + a one-shot migration step:
+#   migrate   applies the schema once, before anything else touches the database
+#   collector `jobtracker loop` — the ONE writer of jobtracker.db
+#   api       uvicorn — reads, plus the favorite/hide flags in user_flags
+#   web       nginx serving the Vite build; proxies /api/ to the api
+
+name: jobtracker-prod
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: jobtracker-backend:${COMMIT_SHA:-latest}
+  env_file: .env
+  # Set once, for all three backend services: `environment:` beats `env_file`, so the
+  # sample .env's `JT_DB_PATH=./jobtracker.db` can never send one of them elsewhere.
+  environment:
+    JT_DB_PATH: /data/jobtracker.db
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["jobtracker", "migrate"]
+    volumes:
+      - jt_data:/data
+
+  collector:
+    <<: *backend
+    command: ["jobtracker", "loop"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # Host networking, for this outbound-only service alone: llama-server listens on
+    # the host's 127.0.0.1:8000, which a bridge-network container cannot reach. The
+    # collector publishes no port, so nothing new is exposed; it also sidesteps the
+    # bridge's NAT for the many small requests a collection cycle makes.
+    network_mode: host
+    volumes:
+      - jt_data:/data
+      # A named volume, not a host bind mount: the container runs as a non-root uid that
+      # cannot write into a host-owned directory. scripts/backup.sh copies out to the host.
+      - jt_backups:/backups
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2g
+
+  api:
+    <<: *backend
+    command: ["uvicorn", "jobtracker.api.app:app", "--host", "0.0.0.0", "--port", "8100", "--proxy-headers", "--forwarded-allow-ips=*"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - jt_data:/data
+    # Debug access only — the tunnel and the front reach it over the compose network.
+    ports:
+      - "127.0.0.1:${JT_API_PORT:-8100}:8100"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8100/health', timeout=4)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512m
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile.prod
+    image: jobtracker-web:${COMMIT_SHA:-latest}
+    restart: unless-stopped
+    environment:
+      # Read at container start into /config.js — changing it is a restart, not a rebuild.
+      JT_PUBLIC_API_BASE: ${JT_PUBLIC_API_BASE:-/api}
+    ports:
+      - "127.0.0.1:${JT_WEB_PORT:-5190}:8080"
+    # Deliberately no `depends_on: api`: nginx resolves `api` per request, so the web
+    # tier survives an API restart and still starts while the API is down.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Outbound-only connection to Cloudflare's edge — no inbound port anywhere. In the
+  # `tunnel` profile: a bare `up` never starts it; deploy.sh adds the profile once
+  # CLOUDFLARE_TUNNEL_TOKEN is set. See deploy/RUNBOOK.md §1 and §Protection d'accès.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.8.3
+    container_name: jobtracker-tunnel
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - web
+
+volumes:
+  jt_data:
+  jt_backups:

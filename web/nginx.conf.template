@@ -1,0 +1,56 @@
+# Rendered by the nginx image's envsubst step (only variables that are *defined* in
+# the environment are substituted, so nginx's own $uri, $host... survive).
+
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # nginx drops server-level add_header in any location that declares its own, so
+    # the security headers are an include, repeated in each location that needs them.
+    # `always`: also on 4xx/5xx — an error page is still a page.
+    include /etc/nginx/snippets/security-headers.conf;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # Runtime configuration (blueprint/12-WEB-UI.md §9): generated at container start
+    # from JT_PUBLIC_API_BASE, so one image serves every environment.
+    location = /config.js {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-store" always;
+        default_type application/javascript;
+        alias /tmp/jt/config.js;
+    }
+
+    # Same-origin API: the browser only ever talks to this host, so there is no CORS
+    # surface and one tunnel hostname is enough. The API's routes have no prefix
+    # (/postings), hence the rewrite. A variable + resolver, not a bare upstream:
+    # nginx then re-resolves `api` on each request, so restarting the API container
+    # (new IP) doesn't need an nginx reload — and nginx still starts if it is down.
+    location /api/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        resolver 127.0.0.11 valid=10s ipv6=off;
+        set $api_upstream http://api:8100;
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass $api_upstream;
+        proxy_set_header Host $host;
+        proxy_read_timeout 30s;
+    }
+
+    # Vite's hashed assets never change under the same name.
+    location /assets/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # SPA fallback: /p/{id}, /companies and /health are client routes, and must
+    # survive a reload and a pasted URL.
+    location / {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
+        try_files $uri /index.html;
+    }
+}
