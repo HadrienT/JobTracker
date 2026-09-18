@@ -97,6 +97,16 @@ class RawPosting(BaseModel, frozen=True):
     content_hash: str
 
 
+class CollectResult(BaseModel, frozen=True):
+    """What one `Collector.fetch()` call returns — blueprint/03-INTERFACES.md §3.1."""
+
+    board: Board
+    postings: tuple[RawPosting, ...]
+    requests_made: int
+    duration_ms: int
+    truncated: bool  # True if the request budget cut collection short
+
+
 class Location(BaseModel, frozen=True):
     city: str | None
     country: str | None

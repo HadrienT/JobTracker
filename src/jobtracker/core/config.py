@@ -61,19 +61,38 @@ def _format_settings_error(exc: ValidationError) -> str:
     return "\n".join(lines)
 
 
-def load_yaml(path: Path) -> dict[str, Any]:
-    """Load a YAML mapping, raising `ConfigError` naming the file and the cause."""
+def _load_yaml_document(path: Path) -> Any:
     if not path.is_file():
         raise ConfigError(f"config file not found: {path}")
     try:
         with path.open("r", encoding="utf-8") as handle:
-            data = yaml.safe_load(handle)
+            return yaml.safe_load(handle)
     except yaml.YAMLError as exc:
         mark = getattr(exc, "problem_mark", None)
         location = f" at line {mark.line + 1}, column {mark.column + 1}" if mark else ""
         raise ConfigError(f"invalid YAML in {path}{location}: {exc}") from exc
+
+
+def load_yaml(path: Path) -> dict[str, Any]:
+    """Load a YAML mapping, raising `ConfigError` naming the file and the cause."""
+    data = _load_yaml_document(path)
     if data is None:
         return {}
     if not isinstance(data, dict):
         raise ConfigError(f"{path}: expected a YAML mapping at the top level")
+    return data
+
+
+def load_yaml_list(path: Path) -> list[Any]:
+    """Load a top-level YAML list, raising `ConfigError` naming the file and the cause.
+
+    `configs/companies.yaml` is a list of entries rather than a mapping — the
+    registry (blueprint/wp/WP04-collect-core.md §4) is the one config shaped
+    this way.
+    """
+    data = _load_yaml_document(path)
+    if data is None:
+        return []
+    if not isinstance(data, list):
+        raise ConfigError(f"{path}: expected a YAML list at the top level")
     return data

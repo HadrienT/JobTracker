@@ -1,0 +1,29 @@
+# Collection cadence and HTTP budget, per source — blueprint/06-CONFIG.md §4.
+# blueprint/wp/WP04-collect-core.md builds the one shared policy that reads
+# this file (collect/http.py); nothing here is a per-company setting, that is
+# configs/companies.yaml's job.
+
+defaults:
+  timeout_s: 20
+  max_requests_per_run: 200
+  jitter_s: [2, 7] # random interval in seconds between two requests to the same source
+  backoff_base_s: 30
+  backoff_max_s: 3600
+  dedup_window_days: 14 # fingerprint date bucket (03-INTERFACES §3.4)
+
+sources:
+  greenhouse: { interval_min: 180, enabled: true }
+  lever: { interval_min: 180, enabled: true }
+  ashby: { interval_min: 180, enabled: true }
+  smartrecruiters: { interval_min: 180, enabled: false } # [À CONFIRMER], 11-SOURCES §3
+  workable: { interval_min: 180, enabled: false } # WP06
+  recruitee: { interval_min: 180, enabled: false } # WP06
+  personio: { interval_min: 180, enabled: false } # WP06
+  workday: { interval_min: 360, enabled: false, max_requests_per_run: 400 } # WP06
+  efinancialcareers: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13
+  wttj: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13
+  linkedin: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13
+  indeed: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13
+
+watchdog:
+  empty_runs_before_alert: 3 # 3 consecutive silent cycles = alert
