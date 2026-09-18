@@ -22,7 +22,6 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('web/package.json') != '' }}
     defaults:
       run:
         working-directory: web
@@ -41,9 +40,6 @@ jobs:
 
   api-contract:
     runs-on: ubuntu-latest
-    # gated on tools/gen_openapi.py too: WP09 (this front) has no dependency on WP07
-    # (the API), so this job must stay a no-op until WP07 actually ships the generator.
-    if: ${{ hashFiles('web/package.json') != '' && hashFiles('tools/gen_openapi.py') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
