@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -135,3 +136,87 @@ def test_purge_source_runs_drops_only_old_rows(store_conn: sqlite3.Connection) -
     deleted = purge_source_runs(store_conn, now=_NOW, retention_days=90)
 
     assert deleted == 1
+
+
+# --- WP16 §5, §6: the daily batched run ------------------------------------------------
+
+from jobtracker.core.db import connect  # noqa: E402
+from jobtracker.store.postings import mark_favorite  # noqa: E402
+from jobtracker.store.retention import run_retention  # noqa: E402
+
+_OLD = datetime(2025, 1, 1, tzinfo=UTC)
+
+
+def _old_inactive(conn: sqlite3.Connection, pid: str) -> None:
+    posting = make_posting(posting_id=pid, source_job_id=pid, first_seen_at=_OLD, last_seen_at=_OLD)
+    posting = posting.model_copy(update={"fingerprint": f"fp-{pid}"})
+    upsert_posting(conn, posting, make_verdict(posting_id=pid))
+    archive_payload(conn, pid, b"raw", _OLD)
+    conn.execute("UPDATE postings SET is_active = 0 WHERE posting_id = ?", (pid,))
+
+
+def test_retention_purges_payloads_and_inactive_postings_but_keeps_active_ones(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _old_inactive(store_conn, "gone")
+    active = make_posting(posting_id="alive", source_job_id="alive", first_seen_at=_OLD)
+    upsert_posting(
+        store_conn,
+        active.model_copy(update={"fingerprint": "fp-alive"}),
+        make_verdict(posting_id="alive"),
+    )
+    archive_payload(store_conn, "alive", b"raw", _OLD)
+    store_conn.commit()
+
+    result = run_retention(store_conn, now=_NOW, batch_size=1)
+
+    assert result.inactive_postings == 1 and result.raw_payloads >= 1
+    remaining = {r["posting_id"] for r in store_conn.execute("SELECT posting_id FROM postings")}
+    assert remaining == {"alive"}  # the active posting is kept, payload or not
+    assert not has_payload(store_conn, "gone")
+
+
+def test_a_favorite_survives_its_posting_going_inactive_and_old(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _old_inactive(store_conn, "loved")
+    mark_favorite(store_conn, "loved", True)
+    store_conn.commit()
+
+    run_retention(store_conn, now=_NOW)
+    assert purge_inactive_postings(store_conn, now=_NOW) == 0  # the older entry point agrees
+    store_conn.commit()
+
+    flag = store_conn.execute(
+        "SELECT is_favorite FROM user_flags WHERE posting_id = 'loved'"
+    ).fetchone()
+    assert flag is not None and flag["is_favorite"] == 1
+    assert store_conn.execute("SELECT 1 FROM postings WHERE posting_id = 'loved'").fetchone()
+
+
+def test_retention_never_holds_the_write_lock_between_batches(
+    store_conn: sqlite3.Connection,
+) -> None:
+    """A concurrent writer (the API's favorite write) must get in between two batches."""
+    for i in range(6):
+        _old_inactive(store_conn, f"old-{i}")
+    store_conn.commit()
+    db_path = store_conn.execute("PRAGMA database_list").fetchone()["file"]
+    writer = connect(Path(db_path))
+    writer.execute("PRAGMA busy_timeout=0")  # fail instantly if the lock is still held
+    writes = []
+
+    def concurrent_write() -> None:
+        writer.execute(
+            "UPDATE companies SET last_count = last_count + 1 WHERE company_slug = 'acme'"
+        )
+        writer.commit()
+        writes.append(1)
+
+    try:
+        result = run_retention(store_conn, now=_NOW, batch_size=1, on_batch=concurrent_write)
+    finally:
+        writer.close()
+
+    assert result.inactive_postings == 6
+    assert len(writes) >= 6  # one successful concurrent write per committed batch

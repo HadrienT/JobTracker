@@ -908,8 +908,28 @@ def update_resolution(conn: sqlite3.Connection, posting: Posting, verdict: Match
     door. Dedup state (`is_canonical`, aliases, flags) is left exactly as it is.
     """
     row = conn.execute(
-        "SELECT is_canonical FROM postings WHERE posting_id = ?", (posting.posting_id,)
+        "SELECT is_canonical, is_active FROM postings WHERE posting_id = ?", (posting.posting_id,)
     ).fetchone()
     if row is None:
         raise StorageError(f"update_resolution: no such posting {posting.posting_id!r}")
     _write_posting_row(conn, posting, verdict, is_canonical=bool(row["is_canonical"]))
+    # `_write_posting_row` marks a posting active (right for a fresh collection, wrong
+    # here): re-resolving an inactive posting must not resurrect it in the feed.
+    conn.execute(
+        "UPDATE postings SET is_active = ? WHERE posting_id = ?",
+        (row["is_active"], posting.posting_id),
+    )
+
+
+def record_raw_inputs(
+    conn: sqlite3.Connection,
+    posting_id: str,
+    *,
+    location_raw: str | None,
+    posted_at_raw: str | None,
+) -> None:
+    """The two normalizer inputs `postings` would otherwise hold only parsed (migration 0005)."""
+    conn.execute(
+        "UPDATE postings SET location_raw = ?, posted_at_raw = ? WHERE posting_id = ?",
+        (location_raw, posted_at_raw, posting_id),
+    )

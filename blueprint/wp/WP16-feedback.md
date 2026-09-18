@@ -140,3 +140,25 @@ fois par jour depuis l'ordonnanceur.
 - [ ] La rétention respecte [04-DATA-MODEL.md](../04-DATA-MODEL.md) §6 et ne
       purge jamais `user_flags`.
 - [ ] `mypy --strict` passe.
+
+---
+
+## 8. Écarts et décisions à l'implémentation
+
+| Sujet | Décision | Pourquoi |
+|---|---|---|
+| **Source du rejeu** | Les entrées archivées que `normalize()` consomme (titre, description, lieu, date), pas les `raw_payloads` | Une charge utile est le JSON propre à chaque ATS ; la remettre en `RawPosting` exigerait de rejouer les neuf mappeurs de collecteurs (dont certains dépendent du `Board`). La description brute était déjà conservée intégralement ; la migration **0005** ajoute `location_raw` et `posted_at_raw` exacts. Avant 0005, repli sur les lieux déjà parsés. Le rejeu ne recollecte jamais et n'importe ni `httpx` ni `collect` (test) |
+| **Deltas de palier** | `evaluate(avant)` et `evaluate(après)` au **même instant** | Sinon une offre qui vieillit entre deux exécutions passerait pour un effet du parseur |
+| **Offres tranchées par le LLM** | Les champs du LLM ne sont jamais écrasés par les règles | Le rejeu ne ferait que défaire ce que le LLM a réglé |
+| **`--apply` sur une régression** | Refusé sans `--allow-regression` ; code retour 1 | Une régression ne doit jamais passer en silence dans un script |
+| **Rétention** | Par lots bornés (500) avec `COMMIT` entre chaque, quotidienne depuis `jobtracker loop` | Un seul `DELETE` géant garde le verrou d'écriture WAL et fait attendre les favoris de l'API |
+
+**Un défaut corrigé au passage** : `purge_inactive_postings` supprimait les offres
+inactives depuis plus de 180 jours, et `user_flags.posting_id` étant en
+`ON DELETE CASCADE`, un favori disparaissait avec son offre — l'inverse de la
+règle « un favori survit à la disparition de l'offre ». Une offre portant un
+`user_flags` est désormais exemptée de la purge. De même, `update_resolution`
+ne réactive plus une offre inactive.
+
+**Non mesuré** : la charge LLM du rapport est une estimation (les appels mis en
+quarantaine ne sont pas persistés) — le rapport le dit.

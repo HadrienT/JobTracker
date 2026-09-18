@@ -30,6 +30,7 @@ from jobtracker.store.companies import ensure_discovered_company, get_company
 from jobtracker.store.postings import (
     previous_content_hash,
     record_alias,
+    record_raw_inputs,
     resolve_dedup,
     resolve_posting_id,
     upsert_posting,
@@ -98,6 +99,9 @@ def ingest(
     verdict = evaluate(posting, profile=profile)
     final_id = upsert_posting(conn, posting, verdict)
     index_description(conn, final_id, raw.description_raw)
+    record_raw_inputs(
+        conn, final_id, location_raw=raw.location_raw, posted_at_raw=raw.posted_at_raw
+    )
     conn.commit()
 
     # An unchanged re-fetch keeps whatever verdict is stored — including one the

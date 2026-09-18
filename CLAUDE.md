@@ -45,6 +45,8 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just run-once source="greenhouse"` | un cycle de collecte sur une famille de sources |
 | `just loop` | ordonnanceur continu |
 | `just discover-employers` | employeurs vus chez les agrégateurs et absents de `companies.yaml` (alimente WP00) |
+| `just replay <date>` | rejeu du normaliseur sur les entrées archivées, **dry-run** : delta par étage, régression signalée |
+| `just report` | rapport hebdomadaire markdown dans `docs/reports/` |
 | `just llm-drain` | un passage sur la file LLM différée (le serveur est partagé et pas toujours levé) |
 | `just status` | santé : sources muettes, sources en erreur, fraîcheur du flux (code retour 1 si dégradé) |
 | `just api` | `uvicorn` sur `127.0.0.1:8100` |
