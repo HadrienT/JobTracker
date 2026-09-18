@@ -27,12 +27,13 @@ from jobtracker.normalize.visa import parse_visa
 NORMALIZE_VERSION = 1
 
 _PHD_REQUIRED_RE = re.compile(
-    r"\bphd\s+(?:is\s+)?required\b|\brequires?\s+a\s+phd\b|\bphd\s+or\s+equivalent\b|"
-    r"\bmust\s+have\s+a\s+phd\b",
+    r"\bphd\s+(?:is\s+)?required\b|\brequires?\s+a\s+phd\b|\bmust\s+have\s+a\s+phd\b",
     re.IGNORECASE,
 )
 _PHD_NOT_REQUIRED_RE = re.compile(
-    r"\bphd\s+preferred\b|\bphd\s+(?:is\s+)?a\s+plus\b|\bno\s+phd\s+required\b", re.IGNORECASE
+    r"\bphd\s+preferred\b|\bphd\s+(?:is\s+)?a\s+plus\b|\bno\s+phd\s+required\b|"
+    r"\bphd\s+or\s+equivalent\b",
+    re.IGNORECASE,
 )
 
 _ISO_DATE_FORMATS = ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d")

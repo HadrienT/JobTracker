@@ -165,6 +165,8 @@ name = "D8 — aucun client HTTP hors collect et match.llm"
 type = "forbidden"
 source_modules = [
     "jobtracker.core", "jobtracker.store", "jobtracker.normalize",
+    "jobtracker.match.profile", "jobtracker.match.rules",
+    "jobtracker.match.score", "jobtracker.match.reasons",
 ]
 # `urllib.request` et `http.client` ne sont pas listables ici (import-linter
 # refuse les sous-paquets externes) : ils sont couverts par un test de

@@ -1,0 +1,70 @@
+# The target profile — blueprint/10-PROFILE-TARGET.md.
+# Every number match uses to score a posting lives here — none in code
+# (blueprint/00-PRIMER.md interdit n°1). Bump `version` on any change below:
+# it is what tells the runtime which postings need rescoring.
+
+version: 1
+
+titles:
+  strong:
+    [
+      "quantitative developer",
+      "quant developer",
+      "quantitative software engineer",
+      "quant dev",
+      "software engineer, trading",
+      "core developer",
+      "trading systems engineer",
+    ]
+  possible:
+    [
+      "software engineer",
+      "c++ developer",
+      "python developer",
+      "platform engineer",
+      "quantitative researcher",
+      "quantitative analyst",
+    ]
+  excluded:
+    [
+      "sales",
+      "recruiter",
+      "compliance",
+      "audit",
+      "hr business partner",
+      "account manager",
+      "client relationship",
+      "coordinator",
+      "executive assistant",
+    ]
+
+seniority:
+  # blueprint/wp/WP05-match.md §3: "Staff Engineer" is senior_only, "Staffing
+  # Coordinator" is not — every keyword here is matched on a word boundary.
+  accept_if_years_max: 3
+  reject: ["senior", "lead", "principal", "staff", "vp", "director", "head of"]
+
+hard_rejects:
+  phd_required: true # a PhD required (and not "or equivalent experience") excludes the profile
+  min_years_above: 4
+  stale_after_days: 60
+
+weights: # every point of the score comes from here, NONE hardcoded
+  title_strong: 35
+  title_possible: 18
+  sector_tier1: 12
+  tech_cpp: 10
+  tech_python: 6
+  tech_niche: 8 # kdb, ocaml, rust, cuda, fpga
+  seniority_match: 20
+  graduate_programme: 10
+  visa_sponsors: 8
+  visa_no: -25
+  salary_disclosed: 3
+  freshness_7d: 6
+  stale_penalty: -10
+
+tiers: # palier thresholds
+  strong: 70
+  possible: 45
+  stretch: 25

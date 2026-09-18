@@ -11,6 +11,10 @@ never consumed by the normalizer itself:
   instead of by re-reading every entry.
 - `company_slug`: links a corpus entry back to configs/companies.yaml, needed
   to check the "5 Software Engineer postings at a prop shop" quota.
+
+`expect.tier` was added by WP05 (blueprint/wp/WP05-match.md §6): a frozen
+`evaluate()` baseline, not an independent hand-label like the other `expect`
+fields — see tests/test_golden_match.py for why that distinction matters.
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ SENIORITIES = frozenset({"intern", "graduate", "junior", "mid", "senior", "lead"
 VISA_STATUSES = frozenset({"sponsors", "no", "unknown"})
 REMOTE_MODES = frozenset({"onsite", "hybrid", "remote", "unknown"})
 SALARY_PERIODS = frozenset({"year", "month", "day", "hour"})
+TIERS = frozenset({"strong", "possible", "stretch", "rejected"})
 
 
 class ExpectedLocation(BaseModel):
@@ -58,6 +63,7 @@ class Expected(BaseModel):
     languages_required: list[str]
     compensation: ExpectedCompensation
     closes_at: str | None
+    tier: str
 
 
 class CorpusEntry(BaseModel):
