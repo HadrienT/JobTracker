@@ -8,6 +8,9 @@ from jobtracker.core.models import Location
 from jobtracker.match.prefilter import is_ambiguous
 from jobtracker.match.profile import Profile, build_profile
 
+# Every test here runs against the shared frozen instant (tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("frozen_clock")
+
 pytestmark = pytest.mark.contract
 
 _LONG_DESCRIPTION = "We are hiring. " * 20  # > 200 chars
@@ -41,6 +44,13 @@ _PROFILE_DATA = {
         "stale_penalty": -10,
     },
     "tiers": {"strong": 70, "possible": 45, "stretch": 25},
+    "freshness": {"window_days": 7, "stale_penalty_fraction": 0.5},
+    "llm": {
+        "min_description_chars": 200,
+        "high_confidence_margin": 20,
+        "min_confidence": 0.6,
+        "max_description_chars": 6000,
+    },
 }
 
 

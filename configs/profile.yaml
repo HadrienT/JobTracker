@@ -68,3 +68,13 @@ tiers: # palier thresholds
   strong: 70
   possible: 45
   stretch: 25
+
+freshness: # blueprint/10-PROFILE-TARGET.md §6
+  window_days: 7 # a posting this young earns the freshness_7d weight
+  stale_penalty_fraction: 0.5 # stale_penalty applies past this fraction of stale_after_days
+
+llm: # the ambiguous-residual lane — blueprint/wp/WP12-match-llm.md §3-4. None of it in code.
+  min_description_chars: 200 # shorter than this, there is nothing for an LLM to read
+  high_confidence_margin: 20 # points above tiers.strong at which a fully-resolved posting is settled
+  min_confidence: 0.6 # below this a reply is quarantined, never promoted
+  max_description_chars: 6000 # what the prompt carries (~1500 tokens): a cap, not a truncation of meaning

@@ -32,3 +32,6 @@ test-results/
 # Divers
 .DS_Store
 .state/
+e2e/demo.db
+test-results/
+playwright-report/

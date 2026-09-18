@@ -1,0 +1,59 @@
+{
+  "RemoteMode": [
+    "hybrid",
+    "onsite",
+    "remote",
+    "unknown"
+  ],
+  "RoleFamily": [
+    "data_eng",
+    "other",
+    "quant_dev",
+    "quant_research",
+    "quant_trading",
+    "risk",
+    "swe_platform"
+  ],
+  "SalaryPeriod": [
+    "day",
+    "hour",
+    "month",
+    "year"
+  ],
+  "Seniority": [
+    "graduate",
+    "intern",
+    "junior",
+    "lead",
+    "mid",
+    "senior",
+    "unknown"
+  ],
+  "Source": [
+    "adzuna",
+    "ashby",
+    "custom",
+    "efinancialcareers",
+    "greenhouse",
+    "indeed",
+    "lever",
+    "linkedin",
+    "personio",
+    "recruitee",
+    "smartrecruiters",
+    "workable",
+    "workday",
+    "wttj"
+  ],
+  "Tier": [
+    "possible",
+    "rejected",
+    "stretch",
+    "strong"
+  ],
+  "VisaStatus": [
+    "no",
+    "sponsors",
+    "unknown"
+  ]
+}

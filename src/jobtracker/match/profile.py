@@ -61,6 +61,20 @@ class Tiers:
 
 
 @dataclass(frozen=True)
+class FreshnessRules:
+    window_days: int
+    stale_penalty_fraction: float
+
+
+@dataclass(frozen=True)
+class LlmRules:
+    min_description_chars: int
+    high_confidence_margin: int
+    min_confidence: float
+    max_description_chars: int
+
+
+@dataclass(frozen=True)
 class Profile:
     version: int
     titles: TitleRules
@@ -68,6 +82,8 @@ class Profile:
     hard_rejects: HardRejectRules
     weights: Mapping[str, int]
     tiers: Tiers
+    freshness: FreshnessRules
+    llm: LlmRules
     company_tiers: Mapping[str, int]
 
 
@@ -146,6 +162,30 @@ def build_profile(
     except KeyError as exc:
         raise ConfigError(f"profile{where}: 'tiers' is missing field {exc}") from exc
 
+    raw_freshness = data.get("freshness", {})
+    if not isinstance(raw_freshness, dict):
+        raise ConfigError(f"profile{where}: 'freshness' must be a mapping")
+    try:
+        freshness = FreshnessRules(
+            window_days=int(raw_freshness["window_days"]),
+            stale_penalty_fraction=float(raw_freshness["stale_penalty_fraction"]),
+        )
+    except KeyError as exc:
+        raise ConfigError(f"profile{where}: 'freshness' is missing field {exc}") from exc
+
+    raw_llm = data.get("llm", {})
+    if not isinstance(raw_llm, dict):
+        raise ConfigError(f"profile{where}: 'llm' must be a mapping")
+    try:
+        llm = LlmRules(
+            min_description_chars=int(raw_llm["min_description_chars"]),
+            high_confidence_margin=int(raw_llm["high_confidence_margin"]),
+            min_confidence=float(raw_llm["min_confidence"]),
+            max_description_chars=int(raw_llm["max_description_chars"]),
+        )
+    except KeyError as exc:
+        raise ConfigError(f"profile{where}: 'llm' is missing field {exc}") from exc
+
     return Profile(
         version=version,
         titles=titles,
@@ -153,6 +193,8 @@ def build_profile(
         hard_rejects=hard_rejects,
         weights=weights,
         tiers=tiers,
+        freshness=freshness,
+        llm=llm,
         company_tiers=dict(company_tiers) if company_tiers is not None else {},
     )
 

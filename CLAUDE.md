@@ -53,7 +53,10 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just api` | `uvicorn` sur `127.0.0.1:8100` |
 | `just web` | front seul, Vite sur `127.0.0.1:5190` |
 | `just types` | régénère `web/openapi.json` + `web/src/api/schema.gen.ts` depuis FastAPI |
-| `just ci` | reproduit la CI locale : `lint arch test` |
+| `just web-check` / `just types-check` | front (typecheck, lint, vitest, build + budget) / contrat d'API commité = celui de FastAPI |
+| `just e2e` | Playwright (parcours, axe, captures) sur la stack compose + base de démo figée ; `just e2e --update-snapshots` réécrit les captures |
+| `just ci` | reproduit les jobs `backend`, `frontend`, `api-contract` : `lint arch test web-check types-check` |
+| `just ci-full` | `ci` + `e2e` |
 
 `just types` est à relancer **après tout changement de route ou de schéma API** :
 les deux fichiers sont commités et le job CI `api-contract` échoue si le diff

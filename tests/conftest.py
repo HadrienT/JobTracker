@@ -2,13 +2,16 @@
 
 import importlib.util
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from jobtracker.api.app import app
+from jobtracker.core.clock import freeze
+from jobtracker.core.config import Settings
 from jobtracker.core.db import apply_migrations, connect
 from jobtracker.core.geo import GeoIndex, load_geo_index
 from jobtracker.normalize.taxonomy import Taxonomy, load_taxonomy
@@ -33,6 +36,49 @@ _API_TEST_ENV = {
     "JT_HTTP_TIMEOUT_S": "20",
     "JT_AGGREGATORS_ENABLED": "false",
 }
+
+
+FROZEN_INSTANT = datetime(2026, 1, 1, tzinfo=UTC)
+
+
+@pytest.fixture
+def frozen_clock() -> Iterator[datetime]:
+    """Pin `core.clock.utc_now()` to `FROZEN_INSTANT` for the whole test.
+
+    Nested `freeze()` calls inside a test still work; the outer pin is restored after.
+    """
+    with freeze(FROZEN_INSTANT):
+        yield FROZEN_INSTANT
+
+
+@pytest.fixture
+def settings_factory(tmp_path: Path) -> Callable[..., Settings]:
+    """Build a `Settings` from test defaults, without reading the environment or a `.env`.
+
+    Every field is overridable by keyword: `settings_factory(llm_enabled=True)`.
+    """
+
+    def build(**overrides: object) -> Settings:
+        base: dict[str, object] = {
+            "db_path": tmp_path / "jobtracker.db",
+            "log_level": "INFO",
+            "log_format": "json",
+            "api_host": "127.0.0.1",
+            "api_port": 8100,
+            "web_port": 5190,
+            "public_api_base": "http://127.0.0.1:8100",
+            "llm_enabled": False,
+            "llm_base_url": "http://127.0.0.1:8000/v1",
+            "llm_model": "test-model",
+            "llm_timeout_s": 5,
+            "user_agent": "JobTracker/0.1 (+contact)",
+            "http_timeout_s": 20,
+            "aggregators_enabled": False,
+        }
+        base.update(overrides)
+        return Settings(_env_file=None, **base)  # type: ignore[arg-type]
+
+    return build
 
 
 @pytest.fixture

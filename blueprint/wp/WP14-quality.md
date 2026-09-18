@@ -102,3 +102,52 @@ rouge un jour, sans rapport avec le code.
 - [ ] Le parcours e2e passe sur la stack compose.
 - [ ] `axe` sans violation sérieuse sur les trois écrans.
 - [ ] Les quatre jobs CI sont verts et bloquants.
+
+---
+
+## 5. État de livraison
+
+Ce qui est fait, et ce qui ne l'est pas — sans arrondi.
+
+**Fait**
+
+- Amorce (§1) : cinq marqueurs + `--strict-markers` ; fixtures partagées
+  `frozen_clock` et `settings_factory` (`tests/conftest.py`), utilisées par plus de
+  trois modules de tests (`test_match_rules`, `test_match_score`, `test_match_prefilter`,
+  `test_match_llm`, `test_aggregators_isolation`) ; `just ci` reproduit les jobs
+  `backend`, `frontend`, `api-contract`.
+- Tests de discipline (§2.1) : `tests/test_discipline.py`, en **AST** et non en `grep` —
+  un commentaire qui *mentionne* `datetime.now()` ne doit pas casser le build. Le test
+  « aucun littéral de seuil dans `match/` » a trouvé de vrais manquements (les constantes
+  de WP12 : confiance minimale, marge de haute confiance, longueur minimale de
+  description, fenêtre de fraîcheur) ; ils vivent désormais dans `configs/profile.yaml`
+  (`freshness:` et `llm:`), pas dans le code.
+- Plancher de résolution (§2.2) : `tests/fixtures/postings/resolution_floors.json`,
+  versionné ; `just test-golden` imprime le taux par étage **et** son plancher, et une
+  baisse fait échouer le test. Un second test interdit d'abaisser un plancher sous sa
+  valeur de livraison.
+- e2e (§2.3) : `scripts/e2e.sh` — base de démo figée (`tools/seed_demo_db.py`, le corpus
+  doré passé par le vrai chemin `ingest` sous horloge figée), images `api` et `web` de
+  la stack de production sur un projet compose à part (`docker-compose.e2e.yml`),
+  démontage garanti. Le parcours du §2.3 lit les réponses de l'API, pas seulement le DOM.
+- Accessibilité et visuel (§2.4) : `axe` sur le feed, les filtres et le détail, **dans les
+  deux thèmes** ; captures de référence des primitives de densité, dans les deux thèmes.
+- CI : job `e2e` bloquant ; job `e2e-visual` **informatif** (voir plus bas).
+
+**Ce que l'e2e a trouvé** (et qui est corrigé) : ouvrir puis fermer un détail effaçait les
+filtres de l'URL (`routing.ts` poussait `/p/{id}` et `/` sans la query string) ; la liste
+était un `listbox` dont chaque `option` contenait le bouton favori (`nested-interactive`,
+`aria-required-children`) — devenue `grid`/`row`/`gridcell` ; le contraste du texte tertiaire
+et du vert / ambre du thème clair était sous 4,5:1.
+
+**Non atteint**
+
+- **Corpus à 200 offres** : il en compte 71. Étiqueter à la main est le but du corpus ; les
+  étiqueter par le code qu'on teste le viderait de sa valeur. Le quota reste à faire par
+  le mainteneur (voir `tests/fixtures/postings/README.md`).
+- **Captures visuelles en CI** : les références ont été produites sur la machine du
+  mainteneur ; les polices système diffèrent d'un runner à l'autre. Tant qu'elles ne sont
+  pas régénérées sur le runner (`just e2e --update-snapshots`, relire, commiter), le job
+  `e2e-visual` est `continue-on-error`. Le job `e2e` (parcours + axe) est bloquant.
+- La CI GitHub elle-même n'a pas été exécutée : reproduite localement, pas sur un runner.
+

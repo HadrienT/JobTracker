@@ -14,6 +14,19 @@ from jobtracker.core.enums import RoleFamily
 from jobtracker.core.models import Posting
 from jobtracker.match.profile import Profile
 
+# Every identifier `evaluate` can persist as a `rejection_reason` (the five hard rejects
+# here, plus `low_score` from score.py). They are stored, shown in the UI and aggregated in
+# the weekly report: renaming one silently splits its history, so tests/test_discipline.py
+# pins this set.
+REJECTION_REASONS = (
+    "excluded_title",
+    "not_quant",
+    "senior_only",
+    "phd_required",
+    "stale",
+    "low_score",
+)
+
 
 def hard_reject(posting: Posting, *, profile: Profile) -> str | None:
     if _title_matches_any(posting.title, profile.titles.excluded):

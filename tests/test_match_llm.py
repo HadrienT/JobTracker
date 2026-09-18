@@ -7,6 +7,7 @@ No real network anywhere here: every response comes from an
 import json
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -51,6 +52,13 @@ _PROFILE_DATA = {
         "stale_penalty": -10,
     },
     "tiers": {"strong": 70, "possible": 45, "stretch": 25},
+    "freshness": {"window_days": 7, "stale_penalty_fraction": 0.5},
+    "llm": {
+        "min_description_chars": 200,
+        "high_confidence_margin": 20,
+        "min_confidence": 0.6,
+        "max_description_chars": 6000,
+    },
 }
 
 
@@ -58,25 +66,7 @@ def _profile(**company_tiers: int) -> Profile:
     return build_profile(_PROFILE_DATA, company_tiers=company_tiers)
 
 
-def _settings(**overrides: object) -> Settings:
-    base: dict[str, object] = {
-        "db_path": Path("./jobtracker.db"),
-        "log_level": "INFO",
-        "log_format": "json",
-        "api_host": "127.0.0.1",
-        "api_port": 8100,
-        "web_port": 5190,
-        "public_api_base": "http://127.0.0.1:8100",
-        "llm_enabled": True,
-        "llm_base_url": _BASE_URL,
-        "llm_model": _MODEL,
-        "llm_timeout_s": 5,
-        "user_agent": "JobTracker/0.1 (+contact)",
-        "http_timeout_s": 20,
-        "aggregators_enabled": False,
-    }
-    base.update(overrides)
-    return Settings(**base)  # type: ignore[arg-type]
+_LLM_ON = {"llm_enabled": True, "llm_base_url": _BASE_URL, "llm_model": _MODEL}
 
 
 def _chat_response(payload: dict) -> httpx.Response:
@@ -111,6 +101,7 @@ def test_classify_llm_returns_a_verdict_on_a_conforming_reply() -> None:
         timeout_s=5,
         base_url=_BASE_URL,
         model=_MODEL,
+        max_description_chars=6000,
         client=_client(handler),
     )
     assert verdict == LlmVerdict(
@@ -136,6 +127,7 @@ def test_non_conforming_reply_is_quarantined_not_raised() -> None:
         timeout_s=5,
         base_url=_BASE_URL,
         model=_MODEL,
+        max_description_chars=6000,
         client=httpx.Client(transport=handler),
     )
     assert verdict is None
@@ -150,6 +142,7 @@ def test_server_busy_returns_none_with_no_fallback() -> None:
         timeout_s=5,
         base_url=_BASE_URL,
         model=_MODEL,
+        max_description_chars=6000,
         client=httpx.Client(transport=handler),
     )
     assert verdict is None
@@ -168,6 +161,7 @@ def test_server_down_returns_none_and_the_run_continues() -> None:
         timeout_s=5,
         base_url=_BASE_URL,
         model=_MODEL,
+        max_description_chars=6000,
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
     assert verdict is None
@@ -200,6 +194,7 @@ def test_timeout_returns_none() -> None:
         timeout_s=5,
         base_url=_BASE_URL,
         model=_MODEL,
+        max_description_chars=6000,
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
     assert verdict is None
@@ -239,6 +234,7 @@ def test_concurrency_never_exceeds_one_under_load() -> None:
             timeout_s=5,
             base_url=_BASE_URL,
             model=_MODEL,
+            max_description_chars=6000,
             client=client,
         )
 
@@ -267,34 +263,40 @@ def test_apply_llm_verdict_sets_resolver_stage_to_llm() -> None:
     assert posting.resolver_stage == "rules"  # the original is untouched
 
 
-def test_resolve_residual_skips_the_call_when_llm_is_disabled() -> None:
+def test_resolve_residual_skips_the_call_when_llm_is_disabled(
+    settings_factory: Callable[..., Settings],
+) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise AssertionError("classify_llm must not be called when JT_LLM_ENABLED=false")
 
     posting = make_posting(seniority=Seniority.UNKNOWN)
     verdict = make_verdict(score=50, tier=Tier.POSSIBLE)
     profile = _profile()
-    settings = _settings(llm_enabled=False)
+    settings = settings_factory(**{**_LLM_ON, "llm_enabled": False})
     result = resolve_residual(
         posting, verdict, profile=profile, settings=settings, description=_LONG_DESCRIPTION
     )
     assert result is verdict
 
 
-def test_resolve_residual_skips_the_call_when_not_ambiguous() -> None:
+def test_resolve_residual_skips_the_call_when_not_ambiguous(
+    settings_factory: Callable[..., Settings],
+) -> None:
     posting = make_posting(seniority=Seniority.JUNIOR, visa_sponsorship=VisaStatus.SPONSORS)
     verdict = make_verdict(score=95, tier=Tier.STRONG)
     result = resolve_residual(
         posting,
         verdict,
         profile=_profile(),
-        settings=_settings(),
+        settings=settings_factory(**_LLM_ON),
         description=_LONG_DESCRIPTION,
     )
     assert result is verdict
 
 
-def test_resolve_residual_keeps_the_deterministic_verdict_on_low_confidence() -> None:
+def test_resolve_residual_keeps_the_deterministic_verdict_on_low_confidence(
+    settings_factory: Callable[..., Settings],
+) -> None:
     handler = httpx.MockTransport(
         lambda request: _chat_response(
             {
@@ -314,14 +316,16 @@ def test_resolve_residual_keeps_the_deterministic_verdict_on_low_confidence() ->
         posting,
         verdict,
         profile=_profile(),
-        settings=_settings(),
+        settings=settings_factory(**_LLM_ON),
         description=_LONG_DESCRIPTION,
         client=httpx.Client(transport=handler),
     )
     assert result is verdict  # quarantined: never promoted on low confidence
 
 
-def test_resolve_residual_promotes_and_rescores_on_a_confident_reply() -> None:
+def test_resolve_residual_promotes_and_rescores_on_a_confident_reply(
+    settings_factory: Callable[..., Settings],
+) -> None:
     handler = httpx.MockTransport(
         lambda request: _chat_response(
             {
@@ -346,7 +350,7 @@ def test_resolve_residual_promotes_and_rescores_on_a_confident_reply() -> None:
         posting,
         verdict,
         profile=_profile(),
-        settings=_settings(),
+        settings=settings_factory(**_LLM_ON),
         description=_LONG_DESCRIPTION,
         client=httpx.Client(transport=handler),
     )

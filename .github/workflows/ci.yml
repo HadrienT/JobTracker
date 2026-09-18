@@ -58,3 +58,54 @@ jobs:
       - run: cd web && npm run api:types:local
       - name: le schéma généré doit être identique au schéma commité
         run: git diff --exit-code web/openapi.json web/src/api/schema.gen.ts
+
+  # The browser journey and the accessibility gate: blocking. Runs the real compose images
+  # over a frozen demo database (docker-compose.e2e.yml); no source is ever contacted.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: uv sync --all-extras
+      - run: cd web && npm ci && npx playwright install --with-deps chromium
+      - run: scripts/e2e.sh --grep-invert "density primitives"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: web/test-results/
+
+  # Pixel baselines are per-platform and depend on the runner's system fonts, which the app
+  # uses (`ui-sans-serif, system-ui`). They were recorded on the maintainer's machine, so a
+  # red result here can mean "fonts differ", not "the UI regressed": informational until the
+  # baselines are regenerated on the runner (`just e2e --update-snapshots`, review, commit).
+  e2e-visual:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: uv sync --all-extras
+      - run: cd web && npm ci && npx playwright install --with-deps chromium
+      - run: scripts/e2e.sh --grep "density primitives"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-visual-diffs
+          path: web/test-results/

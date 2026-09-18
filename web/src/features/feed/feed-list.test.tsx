@@ -75,7 +75,7 @@ describe('FeedList', () => {
     await screen.findAllByTestId('posting-row')
 
     await user.keyboard('j')
-    const listbox = screen.getByRole('listbox', { name: 'Job postings' })
+    const listbox = screen.getByRole('grid', { name: 'Job postings' })
     await waitFor(() => {
       expect(listbox).toHaveAttribute('aria-activedescendant')
     })
@@ -163,7 +163,7 @@ describe('FeedList', () => {
 
     server.use(http.get('*/postings', () => HttpResponse.json({ detail: 'boom' }, { status: 500 })))
     // Force the prefetch by scrolling the listbox all the way down.
-    const listbox = screen.getByRole('listbox', { name: 'Job postings' })
+    const listbox = screen.getByRole('grid', { name: 'Job postings' })
     listbox.scrollTop = 2000 * 44
     listbox.dispatchEvent(new Event('scroll', { bubbles: true }))
 

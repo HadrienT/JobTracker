@@ -36,15 +36,6 @@ from jobtracker.match.score import evaluate
 
 _logger = get_logger(__name__)
 
-# A verdict below this confidence is quarantined: the posting keeps its
-# deterministic verdict rather than being promoted on a guess.
-_CONFIDENCE_THRESHOLD = 0.6
-
-# ~1500 tokens of context per posting (blueprint/wp/WP12-match-llm.md §2) — a
-# generous cap that keeps the call cheap without truncating mid-sentence for
-# any real job description.
-_MAX_DESCRIPTION_CHARS = 6000
-
 # Concurrency côté JobTracker : jamais plus d'un appel en vol, y compris quand
 # deux sources tournent en parallèle (blueprint/wp/WP08-runtime.md §3) et
 # tombent toutes les deux sur une offre ambiguë au même instant. Un
@@ -81,7 +72,7 @@ class LlmVerdict(BaseModel, frozen=True, extra="forbid"):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
-def _user_content(posting: Posting, description: str) -> str:
+def _user_content(posting: Posting, description: str, *, max_description_chars: int) -> str:
     return (
         f"Company: {posting.company_slug}\n"
         f"Title: {posting.title_raw}\n"
@@ -89,17 +80,24 @@ def _user_content(posting: Posting, description: str) -> str:
         f"role_family={posting.role_family.value}, seniority={posting.seniority.value}, "
         f"min_years={posting.min_years}, visa_sponsorship={posting.visa_sponsorship.value}, "
         f"phd_required={posting.phd_required}\n\n"
-        f"Description:\n{description[:_MAX_DESCRIPTION_CHARS]}"
+        f"Description:\n{description[:max_description_chars]}"
     )
 
 
-def _build_payload(posting: Posting, description: str, *, model: str) -> dict[str, Any]:
+def _build_payload(
+    posting: Posting, description: str, *, model: str, max_description_chars: int
+) -> dict[str, Any]:
     return {
         "model": model,
         "temperature": 0,
         "messages": [
             {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": _user_content(posting, description)},
+            {
+                "role": "user",
+                "content": _user_content(
+                    posting, description, max_description_chars=max_description_chars
+                ),
+            },
         ],
         "response_format": {
             "type": "json_schema",
@@ -157,6 +155,7 @@ def attempt_llm(
     timeout_s: int,
     base_url: str,
     model: str,
+    max_description_chars: int,
     client: httpx.Client | None = None,
 ) -> LlmOutcome:
     """Same call as `classify_llm`, but says *why* there was no verdict.
@@ -172,7 +171,9 @@ def attempt_llm(
         owned_client = client is None
         http_client = client if client is not None else httpx.Client()
         try:
-            payload = _build_payload(posting, description, model=model)
+            payload = _build_payload(
+                posting, description, model=model, max_description_chars=max_description_chars
+            )
             response = _post_completion(
                 http_client, base_url=base_url, payload=payload, timeout_s=timeout_s
             )
@@ -209,6 +210,7 @@ def classify_llm(
     timeout_s: int,
     base_url: str,
     model: str,
+    max_description_chars: int,
     client: httpx.Client | None = None,
 ) -> LlmVerdict | None:
     """`None` means "indisponible" — busy, unreachable, or a non-conforming reply.
@@ -224,6 +226,7 @@ def classify_llm(
         timeout_s=timeout_s,
         base_url=base_url,
         model=model,
+        max_description_chars=max_description_chars,
         client=client,
     ).verdict
 
@@ -252,10 +255,10 @@ def rescore_with_llm(
 ) -> tuple[Posting, MatchVerdict] | None:
     """Apply the LLM's fields and recompute the score — `None` if under-confident.
 
-    `None` is the quarantine: below `_CONFIDENCE_THRESHOLD` the posting keeps
+    `None` is the quarantine: below `profile.llm.min_confidence` the posting keeps
     its deterministic verdict rather than being promoted on a guess (§4.3).
     """
-    if llm_verdict.confidence < _CONFIDENCE_THRESHOLD:
+    if llm_verdict.confidence < profile.llm.min_confidence:
         return None
     updated = apply_llm_verdict(posting, llm_verdict)
     return updated, evaluate(updated, profile=profile)
@@ -291,6 +294,7 @@ def resolve_residual(
         timeout_s=settings.llm_timeout_s,
         base_url=settings.llm_base_url,
         model=settings.llm_model,
+        max_description_chars=profile.llm.max_description_chars,
         client=client,
     )
     if llm_verdict is None:

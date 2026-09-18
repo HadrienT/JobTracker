@@ -43,68 +43,76 @@ interface PostingRowProps {
 
 /** One row per posting — the single most-read element of the product (blueprint/12-WEB-UI.md §3). */
 export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen, onToggleFavorite }: PostingRowProps) {
+  // A `grid`/`row` rather than a listbox/option: the favorite toggle is a real button, and
+  // an `option` may not contain one (axe `nested-interactive`, `aria-required-children`).
+  // A row may hold any number of cells, so the data columns are one cell and the toggle
+  // another, and `aria-activedescendant` on the grid still drives the keyboard selection.
   return (
     <div
       id={`posting-row-${posting.posting_id}`}
-      role="option"
+      role="row"
       aria-selected={selected}
       data-testid="posting-row"
       style={style}
       className={cn(
-        'grid cursor-pointer items-center gap-3 border-b border-border px-3 text-sm',
-        GRID_COLUMNS,
+        'relative cursor-pointer border-b border-border',
         selected ? 'bg-surface-elevated' : 'hover:bg-surface-elevated/60',
       )}
       onClick={onSelect}
       onDoubleClick={onOpen}
     >
-      <Score score={posting.score} tier={posting.tier} reasons={reasons} />
+      <div role="gridcell" className={cn('grid h-full items-center gap-3 px-3 text-sm', GRID_COLUMNS)}>
+        <Score score={posting.score} tier={posting.tier} reasons={reasons} />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="truncate text-text-primary">{posting.title}</span>
-        </TooltipTrigger>
-        <TooltipContent>{posting.title_raw}</TooltipContent>
-      </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="truncate text-text-primary">{posting.title}</span>
+          </TooltipTrigger>
+          <TooltipContent>{posting.title_raw}</TooltipContent>
+        </Tooltip>
 
-      <span className="text-xs text-text-tertiary">{posting.alias_count > 0 ? `+${String(posting.alias_count)}` : null}</span>
+        <span className="text-xs text-text-tertiary">{posting.alias_count > 0 ? `+${String(posting.alias_count)}` : null}</span>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="truncate text-text-secondary">{posting.company_name}</span>
-        </TooltipTrigger>
-        <TooltipContent>{posting.sector}</TooltipContent>
-      </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="truncate text-text-secondary">{posting.company_name}</span>
+          </TooltipTrigger>
+          <TooltipContent>{posting.sector}</TooltipContent>
+        </Tooltip>
 
-      <LocationCell locations={posting.locations} />
+        <LocationCell locations={posting.locations} />
 
-      <span className="truncate text-xs text-text-tertiary">{meta(posting)}</span>
+        <span className="truncate text-xs text-text-tertiary">{meta(posting)}</span>
 
-      <VisaBadge status={posting.visa_sponsorship} />
+        <VisaBadge status={posting.visa_sponsorship} />
 
-      <Money
-        amountMin={posting.compensation.amount_min}
-        amountMax={posting.compensation.amount_max}
-        currency={posting.compensation.currency}
-        period={posting.compensation.period}
-      />
+        <Money
+          amountMin={posting.compensation.amount_min}
+          amountMax={posting.compensation.amount_max}
+          currency={posting.compensation.currency}
+          period={posting.compensation.period}
+        />
 
-      <Age postedAt={posting.posted_at} firstSeenAt={posting.first_seen_at} staleAfterDays={STALE_AFTER_DAYS} />
+        <Age postedAt={posting.posted_at} firstSeenAt={posting.first_seen_at} staleAfterDays={STALE_AFTER_DAYS} />
 
-      <Deadline closesAt={posting.closes_at} />
+        <Deadline closesAt={posting.closes_at} />
 
-      <button
-        type="button"
-        aria-pressed={posting.favorited}
-        aria-label={posting.favorited ? 'unmark favorite' : 'mark favorite'}
-        className={cn('text-base leading-none', posting.favorited ? 'text-tier-stretch' : 'text-text-tertiary')}
-        onClick={(event) => {
-          event.stopPropagation()
-          onToggleFavorite()
-        }}
-      >
-        {posting.favorited ? '★' : '☆'}
-      </button>
+        <span aria-hidden="true" />
+      </div>
+      <div role="gridcell" className="absolute right-3 top-0 flex h-full items-center">
+        <button
+          type="button"
+          aria-pressed={posting.favorited}
+          aria-label={posting.favorited ? 'unmark favorite' : 'mark favorite'}
+          className={cn('h-8 w-8 text-base leading-none', posting.favorited ? 'text-tier-stretch' : 'text-text-tertiary')}
+          onClick={(event) => {
+            event.stopPropagation()
+            onToggleFavorite()
+          }}
+        >
+          {posting.favorited ? '★' : '☆'}
+        </button>
+      </div>
     </div>
   )
 }

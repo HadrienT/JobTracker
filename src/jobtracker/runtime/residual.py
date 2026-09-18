@@ -110,6 +110,7 @@ def process_entry(
         timeout_s=timeout_s,
         base_url=cfg.base_url,
         model=cfg.model,
+        max_description_chars=profile.llm.max_description_chars,
         client=cfg.client,
     )
     if outcome.status == LlmStatus.UNAVAILABLE:

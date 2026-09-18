@@ -165,7 +165,7 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
     <div className="flex flex-1 flex-col overflow-hidden">
       <div
         ref={parentRef}
-        role="listbox"
+        role="grid"
         aria-label="Job postings"
         aria-activedescendant={selected ? `posting-row-${selected.posting_id}` : undefined}
         className="flex-1 overflow-y-auto"

@@ -127,7 +127,7 @@ def _visa(posting: Posting, *, profile: Profile) -> Reason | None:
 
 def _freshness(posting: Posting, *, profile: Profile) -> Reason | None:
     age_days = (utc_now() - reference_date(posting)).days
-    if age_days <= 7:
+    if age_days <= profile.freshness.window_days:
         return Reason(
             code="freshness_7d",
             delta=profile.weights["freshness_7d"],
@@ -148,7 +148,8 @@ def _salary_disclosed(posting: Posting, *, profile: Profile) -> Reason | None:
 
 def _stale_penalty(posting: Posting, *, profile: Profile) -> Reason | None:
     age_days = (utc_now() - reference_date(posting)).days
-    if age_days > profile.hard_rejects.stale_after_days / 2:
+    stale_from = profile.hard_rejects.stale_after_days * profile.freshness.stale_penalty_fraction
+    if age_days > stale_from:
         return Reason(
             code="stale_penalty",
             delta=profile.weights["stale_penalty"],

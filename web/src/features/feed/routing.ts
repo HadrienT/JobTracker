@@ -11,7 +11,10 @@ function readPostingId(pathname: string): string | null {
 /**
  * `/p/{id}` is a real, shareable, reloadable URL, but it never navigates away —
  * it's rendered as an overlay on top of the feed, which stays mounted underneath
- * and keeps its scroll position (blueprint/wp/WP10-web-feed.md §5).
+ * and keeps its scroll position (blueprint/wp/WP10-web-feed.md §5). The query string
+ * — the filters and the sort, the only source of truth for the feed (ADR-008) — rides
+ * along both ways: dropping it would silently reset the feed the moment a detail is
+ * closed, and a reload of `/p/{id}` would come back unfiltered.
  */
 export function usePostingRoute(): {
   postingId: string | null
@@ -31,12 +34,12 @@ export function usePostingRoute(): {
   }, [])
 
   const openPosting = useCallback((id: string) => {
-    window.history.pushState(null, '', `${DETAIL_PATH_PREFIX}${encodeURIComponent(id)}`)
+    window.history.pushState(null, '', `${DETAIL_PATH_PREFIX}${encodeURIComponent(id)}${window.location.search}`)
     setPostingId(id)
   }, [])
 
   const closePosting = useCallback(() => {
-    window.history.pushState(null, '', '/')
+    window.history.pushState(null, '', `/${window.location.search}`)
     setPostingId(null)
   }, [])
 

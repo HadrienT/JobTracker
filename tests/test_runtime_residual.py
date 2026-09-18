@@ -52,6 +52,13 @@ _PROFILE_DATA = {
         "stale_penalty": -10,
     },
     "tiers": {"strong": 70, "possible": 45, "stretch": 25},
+    "freshness": {"window_days": 7, "stale_penalty_fraction": 0.5},
+    "llm": {
+        "min_description_chars": 200,
+        "high_confidence_margin": 20,
+        "min_confidence": 0.6,
+        "max_description_chars": 6000,
+    },
 }
 _DESCRIPTION = "We build low latency trading systems and need an engineer to join the desk. " * 4
 _GOOD_REPLY = {

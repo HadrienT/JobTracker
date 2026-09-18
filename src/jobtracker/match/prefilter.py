@@ -19,14 +19,6 @@ from jobtracker.core.enums import Seniority, Tier, VisaStatus
 from jobtracker.core.models import MatchVerdict, Posting
 from jobtracker.match.profile import Profile
 
-# Below this many characters, there is nothing in the description an LLM
-# could read that the regexes upstream would have missed.
-_MIN_DESCRIPTION_CHARS = 200
-
-# "très au-dessus du seuil strong" — comfortably clear of the tier boundary,
-# not just a couple of points over it.
-_HIGH_CONFIDENCE_MARGIN = 20
-
 # EU-27: a candidate holding EU citizenship needs no visa sponsorship inside
 # this set, which is why `visa_sponsorship == UNKNOWN` is far less consequential
 # here than it is for a US, UK, Swiss or APAC posting (P4).
@@ -50,7 +42,7 @@ def is_ambiguous(
     ):
         return False  # every other hard reject / low_score is final (§3)
 
-    if len(description) < _MIN_DESCRIPTION_CHARS:
+    if len(description) < profile.llm.min_description_chars:
         return False  # nothing to read, whatever else is uncertain
 
     if verdict.rejection_reason == "not_quant":
@@ -82,7 +74,10 @@ def _is_confidently_resolved(posting: Posting, verdict: MatchVerdict, *, profile
     fully_resolved = (
         posting.seniority != Seniority.UNKNOWN and posting.visa_sponsorship != VisaStatus.UNKNOWN
     )
-    return fully_resolved and verdict.score >= profile.tiers.strong + _HIGH_CONFIDENCE_MARGIN
+    return (
+        fully_resolved
+        and verdict.score >= profile.tiers.strong + profile.llm.high_confidence_margin
+    )
 
 
 def _has_eu_location(posting: Posting) -> bool:

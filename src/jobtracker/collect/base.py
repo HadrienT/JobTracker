@@ -14,6 +14,11 @@ from jobtracker.collect.http import HttpClient, HttpSession
 from jobtracker.core.enums import Source
 from jobtracker.core.models import Board, CollectResult, RawPosting
 
+# Sources the schema and the API know about but nothing collects — deliberately (WP13 §7):
+# LinkedIn's robots.txt disallows its only programmatic endpoint, and WTTJ loads its
+# listing client-side. Listed so tests/test_discipline.py can tell "forgotten" from "decided".
+UNIMPLEMENTED_SOURCES = frozenset({Source.LINKEDIN, Source.WTTJ})
+
 
 class Collector(Protocol):
     source: Source

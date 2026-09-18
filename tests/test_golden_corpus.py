@@ -21,8 +21,16 @@ pytestmark = pytest.mark.golden
 
 CORPUS_PATH = Path(__file__).parent / "fixtures" / "postings" / "corpus.jsonl"
 
-# blueprint/wp/WP03-normalize.md §5 — minimum resolution rate at delivery.
-_FLOORS = {"title": 0.95, "location": 0.85, "seniority": 0.75, "visa": 0.60}
+FLOORS_PATH = Path(__file__).parent / "fixtures" / "postings" / "resolution_floors.json"
+
+# blueprint/wp/WP03-normalize.md §5 — the floors at delivery. The versioned file may only
+# ratchet upwards from these (blueprint/wp/WP14-quality.md §2.2).
+_DELIVERY_FLOORS = {"title": 0.95, "location": 0.85, "seniority": 0.75, "visa": 0.60}
+
+
+def _load_floors() -> dict[str, float]:
+    raw = json.loads(FLOORS_PATH.read_text(encoding="utf-8"))
+    return {stage: float(value) for stage, value in raw.items() if not stage.startswith("_")}
 
 
 def _load_corpus() -> list[dict]:
@@ -88,18 +96,31 @@ def _score_corpus(taxonomy: Taxonomy, geo_index: GeoIndex) -> dict[str, tuple[in
 def test_golden_corpus_resolution_rates(taxonomy: Taxonomy, geo_index: GeoIndex) -> None:
     rates = _score_corpus(taxonomy, geo_index)
 
-    print("\nétage            résolus   cumul")
+    floors = _load_floors()
+
+    print("\nétage            résolus   cumul    plancher")
     for stage, (count, total) in rates.items():
         pct = count / total if total else 0.0
-        print(f"{stage:<15}  {count:>3}/{total:<3}   {pct:.1%}")
+        floor = floors.get(stage)
+        print(
+            f"{stage:<15}  {count:>3}/{total:<3}   {pct:>6.1%}   {floor:.1%}"
+            if floor
+            else f"{stage:<15}  {count:>3}/{total:<3}   {pct:>6.1%}   —"
+        )
 
     failures = []
-    for stage, floor in _FLOORS.items():
+    for stage, floor in floors.items():
         count, total = rates[stage]
         rate = count / total if total else 0.0
         if rate < floor:
-            failures.append(f"{stage}: {rate:.1%} < floor {floor:.0%}")
+            failures.append(f"{stage}: {rate:.1%} < floor {floor:.1%}")
     assert not failures, "resolution rate below floor: " + "; ".join(failures)
+
+
+def test_floors_file_never_falls_below_the_delivery_floors() -> None:
+    floors = _load_floors()
+    for stage, delivery in _DELIVERY_FLOORS.items():
+        assert floors[stage] >= delivery, f"{stage} floor lowered below its delivery value"
 
 
 def test_golden_corpus_has_no_regression_versus_a_frozen_baseline(

@@ -1,0 +1,39 @@
+# e2e overlay — blueprint/wp/WP14-quality.md §2.3. The production stack's api and web
+# services, unchanged, over a frozen demo database and without the collector, so the
+# browser suite exercises the same images that ship and never touches a real source.
+#
+#   scripts/e2e.sh            # seed, build, up, run Playwright, tear down
+#
+#   docker compose -p jobtracker-e2e -f docker-compose.prod.yml -f docker-compose.e2e.yml ...
+
+services:
+  # Copies the frozen demo database into the data volume before anything opens it.
+  # Root only for the copy + chown: the api runs as uid 1001 and must be able to write
+  # (favorites live in the same file).
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jobtracker-backend:${COMMIT_SHA:-latest}
+    user: "0:0"
+    restart: "no"
+    entrypoint: ["sh", "-c", "cp /seed/demo.db /data/jobtracker.db && chown 1001:1001 /data/jobtracker.db"]
+    volumes:
+      - jt_data:/data
+      - ./e2e/demo.db:/seed/demo.db:ro
+
+  migrate:
+    env_file: !override
+      - e2e/e2e.env
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  api:
+    env_file: !override
+      - e2e/e2e.env
+
+  collector:
+    profiles: ["never"]
+    env_file: !override
+      - e2e/e2e.env

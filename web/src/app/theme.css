@@ -11,7 +11,7 @@
 
   --text-primary: #e8eaed;
   --text-secondary: #a8aeb8;
-  --text-tertiary: #6b7280;
+  --text-tertiary: #8b93a1;
 
   --tier-strong: #34d399;
   --tier-possible: #5b9dff;
@@ -38,17 +38,17 @@
 
   --text-primary: #14171c;
   --text-secondary: #4b5160;
-  --text-tertiary: #6b7280;
+  --text-tertiary: #5a6270;
 
-  --tier-strong: #0f9d58;
+  --tier-strong: #0a6b3a;
   --tier-possible: #1d4ed8;
-  --tier-stretch: #b45309;
+  --tier-stretch: #9a4507;
   --tier-rejected: #9f4d54;
-  --warning: #b45309;
+  --warning: #9a4507;
   --danger: #dc2626;
 
-  --visa-sponsors: #0f9d58;
-  --visa-unknown: #6b7280;
+  --visa-sponsors: #0a6b3a;
+  --visa-unknown: #5a6270;
   --visa-no: #dc2626;
 }
 

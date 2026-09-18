@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -19,45 +20,41 @@ from jobtracker.runtime.aggregator_loader import load_aggregators
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-def _settings(*, enabled: bool) -> Settings:
-    return Settings(
-        db_path=Path("./x.db"),
-        log_level="INFO",
-        log_format="json",
-        api_host="127.0.0.1",
-        api_port=8100,
-        web_port=5190,
-        public_api_base="http://x",
-        llm_enabled=False,
-        llm_base_url="http://x/v1",
-        llm_model="m",
-        llm_timeout_s=5,
-        user_agent="t",
-        http_timeout_s=5,
-        aggregators_enabled=enabled,
+def test_the_first_lock_disabled_means_no_import_and_no_setup(
+    settings_factory: Callable[..., Settings],
+) -> None:
+    assert (
+        load_aggregators(
+            settings_factory(aggregators_enabled=False), [], configs_dir=REPO_ROOT / "configs"
+        )
+        is None
     )
 
 
-def test_the_first_lock_disabled_means_no_import_and_no_setup() -> None:
-    assert load_aggregators(_settings(enabled=False), [], configs_dir=REPO_ROOT / "configs") is None
-
-
-def test_an_absent_package_is_no_aggregators_not_an_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_absent_package_is_no_aggregators_not_an_error(
+    monkeypatch: pytest.MonkeyPatch, settings_factory: Callable[..., Settings]
+) -> None:
     def gone(name: str) -> None:
         raise ModuleNotFoundError(f"No module named {name!r}", name=name)
 
     monkeypatch.setattr(aggregator_loader.importlib, "import_module", gone)
-    result = load_aggregators(_settings(enabled=True), [], configs_dir=REPO_ROOT / "configs")
+    result = load_aggregators(
+        settings_factory(aggregators_enabled=True), [], configs_dir=REPO_ROOT / "configs"
+    )
     assert result is None
 
 
-def test_a_missing_third_party_dependency_is_not_swallowed(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_missing_third_party_dependency_is_not_swallowed(
+    monkeypatch: pytest.MonkeyPatch, settings_factory: Callable[..., Settings]
+) -> None:
     def broken(name: str) -> None:
         raise ModuleNotFoundError("No module named 'somelib'", name="somelib")
 
     monkeypatch.setattr(aggregator_loader.importlib, "import_module", broken)
     with pytest.raises(ModuleNotFoundError):
-        load_aggregators(_settings(enabled=True), [], configs_dir=REPO_ROOT / "configs")
+        load_aggregators(
+            settings_factory(aggregators_enabled=True), [], configs_dir=REPO_ROOT / "configs"
+        )
 
 
 def test_the_project_runs_and_its_tests_pass_with_the_package_deleted(tmp_path: Path) -> None:

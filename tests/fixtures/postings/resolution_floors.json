@@ -1,0 +1,8 @@
+{
+  "_comment": "Minimum per-stage resolution rate on corpus.jsonl. A drop fails the build; raise a floor deliberately, in the same commit as the improvement that earns it, never lower one to make a build pass. Measured 2026-09-18 on 71 entries: title 98.6, location 100, seniority 100, visa 98.6, compensation 94.4.",
+  "title": 0.98,
+  "location": 1.0,
+  "seniority": 1.0,
+  "visa": 0.98,
+  "compensation": 0.94
+}

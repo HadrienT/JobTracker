@@ -72,3 +72,10 @@ Le corpus est **figé** : on l'étend, on ne le régénère jamais. Un corpus
 régénérable ne détecte aucune régression.
 
 À chaque bug de parsing constaté : **l'entrée arrive ici avant le correctif**.
+
+## Plancher de résolution
+
+`resolution_floors.json` fixe, par étage, le taux minimal de résolution. `just test-golden`
+imprime le taux mesuré à côté de son plancher ; une baisse fait échouer le build. On **relève**
+un plancher dans le commit qui gagne le point, jamais l'inverse.
+

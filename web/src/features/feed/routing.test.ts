@@ -39,6 +39,21 @@ describe('usePostingRoute', () => {
     expect(window.location.pathname).toBe('/')
   })
 
+  it('keeps the filters and sort in the query string when opening and closing a detail', () => {
+    window.history.pushState(null, '', '/?countries=US&sort=seen')
+    const { result } = renderHook(() => usePostingRoute())
+    act(() => {
+      result.current.openPosting('xyz')
+    })
+    expect(window.location.pathname).toBe('/p/xyz')
+    expect(window.location.search).toBe('?countries=US&sort=seen')
+    act(() => {
+      result.current.closePosting()
+    })
+    expect(window.location.pathname).toBe('/')
+    expect(window.location.search).toBe('?countries=US&sort=seen')
+  })
+
   it('follows browser back/forward navigation', () => {
     const { result } = renderHook(() => usePostingRoute())
     act(() => {

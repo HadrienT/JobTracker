@@ -91,5 +91,21 @@ backup db="jobtracker.db":
     mkdir -p backups
     sqlite3 {{db}} ".backup backups/jobtracker-$(date +%Y%m%d).db"
 
-# CI locale : reproduit .github/workflows/ci.yml
-ci: lint arch test
+# le front : types, lint, tests unitaires, build + budget de bundle
+web-check:
+    cd web && npm run typecheck && npm run lint && npm run test -- --run && npm run build
+
+# le contrat d'API commité doit être celui que FastAPI génère
+types-check: types
+    git diff --exit-code web/openapi.json web/src/api/schema.gen.ts
+
+# parcours navigateur + axe + captures, sur la stack compose et une base de démo figée
+# (`just e2e --update-snapshots` réécrit les captures de référence)
+e2e *args:
+    scripts/e2e.sh {{args}}
+
+# CI locale : reproduit les trois premiers jobs de .github/workflows/ci.yml (backend, frontend, api-contract)
+ci: lint arch test web-check types-check
+
+# tout, e2e compris — ce que la CI exécute au total
+ci-full: ci e2e
