@@ -45,9 +45,10 @@ migrate:
 run-once source="greenhouse":
     uv run jobtracker run-once --source {{source}}
 
-# un passage sur toutes les sources activées (configs/sources.yaml), puis la file LLM ; code 1 si dégradé
-collect:
-    uv run jobtracker collect
+# un passage sur toutes les sources activées (configs/sources.yaml), puis la file LLM ; code 1 si dégradé.
+# Les sociétés déjà vues récemment sont sautées (cadence par priorité) : `just collect --force` les ré-interroge toutes.
+collect *args:
+    uv run jobtracker collect {{args}}
 
 # l'interface en local : API + front dans docker, sur http://127.0.0.1:5190 (lit ./data/jobtracker.db)
 up:

@@ -15,6 +15,7 @@ from jobtracker.runtime import pipeline
 from jobtracker.runtime.pipeline import ingest
 from jobtracker.store.archive import has_payload, read_payload
 from jobtracker.store.companies import sync_companies
+from jobtracker.store.search import get_description
 
 pytestmark = pytest.mark.db
 
@@ -89,6 +90,17 @@ def test_a_new_posting_is_stored_as_new(
         "SELECT title FROM postings WHERE posting_id = ?", (result.posting_id,)
     ).fetchone()
     assert row["title"] == "Quant Developer"
+
+
+def test_an_escaped_html_description_is_stored_and_indexed_as_readable_text(
+    store_conn: sqlite3.Connection, taxonomy: Taxonomy, geo_index: GeoIndex, profile: Profile
+) -> None:
+    raw = _raw(
+        description_raw="&lt;p&gt;Join us.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;C++&lt;/li&gt;&lt;/ul&gt;"
+    )
+    result = ingest(store_conn, raw, taxonomy=taxonomy, geo=geo_index, profile=profile)
+    assert result.posting_id is not None
+    assert get_description(store_conn, result.posting_id) == "Join us.\n\n• C++"
 
 
 def test_the_payload_is_archived_before_normalize_is_even_called(

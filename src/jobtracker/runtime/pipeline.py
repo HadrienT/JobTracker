@@ -24,6 +24,7 @@ from jobtracker.match.profile import Profile
 from jobtracker.match.score import evaluate
 from jobtracker.normalize.cascade import normalize
 from jobtracker.normalize.taxonomy import Taxonomy
+from jobtracker.normalize.text import html_to_text
 from jobtracker.runtime.residual import LlmClientConfig, queue_if_ambiguous
 from jobtracker.store.archive import archive_payload
 from jobtracker.store.companies import ensure_discovered_company, get_company
@@ -64,8 +65,17 @@ def ingest(
     archive_payload(conn, posting_id, raw.payload, raw.fetched_at)
     conn.commit()
 
+    # The archive above keeps the payload as the source sent it; everything downstream —
+    # the normalizer's regexes, the search text, the UI, the LLM prompt — reads readable text.
+    description = html_to_text(raw.description_raw)
+
     try:
-        posting = normalize(raw, taxonomy=taxonomy, geo=geo, hq_country=hq_country)
+        posting = normalize(
+            raw.model_copy(update={"description_raw": description}),
+            taxonomy=taxonomy,
+            geo=geo,
+            hq_country=hq_country,
+        )
     except Exception:
         _logger.error(
             "pipeline_normalize_failed",
@@ -98,7 +108,7 @@ def ingest(
 
     verdict = evaluate(posting, profile=profile)
     final_id = upsert_posting(conn, posting, verdict)
-    index_description(conn, final_id, raw.description_raw)
+    index_description(conn, final_id, description)
     record_raw_inputs(
         conn, final_id, location_raw=raw.location_raw, posted_at_raw=raw.posted_at_raw
     )
@@ -107,9 +117,7 @@ def ingest(
     # An unchanged re-fetch keeps whatever verdict is stored — including one the
     # LLM already produced — so only a new or changed posting can need the LLM.
     if llm is not None and previous_hash != raw.content_hash:
-        queue_if_ambiguous(
-            conn, final_id, profile=profile, cfg=llm, description=raw.description_raw
-        )
+        queue_if_ambiguous(conn, final_id, profile=profile, cfg=llm, description=description)
 
     outcome: IngestOutcome = "new" if previous_hash is None else "updated"
     return IngestResult(outcome=outcome, posting_id=final_id, tier=verdict.tier)

@@ -105,11 +105,13 @@ def cmd_run_once(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_collect(_args: argparse.Namespace) -> int:
+def cmd_collect(args: argparse.Namespace) -> int:
     """One pass over every enabled source, then the deferred LLM queue — and exit.
 
     The by-hand counterpart of `loop`: no scheduler, no intervals, just "go and look at
     everything once and store it". Sources disabled in `configs/sources.yaml` are skipped.
+    Boards refetched too recently are skipped as well (their per-priority cadence) unless
+    `--force` is given.
     """
     settings = load_settings()
     conn = _connect_and_migrate(settings)
@@ -120,7 +122,7 @@ def cmd_collect(_args: argparse.Namespace) -> int:
             continue
         source_boards = boards_for_source(boards, source)
         with bound_run_id(str(ULID())):
-            run = run_source_cycle(conn, source, source_boards, ctx=ctx)
+            run = run_source_cycle(conn, source, source_boards, ctx=ctx, force=args.force)
         degraded = degraded or run.status != "ok"
         print(
             f"source={run.source.value} status={run.status} boards={len(source_boards)} "
@@ -331,9 +333,11 @@ def _build_parser() -> argparse.ArgumentParser:
     run_once.add_argument("--company", default=None)
     run_once.set_defaults(func=cmd_run_once)
 
-    subparsers.add_parser(
-        "collect", help="one pass over every enabled source, then exit"
-    ).set_defaults(func=cmd_collect)
+    collect = subparsers.add_parser("collect", help="one pass over every enabled source, then exit")
+    collect.add_argument(
+        "--force", action="store_true", help="ignore the per-board refetch cadence"
+    )
+    collect.set_defaults(func=cmd_collect)
 
     subparsers.add_parser("loop", help="run continuously").set_defaults(func=cmd_loop)
 

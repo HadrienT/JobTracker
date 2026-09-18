@@ -8,6 +8,7 @@ import pytest
 
 from factories_store import make_board
 from jobtracker.collect.http import HttpSession, build_sources_config
+from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import Source
 from jobtracker.core.errors import SourceBlocked, SourceUnavailable
 from jobtracker.core.geo import GeoIndex
@@ -262,6 +263,24 @@ def test_priority_3_board_is_not_due_right_after_being_run(
     store_conn.commit()
     assert is_board_due(store_conn, board, now=now + timedelta(hours=1)) is False
     assert is_board_due(store_conn, board, now=now + timedelta(days=8)) is True
+
+
+def test_force_refetches_a_board_that_is_not_due(
+    store_conn: sqlite3.Connection, taxonomy: Taxonomy, geo_index: GeoIndex, profile: Profile
+) -> None:
+    board = make_board(company_slug="acme", priority=3, source=Source.GREENHOUSE)
+    collector = _FakeCollector(
+        source=Source.GREENHOUSE, postings_by_board={"acme": (_raw("acme", "1"),)}
+    )
+    ctx = _ctx(collector, taxonomy=taxonomy, geo=geo_index, profile=profile)
+    record_run(store_conn, _run_row(utc_now()))  # fetched a moment ago: not due
+    store_conn.commit()
+
+    skipped = run_source_cycle(store_conn, Source.GREENHOUSE, [board], ctx=ctx)
+    forced = run_source_cycle(store_conn, Source.GREENHOUSE, [board], ctx=ctx, force=True)
+
+    assert skipped.fetched == 0
+    assert forced.fetched == 1
 
 
 def _run_row(started_at: datetime) -> SourceRun:

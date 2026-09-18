@@ -103,7 +103,12 @@ def is_board_due(conn: sqlite3.Connection, board: Board, *, now: datetime) -> bo
 
 
 def run_source_cycle(
-    conn: sqlite3.Connection, source: Source, boards: list[Board], *, ctx: CycleContext
+    conn: sqlite3.Connection,
+    source: Source,
+    boards: list[Board],
+    *,
+    ctx: CycleContext,
+    force: bool = False,
 ) -> SourceRun:
     """Run one full cycle for `source` over `boards` (already filtered to that source).
 
@@ -111,6 +116,9 @@ def run_source_cycle(
     for every board actually attempted, a per-board row too — `store.health`
     reads the aggregate rows for breaker/watchdog purposes and the per-board
     rows for the boards_ok/boards_error counts.
+
+    `force` ignores the per-board cadence (`is_board_due`): a by-hand `collect --force` means
+    "look at everything now". It never overrides the circuit breaker.
     """
     now = utc_now()
     run_id = str(ULID())
@@ -130,7 +138,7 @@ def run_source_cycle(
         conn.commit()
         return run
 
-    due = [b for b in boards if b.enabled and is_board_due(conn, b, now=now)]
+    due = [b for b in boards if b.enabled and (force or is_board_due(conn, b, now=now))]
     random.shuffle(due)
     if breaker.status == BreakerStatus.HALF_OPEN and due:
         due = [random.choice(due)]
