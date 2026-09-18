@@ -138,3 +138,37 @@ dernière est celle qui prouve son isolement.
       échoué et soit documentée.
 - [ ] Le rapport « employeurs inconnus » est produit et exploitable par WP00.
 - [ ] `mypy --strict` et `lint-imports` passent.
+
+---
+
+## 7. État de l'implémentation (2026-09-18) — ce qui a été vérifié, et ce qui ne l'a pas été
+
+Les sondes ont été faites **une requête à la fois, sur l'IP de la machine**, et
+seulement là où le risque était négligeable. C'est ce qui explique l'écart entre
+la liste du §1 et ce qui existe.
+
+| Source | État | Pourquoi |
+|---|---|---|
+| **Adzuna** | ✅ implémentée, **jamais exécutée en réel** | Il faut une clé (`JT_ADZUNA_APP_ID/KEY`). Le format vient de la doc publique. Sa couverture finance reste `[À CONFIRMER]` : la juger sur le premier rapport `discover-employers` avant de garder les autres |
+| **eFinancialCareers** | ✅ implémentée, **vérifiée en réel** | La page HTML est derrière un **AWS WAF** (405 « Human Verification ») pour un client simple ; mais la page embarque la réponse de sa propre API JSON (`job-search-ui.efinancialcareers.com/v1/efc/jobs/search`), appelable directement, sans `curl_cffi`, sans `robots.txt` sur cet hôte. La fixture est une vraie réponse, anonymisée |
+| **Indeed** | ⚠️ implémentée, **jamais vérifiée** | Anti-bot agressif : une sonde ratée risque l'IP. Écrite d'après la structure connue (JSON `mosaic-provider-jobcards`), `curl_cffi`, `robots.txt` vérifié. Échoue **fort** : challenge → `SourceBlocked`, structure inconnue → `SourceSchemaChanged` |
+| **WTTJ** | ❌ non implémentée | La page ne contient **aucune offre** (Next.js, résultats chargés côté client via Algolia) : rien à parser, et pas de contrat public stable trouvé sans extraire une clé des bundles JS |
+| **LinkedIn** | ❌ non implémentée, **par choix** | Son `robots.txt` interdit `/jobs-guest/`, son seul point d'accès programmatique, et ce lot impose de respecter `robots.txt`. Un collecteur qui ne pourrait jamais tourner serait du code mort |
+
+### Ce que ce lot a ajouté hors de `collect/aggregators/`
+
+| Élément | Pourquoi |
+|---|---|
+| `companies.discovered` (migration 0004) | `postings.company_slug` est une clé étrangère, et `sync_companies` reconstruit la table à chaque démarrage : un employeur inconnu du registre a besoin d'une ligne à la fois **légale** et **jamais balayée**. Le rapport « employeurs inconnus » (§4) est simplement `WHERE discovered = 1` : `jobtracker discover-employers` |
+| `RawPosting.company_name` | Un agrégateur connaît l'employeur par son nom, pas par un slug du registre |
+| Résolveur d'employeur | Le dédoublonnage repose sur `company_slug` : « Jane Street Ltd » doit retomber sur `jane_street`, sinon la même offre apparaît deux fois. Correspondance **exacte après normalisation** (un faux rapprochement masque une offre, un rapprochement manqué montre un doublon *et* remonte l'employeur au rapport : la seconde erreur est la moins chère) |
+| `AggregatorSetup` dans `collect/base.py` | La seule couture avec `runtime` ; définie hors du dossier supprimable |
+| `runtime/aggregator_loader.py` | Atteint le paquet **par chaîne** (`importlib`) : `rm -rf collect/aggregators/` donne « aucun agrégateur ». Contrat `import-linter` **D10** : personne d'autre ne l'importe statiquement |
+| `HttpClient` (`collect/http.py`) | `PolicedHttpSession` accepte `httpx.Client` **ou** l'adaptateur `curl_cffi` : la politique (gigue, budget, 403/429) reste écrite une seule fois |
+
+### Verrous
+
+1. `JT_AGGREGATORS_ENABLED=true` (sinon le paquet n'est même pas importé) **et**
+2. `enabled: true` par source dans `sources.yaml` (toutes livrées à `false`).
+
+Une clé absente = collecteur **non enregistré**, jamais une exception.

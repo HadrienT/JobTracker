@@ -20,6 +20,7 @@ sources:
   recruitee: { interval_min: 180, enabled: false } # WP06
   personio: { interval_min: 180, enabled: false } # WP06
   workday: { interval_min: 360, enabled: false, max_requests_per_run: 400 } # WP06
+  adzuna: { interval_min: 720, enabled: false } # WP13 — official API, needs a key
   efinancialcareers: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13
   wttj: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13
   linkedin: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13

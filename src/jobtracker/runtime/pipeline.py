@@ -26,6 +26,7 @@ from jobtracker.normalize.cascade import normalize
 from jobtracker.normalize.taxonomy import Taxonomy
 from jobtracker.runtime.residual import LlmClientConfig, queue_if_ambiguous
 from jobtracker.store.archive import archive_payload
+from jobtracker.store.companies import ensure_discovered_company, get_company
 from jobtracker.store.postings import (
     previous_content_hash,
     record_alias,
@@ -76,6 +77,17 @@ def ingest(
         return IngestResult(outcome="normalize_error", posting_id=posting_id)
 
     posting = posting.model_copy(update={"posting_id": posting_id})
+
+    # `postings.company_slug` is a foreign key: an employer only an aggregator
+    # knows (blueprint/wp/WP13-aggregators.md §4) needs a row before its postings.
+    if get_company(conn, raw.company_slug) is None:
+        ensure_discovered_company(
+            conn,
+            slug=raw.company_slug,
+            name=raw.company_name or raw.company_slug,
+            source=raw.source,
+            hq_country=hq_country or "",
+        )
 
     alias_of = resolve_dedup(conn, posting)
     if alias_of is not None:

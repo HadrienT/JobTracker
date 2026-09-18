@@ -54,6 +54,7 @@ class Company(BaseModel, frozen=True):
     enabled: bool
     last_ok_at: datetime | None
     last_count: int | None
+    discovered: bool = False  # seen at an aggregator, absent from configs/companies.yaml
 
 
 class SourceRun(BaseModel, frozen=True):
@@ -95,6 +96,9 @@ class RawPosting(BaseModel, frozen=True):
     payload: bytes
     fetched_at: datetime
     content_hash: str
+    # Only an aggregator knows the employer as a display name rather than a
+    # registry slug (blueprint/03-INTERFACES.md §3.4); an ATS collector leaves it unset.
+    company_name: str | None = None
 
 
 class CollectResult(BaseModel, frozen=True):

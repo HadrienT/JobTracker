@@ -11,6 +11,7 @@ the ones that silently starve when a request budget runs out.
 
 import random
 import sqlite3
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -27,13 +28,13 @@ from jobtracker.collect.ats.workable import WorkableCollector
 from jobtracker.collect.ats.workday import WorkdayCollector
 from jobtracker.collect.base import Collector
 from jobtracker.collect.custom import CustomCollector
-from jobtracker.collect.http import PolicedHttpSession, SourcesConfig
+from jobtracker.collect.http import HttpClient, PolicedHttpSession, SourcesConfig
 from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import Source, Tier
 from jobtracker.core.errors import BoardNotFound, CollectError, SourceBlocked, SourceUnavailable
 from jobtracker.core.geo import GeoIndex
 from jobtracker.core.logging import get_logger
-from jobtracker.core.models import Board, SourceRun
+from jobtracker.core.models import Board, RawPosting, SourceRun
 from jobtracker.match.profile import Profile
 from jobtracker.normalize.taxonomy import Taxonomy
 from jobtracker.runtime.breaker import BreakerStatus, compute_state
@@ -86,6 +87,9 @@ class CycleContext:
     profile: Profile
     user_agent: str
     llm: LlmClientConfig | None = None
+    # Aggregator hooks (WP13) — inert defaults, so an ATS-only run is unchanged.
+    client_factories: Mapping[Source, Callable[[], HttpClient]] = field(default_factory=dict)
+    resolve_employer: Callable[[RawPosting], RawPosting] = lambda raw: raw
     collectors: dict[Source, Collector] = field(default_factory=lambda: dict(DEFAULT_COLLECTORS))
 
 
@@ -133,8 +137,9 @@ def run_source_cycle(
 
     collector = ctx.collectors[source]
     http_config = ctx.sources_config.for_source(source)
+    client_factory: Callable[[], HttpClient] = ctx.client_factories.get(source, httpx.Client)
     session = PolicedHttpSession(
-        client=httpx.Client(), config=http_config, user_agent=ctx.user_agent
+        client=client_factory(), config=http_config, user_agent=ctx.user_agent
     )
 
     totals = _Stats()
@@ -191,7 +196,8 @@ def run_source_cycle(
         any_attempt_succeeded = True
         requests_made += result.requests_made
         board_stats = _Stats()
-        for raw in result.postings:
+        for collected in result.postings:
+            raw = ctx.resolve_employer(collected)
             outcome = ingest(
                 conn,
                 raw,
@@ -216,7 +222,7 @@ def run_source_cycle(
             # deactivate postings absent from it — a zero-offer response
             # never deactivates anything, indistinguishable as it is from a
             # broken token.
-            seen_ids = {raw.source_job_id for raw in result.postings}
+            seen_ids = {posting.source_job_id for posting in result.postings}
             deactivate_missing(conn, source, board.company_slug, seen_ids)
 
         totals.add(board_stats)

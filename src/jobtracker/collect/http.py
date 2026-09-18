@@ -34,6 +34,26 @@ from jobtracker.core.errors import (
 )
 
 
+class HttpClient(Protocol):
+    """What `PolicedHttpSession` needs of a client — `httpx.Client` satisfies it as-is.
+
+    A source that blocks non-browser TLS gets a `curl_cffi`-backed adapter with
+    this same shape (collect/aggregators/impersonation.py), so the policy —
+    jitter, budget, 403/429 → `SourceBlocked` — is written once, not per client.
+    """
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        params: Mapping[str, str] | None = None,
+        json: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        timeout: float | None = None,
+    ) -> httpx.Response: ...
+
+
 class HttpSession(Protocol):
     def get_json(self, url: str, *, params: Mapping[str, str] | None = None) -> Any: ...
     def get_text(self, url: str, *, params: Mapping[str, str] | None = None) -> str: ...
@@ -169,7 +189,7 @@ class PolicedHttpSession:
     run, not per board (blueprint/11-SOURCES.md §6).
     """
 
-    client: httpx.Client
+    client: HttpClient
     config: SourceHttpConfig
     user_agent: str
     sleep: Callable[[float], None] = time.sleep

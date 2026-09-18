@@ -1,0 +1,34 @@
+# Aggregator queries — blueprint/wp/WP13-aggregators.md. Read only by
+# collect/aggregators/ (deletable with it), and only when JT_AGGREGATORS_ENABLED
+# is true AND the source is `enabled: true` in sources.yaml (the double lock).
+#
+# A query is *targeted*: keywords from the target profile
+# (blueprint/10-PROFILE-TARGET.md), never a broad sweep (WP13 §3.4). Each entry
+# becomes one pseudo-board — same shape as a registry company, so the scheduler,
+# breaker and watchdog need no special case.
+#
+# Not implemented, on purpose:
+#   linkedin — its robots.txt disallows /jobs-guest/, its only programmatic
+#              endpoint, and the blueprint requires robots.txt to be respected.
+#   wttj     — the listing loads its results client-side (Algolia); nothing to
+#              parse in the page, and no stable public contract found.
+
+adzuna: # official API, needs JT_ADZUNA_APP_ID / JT_ADZUNA_APP_KEY
+  max_pages: 2
+  results_per_page: 50
+  queries:
+    - { country: gb, what: "quantitative developer", where: "London" }
+    - { country: gb, what: "graduate quant" }
+    - { country: us, what: "quantitative developer" }
+    - { country: fr, what: "quantitative developer" }
+
+efinancialcareers: # JSON search API behind the site — verified live
+  max_pages: 2
+  queries:
+    - { country: GB, what: "quantitative developer" }
+    - { country: GB, what: "graduate quant" }
+    - { country: US, what: "quantitative developer" }
+
+indeed: # unverified against the live site — see collect/aggregators/indeed.py
+  queries:
+    - { domain: uk.indeed.com, what: "quantitative developer", where: "London" }

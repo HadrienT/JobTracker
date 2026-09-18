@@ -22,12 +22,15 @@ class Source(StrEnum):
     WTTJ = "wttj"
     LINKEDIN = "linkedin"
     INDEED = "indeed"
+    ADZUNA = "adzuna"
 
 
 # The dedup resolution order (blueprint/03-INTERFACES.md §3.4, blueprint/00-PRIMER.md
 # §2 P2) hinges on this exact split: an ATS record is canonical because it carries
 # the real apply URL; an aggregator is always demoted to an alias of it.
-AGGREGATOR_SOURCES = frozenset({Source.EFC, Source.WTTJ, Source.LINKEDIN, Source.INDEED})
+AGGREGATOR_SOURCES = frozenset(
+    {Source.EFC, Source.WTTJ, Source.LINKEDIN, Source.INDEED, Source.ADZUNA}
+)
 
 
 class RoleFamily(StrEnum):

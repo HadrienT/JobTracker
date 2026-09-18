@@ -399,7 +399,7 @@ export interface components {
          * Source
          * @enum {string}
          */
-        Source: "greenhouse" | "lever" | "ashby" | "smartrecruiters" | "workable" | "recruitee" | "personio" | "workday" | "custom" | "efinancialcareers" | "wttj" | "linkedin" | "indeed";
+        Source: "greenhouse" | "lever" | "ashby" | "smartrecruiters" | "workable" | "recruitee" | "personio" | "workday" | "custom" | "efinancialcareers" | "wttj" | "linkedin" | "indeed" | "adzuna";
         /** SourceHealth */
         SourceHealth: {
             /** Alert */

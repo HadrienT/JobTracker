@@ -1,5 +1,6 @@
 """Shared pytest fixtures."""
 
+import importlib.util
 import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
@@ -74,3 +75,22 @@ def api_conn(api_client: TestClient) -> sqlite3.Connection:
     """The same connection the app's lifespan opened — for seeding test data."""
     conn: sqlite3.Connection = api_client.app.state.conn
     return conn
+
+
+def _aggregators_present() -> bool:
+    try:
+        return importlib.util.find_spec("jobtracker.collect.aggregators.setup") is not None
+    except ModuleNotFoundError:
+        return False
+
+
+def pytest_ignore_collect(collection_path: Path) -> bool | None:
+    """Tests of `collect/aggregators/` go with it (blueprint/wp/WP13-aggregators.md §6).
+
+    With the package deleted they are not collected, so the rest of the suite stays
+    green. A second `conftest.py` in `tests/aggregators/` would shadow this one
+    (same module name, no `__init__`), hence the hook lives here.
+    """
+    if collection_path.name == "aggregators" and not _aggregators_present():
+        return True
+    return None

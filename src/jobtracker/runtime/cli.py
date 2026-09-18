@@ -20,11 +20,12 @@ from jobtracker.core.logging import bound_run_id, configure_logging, get_logger
 from jobtracker.core.models import Board
 from jobtracker.match.profile import load_profile
 from jobtracker.normalize.taxonomy import load_taxonomy
+from jobtracker.runtime.aggregator_loader import load_aggregators
 from jobtracker.runtime.pipeline import ingest
 from jobtracker.runtime.residual import DRAIN_INTERVAL_MIN, LlmClientConfig, drain_queue
 from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.watchdog import full_health_snapshot
-from jobtracker.store.companies import sync_companies
+from jobtracker.store.companies import list_discovered, sync_companies
 from jobtracker.store.schema import MIGRATIONS_DIR
 
 _logger = get_logger(__name__)
@@ -59,6 +60,12 @@ def _build_context(
         user_agent=settings.user_agent,
         llm=LlmClientConfig.from_settings(settings),
     )
+    aggregators = load_aggregators(settings, boards, configs_dir=CONFIGS_DIR)
+    if aggregators is not None:
+        ctx.collectors.update(aggregators.collectors)
+        ctx.client_factories = aggregators.client_factories
+        ctx.resolve_employer = aggregators.resolve_employer
+        boards = [*boards, *aggregators.boards]
     return ctx, boards
 
 
@@ -147,6 +154,26 @@ def cmd_llm_drain(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_discover_employers(_args: argparse.Namespace) -> int:
+    """Employers seen at an aggregator and absent from `companies.yaml` — WP13 §4.
+
+    The durable contribution of a fragile source: each line is a candidate for
+    `tools/probe_ats.py` and the registry (WP00), sorted by how many postings the
+    aggregators showed for it.
+    """
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    discovered = list_discovered(conn)
+    conn.close()
+    if not discovered:
+        print("no employers discovered through aggregators yet", file=sys.stderr)
+        return 0
+    print(f"{'postings':>8}  {'slug':<32} name")
+    for slug, name, postings in discovered:
+        print(f"{postings:>8}  {slug:<32} {name}")
+    return 0
+
+
 def cmd_status(_args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
@@ -217,6 +244,10 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("llm-drain", help="one pass over the deferred LLM queue").set_defaults(
         func=cmd_llm_drain
     )
+
+    subparsers.add_parser(
+        "discover-employers", help="employers seen only at aggregators, for the registry"
+    ).set_defaults(func=cmd_discover_employers)
 
     status = subparsers.add_parser("status", help="health snapshot; exit 1 if degraded")
     status.set_defaults(func=cmd_status)

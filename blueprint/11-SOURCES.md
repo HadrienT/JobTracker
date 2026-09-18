@@ -150,9 +150,9 @@ Cumberland · Galaxy Digital
 | Source | Statut | Ce qu'il faut savoir |
 |---|---|---|
 | **Adzuna** | ✅ **API officielle, gratuite avec clé** | La seule voie d'agrégation propre. `[À CONFIRMER]` sur la couverture finance. **À tenter en premier** |
-| **eFinancialCareers** | ⚠️ HTML | Le plus pertinent pour le secteur, mais scraping HTML, structure instable |
-| **Welcome to the Jungle** | ⚠️ HTML/JSON embarqué | Bonne couverture France, utile pour les sociétés françaises sans ATS moderne |
-| **LinkedIn** | ❌ CGU + anti-bot | Volume maximal, mais scraping interdit par les CGU, anti-bot agressif, nécessite un cookie de session personnel. Doublonne massivement les ATS |
+| **eFinancialCareers** | ✅ API JSON (vérifiée 2026-09-18) | Page HTML derrière un AWS WAF, mais la recherche passe par une API JSON appelable directement. Voir WP13 §7 |
+| **Welcome to the Jungle** | ❌ non implémenté | Résultats chargés côté client (Algolia), rien à parser dans la page — voir WP13 §7. Avant : Bonne couverture France, utile pour les sociétés françaises sans ATS moderne |
+| **LinkedIn** | ❌ CGU + anti-bot + `robots.txt` | `robots.txt` interdit `/jobs-guest/` : non implémenté par choix, WP13 §7. Avant : Volume maximal, mais scraping interdit par les CGU, anti-bot agressif, nécessite un cookie de session personnel. Doublonne massivement les ATS |
 | **Indeed** | ❌ CGU + anti-bot | Même chose. API partenaire fermée aux nouveaux entrants |
 
 **La règle qui encadre tout ce lot** : ces sources sont derrière

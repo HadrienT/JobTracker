@@ -26,7 +26,7 @@ def sync_companies(conn: sqlite3.Connection, boards: Iterable[Board]) -> None:
             ON CONFLICT (company_slug) DO UPDATE SET
                 company_name = excluded.company_name, source = excluded.source,
                 token = excluded.token, sector = excluded.sector, hq_country = excluded.hq_country,
-                priority = excluded.priority, enabled = excluded.enabled
+                priority = excluded.priority, enabled = excluded.enabled, discovered = 0
             """,
             (
                 board.company_slug,
@@ -43,10 +43,41 @@ def sync_companies(conn: sqlite3.Connection, boards: Iterable[Board]) -> None:
     if slugs:
         placeholders = ",".join("?" for _ in slugs)
         conn.execute(
-            f"DELETE FROM companies WHERE company_slug NOT IN ({placeholders})", tuple(slugs)
+            f"DELETE FROM companies WHERE discovered = 0 AND company_slug NOT IN ({placeholders})",
+            tuple(slugs),
         )
     else:
-        conn.execute("DELETE FROM companies")
+        conn.execute("DELETE FROM companies WHERE discovered = 0")
+
+
+def ensure_discovered_company(
+    conn: sqlite3.Connection, *, slug: str, name: str, source: Source, hq_country: str
+) -> None:
+    """A `companies` row for an aggregator-only employer — never overwrites a registry row."""
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO companies (
+            company_slug, company_name, source, token, sector, hq_country, priority, enabled,
+            discovered
+        ) VALUES (?, ?, ?, '', 'unknown', ?, 3, 0, 1)
+        """,
+        (slug, name, source.value, hq_country),
+    )
+
+
+def list_discovered(conn: sqlite3.Connection) -> list[tuple[str, str, int]]:
+    """(slug, name, active postings) for every employer known only through an aggregator."""
+    rows = conn.execute(
+        """
+        SELECT c.company_slug, c.company_name, COUNT(p.posting_id) AS n
+        FROM companies c LEFT JOIN postings p
+            ON p.company_slug = c.company_slug AND p.is_active = 1
+        WHERE c.discovered = 1
+        GROUP BY c.company_slug, c.company_name
+        ORDER BY n DESC, c.company_name
+        """
+    ).fetchall()
+    return [(r["company_slug"], r["company_name"], r["n"]) for r in rows]
 
 
 def record_run_result(
@@ -65,9 +96,13 @@ def get_company(conn: sqlite3.Connection, company_slug: str) -> Company | None:
 
 
 def list_companies(
-    conn: sqlite3.Connection, *, sector: str | None = None, country: str | None = None
+    conn: sqlite3.Connection,
+    *,
+    sector: str | None = None,
+    country: str | None = None,
+    include_discovered: bool = False,
 ) -> list[Company]:
-    clauses = []
+    clauses = [] if include_discovered else ["discovered = 0"]
     params: list[object] = []
     if sector is not None:
         clauses.append("sector = ?")
@@ -92,4 +127,5 @@ def _row_to_company(row: sqlite3.Row) -> Company:
         enabled=bool(row["enabled"]),
         last_ok_at=row["last_ok_at"],
         last_count=row["last_count"],
+        discovered=bool(row["discovered"]),
     )

@@ -53,6 +53,10 @@ loop:
 llm-drain:
     uv run jobtracker llm-drain
 
+# employeurs vus chez les agrégateurs et absents de companies.yaml (alimente WP00)
+discover-employers:
+    uv run jobtracker discover-employers
+
 # santé : sources muettes, fraîcheur du flux (code retour 1 si dégradé)
 status:
     uv run jobtracker status
