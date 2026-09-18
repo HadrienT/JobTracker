@@ -5,7 +5,7 @@ import pytest
 from factories_store import make_board, make_posting, make_verdict
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import PostingFilter, SortKey, list_postings, upsert_posting
-from jobtracker.store.search import index_description, search_posting_ids
+from jobtracker.store.search import get_description, index_description, search_posting_ids
 
 pytestmark = pytest.mark.db
 
@@ -55,3 +55,19 @@ def test_query_filter_on_posting_filter_uses_full_text_search(
     )
 
     assert [row.posting_id for row in page.items] == ["p-match"]
+
+
+def test_get_description_returns_the_indexed_text(store_conn: sqlite3.Connection) -> None:
+    posting = make_posting()
+    upsert_posting(store_conn, posting, make_verdict())
+    store_conn.commit()
+    index_description(store_conn, posting.posting_id, "Full role description.")
+    store_conn.commit()
+
+    assert get_description(store_conn, posting.posting_id) == "Full role description."
+
+
+def test_get_description_returns_none_for_an_unknown_posting(
+    store_conn: sqlite3.Connection,
+) -> None:
+    assert get_description(store_conn, "does-not-exist") is None

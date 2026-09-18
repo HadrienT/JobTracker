@@ -4,16 +4,22 @@ from datetime import UTC, datetime
 import pytest
 
 from factories_store import make_board, make_posting, make_verdict
-from jobtracker.core.enums import RemoteMode, Source, VisaStatus
+from jobtracker.core.enums import RemoteMode, Source, Tier, VisaStatus
 from jobtracker.core.errors import StorageError
-from jobtracker.core.models import Location
+from jobtracker.core.models import Location, RawPosting, Reason
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import (
     PostingFilter,
     SortKey,
+    count_active_canonical,
+    get_posting_row,
+    get_verdict,
+    list_aliases,
     list_postings,
     mark_favorite,
     mark_hidden,
+    newest_first_seen_at,
+    record_alias,
     upsert_posting,
 )
 
@@ -433,3 +439,95 @@ def test_hidden_postings_are_excluded_by_default(store_conn: sqlite3.Connection)
         store_conn, PostingFilter(include_hidden=True), SortKey.SCORE, None, limit=10
     )
     assert [r.posting_id for r in with_hidden.items] == [posting_id]
+
+
+# --- single-posting readers (WP07) -----------------------------------------
+
+
+def test_get_posting_row_returns_the_matching_row(store_conn: sqlite3.Connection) -> None:
+    posting_id = _upsert(store_conn)
+    row = get_posting_row(store_conn, posting_id)
+    assert row is not None
+    assert row.posting_id == posting_id
+
+
+def test_get_posting_row_returns_none_for_an_unknown_id(store_conn: sqlite3.Connection) -> None:
+    assert get_posting_row(store_conn, "does-not-exist") is None
+
+
+def test_get_verdict_round_trips_reasons(store_conn: sqlite3.Connection) -> None:
+    posting = make_posting()
+    verdict = make_verdict(
+        posting_id=posting.posting_id,
+        tier=Tier.POSSIBLE,
+        reasons=(Reason(code="title_strong", delta=35, evidence="Quant Developer"),),
+    )
+    upsert_posting(store_conn, posting, verdict)
+    store_conn.commit()
+
+    fetched = get_verdict(store_conn, posting.posting_id)
+    assert fetched is not None
+    assert fetched.tier == Tier.POSSIBLE
+    assert len(fetched.reasons) == 1
+    assert fetched.reasons[0].code == "title_strong"
+    assert fetched.reasons[0].delta == 35
+
+
+def test_get_verdict_returns_none_for_an_unknown_id(store_conn: sqlite3.Connection) -> None:
+    assert get_verdict(store_conn, "does-not-exist") is None
+
+
+def test_list_aliases_returns_republications_newest_first(store_conn: sqlite3.Connection) -> None:
+    posting_id = _upsert(store_conn)
+    record_alias(
+        store_conn,
+        posting_id,
+        RawPosting(
+            source=Source.LINKEDIN,
+            company_slug="acme",
+            source_job_id="li-1",
+            url="https://linkedin.example/li-1",
+            title_raw="Quant Developer",
+            description_raw="",
+            location_raw=None,
+            department_raw=None,
+            posted_at_raw=None,
+            payload=b"",
+            fetched_at=datetime(2026, 2, 1, tzinfo=UTC),
+            content_hash="hash-alias",
+        ),
+    )
+    store_conn.commit()
+
+    aliases = list_aliases(store_conn, posting_id)
+    assert len(aliases) == 1
+    assert aliases[0].source == Source.LINKEDIN
+    assert aliases[0].source_job_id == "li-1"
+
+
+def test_count_active_canonical_counts_only_active_canonical_postings(
+    store_conn: sqlite3.Connection,
+) -> None:
+    assert count_active_canonical(store_conn) == 0
+    _upsert(store_conn)
+    assert count_active_canonical(store_conn) == 1
+
+
+def test_newest_first_seen_at_is_none_with_no_postings(store_conn: sqlite3.Connection) -> None:
+    assert newest_first_seen_at(store_conn) is None
+
+
+def test_newest_first_seen_at_reflects_the_most_recent_posting(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn, first_seen_at=datetime(2026, 1, 1, tzinfo=UTC))
+    _upsert(
+        store_conn,
+        posting_id="p-2",
+        source_job_id="j-2",
+        fingerprint="fp-2",
+        first_seen_at=datetime(2026, 3, 1, tzinfo=UTC),
+    )
+    newest = newest_first_seen_at(store_conn)
+    assert newest is not None
+    assert newest.startswith("2026-03-01")

@@ -1,0 +1,1811 @@
+{
+  "components": {
+    "schemas": {
+      "AliasOut": {
+        "properties": {
+          "seen_at": {
+            "title": "Seen At",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "source_job_id": {
+            "title": "Source Job Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "source_job_id",
+          "url",
+          "seen_at"
+        ],
+        "title": "AliasOut",
+        "type": "object"
+      },
+      "CompanyOut": {
+        "properties": {
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "company_slug": {
+            "title": "Company Slug",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "hq_country": {
+            "title": "Hq Country",
+            "type": "string"
+          },
+          "last_ok_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Ok At"
+          },
+          "postings_count": {
+            "title": "Postings Count",
+            "type": "integer"
+          },
+          "sector": {
+            "title": "Sector",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          }
+        },
+        "required": [
+          "company_slug",
+          "company_name",
+          "sector",
+          "hq_country",
+          "source",
+          "enabled",
+          "postings_count",
+          "last_ok_at"
+        ],
+        "title": "CompanyOut",
+        "type": "object"
+      },
+      "CompensationOut": {
+        "properties": {
+          "amount_max": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Max"
+          },
+          "amount_min": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Min"
+          },
+          "bonus_mentioned": {
+            "title": "Bonus Mentioned",
+            "type": "boolean"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "equity_mentioned": {
+            "title": "Equity Mentioned",
+            "type": "boolean"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SalaryPeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw"
+          }
+        },
+        "required": [
+          "amount_min",
+          "amount_max",
+          "currency",
+          "period",
+          "bonus_mentioned",
+          "equity_mentioned",
+          "raw"
+        ],
+        "title": "CompensationOut",
+        "type": "object"
+      },
+      "FacetCounts": {
+        "properties": {
+          "cities": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Cities",
+            "type": "object"
+          },
+          "companies": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Companies",
+            "type": "object"
+          },
+          "countries": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Countries",
+            "type": "object"
+          },
+          "sectors": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Sectors",
+            "type": "object"
+          },
+          "seniorities": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Seniorities",
+            "type": "object"
+          },
+          "sources": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Sources",
+            "type": "object"
+          },
+          "tech": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Tech",
+            "type": "object"
+          }
+        },
+        "required": [
+          "countries",
+          "cities",
+          "companies",
+          "sectors",
+          "sources",
+          "seniorities",
+          "tech"
+        ],
+        "title": "FacetCounts",
+        "type": "object"
+      },
+      "FeedHealth": {
+        "properties": {
+          "active_postings": {
+            "title": "Active Postings",
+            "type": "integer"
+          },
+          "newest_posting_age_h": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newest Posting Age H"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active_postings",
+          "newest_posting_age_h",
+          "stale"
+        ],
+        "title": "FeedHealth",
+        "type": "object"
+      },
+      "FlagRequest": {
+        "properties": {
+          "value": {
+            "title": "Value",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "FlagRequest",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthAlert": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "since": {
+            "title": "Since",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "kind",
+          "source",
+          "since"
+        ],
+        "title": "HealthAlert",
+        "type": "object"
+      },
+      "HealthSnapshot": {
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/HealthAlert"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "feed": {
+            "$ref": "#/components/schemas/FeedHealth"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceHealth"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "feed",
+          "sources",
+          "alerts"
+        ],
+        "title": "HealthSnapshot",
+        "type": "object"
+      },
+      "LocationOut": {
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "remote_mode": {
+            "$ref": "#/components/schemas/RemoteMode"
+          }
+        },
+        "required": [
+          "city",
+          "country",
+          "region",
+          "remote_mode",
+          "raw"
+        ],
+        "title": "LocationOut",
+        "type": "object"
+      },
+      "PostingDetailOut": {
+        "properties": {
+          "alias_count": {
+            "title": "Alias Count",
+            "type": "integer"
+          },
+          "aliases": {
+            "items": {
+              "$ref": "#/components/schemas/AliasOut"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "closes_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closes At"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "company_slug": {
+            "title": "Company Slug",
+            "type": "string"
+          },
+          "compensation": {
+            "$ref": "#/components/schemas/CompensationOut"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "favorited": {
+            "title": "Favorited",
+            "type": "boolean"
+          },
+          "first_seen_at": {
+            "title": "First Seen At",
+            "type": "string"
+          },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "last_seen_at": {
+            "title": "Last Seen At",
+            "type": "string"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/LocationOut"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "min_years": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Years"
+          },
+          "phd_required": {
+            "title": "Phd Required",
+            "type": "boolean"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          },
+          "posting_id": {
+            "title": "Posting Id",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/Reason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason"
+          },
+          "role_family": {
+            "$ref": "#/components/schemas/RoleFamily"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "sector": {
+            "title": "Sector",
+            "type": "string"
+          },
+          "seniority": {
+            "$ref": "#/components/schemas/Seniority"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "tech": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tech",
+            "type": "array",
+            "uniqueItems": true
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "title_raw": {
+            "title": "Title Raw",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "visa_sponsorship": {
+            "$ref": "#/components/schemas/VisaStatus"
+          }
+        },
+        "required": [
+          "posting_id",
+          "company_slug",
+          "company_name",
+          "sector",
+          "source",
+          "url",
+          "title",
+          "title_raw",
+          "role_family",
+          "seniority",
+          "min_years",
+          "phd_required",
+          "locations",
+          "compensation",
+          "visa_sponsorship",
+          "tech",
+          "posted_at",
+          "first_seen_at",
+          "last_seen_at",
+          "closes_at",
+          "score",
+          "tier",
+          "alias_count",
+          "favorited",
+          "hidden",
+          "description",
+          "reasons",
+          "rejection_reason",
+          "aliases"
+        ],
+        "title": "PostingDetailOut",
+        "type": "object"
+      },
+      "PostingOut": {
+        "properties": {
+          "alias_count": {
+            "title": "Alias Count",
+            "type": "integer"
+          },
+          "closes_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closes At"
+          },
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "company_slug": {
+            "title": "Company Slug",
+            "type": "string"
+          },
+          "compensation": {
+            "$ref": "#/components/schemas/CompensationOut"
+          },
+          "favorited": {
+            "title": "Favorited",
+            "type": "boolean"
+          },
+          "first_seen_at": {
+            "title": "First Seen At",
+            "type": "string"
+          },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "last_seen_at": {
+            "title": "Last Seen At",
+            "type": "string"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/LocationOut"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "min_years": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Years"
+          },
+          "phd_required": {
+            "title": "Phd Required",
+            "type": "boolean"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          },
+          "posting_id": {
+            "title": "Posting Id",
+            "type": "string"
+          },
+          "role_family": {
+            "$ref": "#/components/schemas/RoleFamily"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "sector": {
+            "title": "Sector",
+            "type": "string"
+          },
+          "seniority": {
+            "$ref": "#/components/schemas/Seniority"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "tech": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tech",
+            "type": "array",
+            "uniqueItems": true
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "title_raw": {
+            "title": "Title Raw",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "visa_sponsorship": {
+            "$ref": "#/components/schemas/VisaStatus"
+          }
+        },
+        "required": [
+          "posting_id",
+          "company_slug",
+          "company_name",
+          "sector",
+          "source",
+          "url",
+          "title",
+          "title_raw",
+          "role_family",
+          "seniority",
+          "min_years",
+          "phd_required",
+          "locations",
+          "compensation",
+          "visa_sponsorship",
+          "tech",
+          "posted_at",
+          "first_seen_at",
+          "last_seen_at",
+          "closes_at",
+          "score",
+          "tier",
+          "alias_count",
+          "favorited",
+          "hidden"
+        ],
+        "title": "PostingOut",
+        "type": "object"
+      },
+      "PostingsPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PostingOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "PostingsPage",
+        "type": "object"
+      },
+      "Reason": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "delta": {
+            "title": "Delta",
+            "type": "integer"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          }
+        },
+        "required": [
+          "code",
+          "delta",
+          "evidence"
+        ],
+        "title": "Reason",
+        "type": "object"
+      },
+      "RemoteMode": {
+        "enum": [
+          "onsite",
+          "hybrid",
+          "remote",
+          "unknown"
+        ],
+        "title": "RemoteMode",
+        "type": "string"
+      },
+      "RoleFamily": {
+        "enum": [
+          "quant_dev",
+          "quant_research",
+          "quant_trading",
+          "swe_platform",
+          "data_eng",
+          "risk",
+          "other"
+        ],
+        "title": "RoleFamily",
+        "type": "string"
+      },
+      "SalaryPeriod": {
+        "enum": [
+          "year",
+          "month",
+          "day",
+          "hour"
+        ],
+        "title": "SalaryPeriod",
+        "type": "string"
+      },
+      "Seniority": {
+        "enum": [
+          "intern",
+          "graduate",
+          "junior",
+          "mid",
+          "senior",
+          "lead",
+          "unknown"
+        ],
+        "title": "Seniority",
+        "type": "string"
+      },
+      "SortKey": {
+        "enum": [
+          "score",
+          "posted",
+          "seen",
+          "company",
+          "closes"
+        ],
+        "title": "SortKey",
+        "type": "string"
+      },
+      "Source": {
+        "enum": [
+          "greenhouse",
+          "lever",
+          "ashby",
+          "smartrecruiters",
+          "workable",
+          "recruitee",
+          "personio",
+          "workday",
+          "custom",
+          "efinancialcareers",
+          "wttj",
+          "linkedin",
+          "indeed"
+        ],
+        "title": "Source",
+        "type": "string"
+      },
+      "SourceHealth": {
+        "properties": {
+          "alert": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert"
+          },
+          "boards_error": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boards Error"
+          },
+          "boards_ok": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boards Ok"
+          },
+          "last_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Count"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "status"
+        ],
+        "title": "SourceHealth",
+        "type": "object"
+      },
+      "Tier": {
+        "enum": [
+          "strong",
+          "possible",
+          "stretch",
+          "rejected"
+        ],
+        "title": "Tier",
+        "type": "string"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VisaStatus": {
+        "enum": [
+          "sponsors",
+          "no",
+          "unknown"
+        ],
+        "title": "VisaStatus",
+        "type": "string"
+      }
+    }
+  },
+  "info": {
+    "title": "JobTracker API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/companies": {
+      "get": {
+        "operationId": "get_companies_companies_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sector",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sector"
+            }
+          },
+          {
+            "in": "query",
+            "name": "country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Country"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyOut"
+                  },
+                  "title": "Response Get Companies Companies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Companies",
+        "tags": [
+          "companies"
+        ]
+      }
+    },
+    "/facets": {
+      "get": {
+        "operationId": "get_facets_facets_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "countries",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Countries",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cities",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Cities",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "companies",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Companies",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sectors",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Sectors",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sources",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/Source"
+              },
+              "title": "Sources",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role_families",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/RoleFamily"
+              },
+              "title": "Role Families",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seniorities",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/Seniority"
+              },
+              "title": "Seniorities",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "remote_modes",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/RemoteMode"
+              },
+              "title": "Remote Modes",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tech_all",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Tech All",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tech_any",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Tech Any",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "visa",
+            "required": false,
+            "schema": {
+              "default": [
+                "sponsors",
+                "unknown"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/VisaStatus"
+              },
+              "title": "Visa",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100,
+              "minimum": 0,
+              "title": "Min Score",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tiers",
+            "required": false,
+            "schema": {
+              "default": [
+                "strong",
+                "possible",
+                "stretch"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/Tier"
+              },
+              "title": "Tiers",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "posted_within_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Posted Within Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "in": "query",
+            "name": "favorites_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Favorites Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_hidden",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Hidden",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacetCounts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Facets",
+        "tags": [
+          "facets"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "get_health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Health",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/postings": {
+      "get": {
+        "operationId": "get_postings_postings_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortKey",
+              "default": "score"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "countries",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Countries",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cities",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Cities",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "companies",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Companies",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sectors",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Sectors",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sources",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/Source"
+              },
+              "title": "Sources",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role_families",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/RoleFamily"
+              },
+              "title": "Role Families",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seniorities",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/Seniority"
+              },
+              "title": "Seniorities",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "remote_modes",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/RemoteMode"
+              },
+              "title": "Remote Modes",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tech_all",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Tech All",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tech_any",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Tech Any",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "visa",
+            "required": false,
+            "schema": {
+              "default": [
+                "sponsors",
+                "unknown"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/VisaStatus"
+              },
+              "title": "Visa",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100,
+              "minimum": 0,
+              "title": "Min Score",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tiers",
+            "required": false,
+            "schema": {
+              "default": [
+                "strong",
+                "possible",
+                "stretch"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/Tier"
+              },
+              "title": "Tiers",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "posted_within_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Posted Within Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "in": "query",
+            "name": "favorites_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Favorites Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_hidden",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Hidden",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingsPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Postings",
+        "tags": [
+          "postings"
+        ]
+      }
+    },
+    "/postings/{posting_id}": {
+      "get": {
+        "operationId": "get_posting_detail_postings__posting_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "posting_id",
+            "required": true,
+            "schema": {
+              "title": "Posting Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Posting Detail",
+        "tags": [
+          "postings"
+        ]
+      }
+    },
+    "/postings/{posting_id}/favorite": {
+      "post": {
+        "operationId": "set_favorite_postings__posting_id__favorite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "posting_id",
+            "required": true,
+            "schema": {
+              "title": "Posting Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Favorite",
+        "tags": [
+          "postings"
+        ]
+      }
+    },
+    "/postings/{posting_id}/hide": {
+      "post": {
+        "operationId": "set_hidden_postings__posting_id__hide_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "posting_id",
+            "required": true,
+            "schema": {
+              "title": "Posting Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Hidden",
+        "tags": [
+          "postings"
+        ]
+      }
+    }
+  }
+}

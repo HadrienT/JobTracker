@@ -11,7 +11,7 @@
     "test": "vitest",
     "typecheck": "tsc -b --noEmit",
     "msw:init": "msw init public/ --save",
-    "api:types:local": "echo 'no-op until WP07 delivers openapi.json (see blueprint/wp/WP09-web-foundations.md)'"
+    "api:types:local": "openapi-typescript openapi.json -o src/api/schema.gen.ts"
   },
   "dependencies": {
     "@radix-ui/react-tooltip": "^1.2.16",
@@ -40,6 +40,7 @@
     "jest-axe": "^11.0.0",
     "jsdom": "^27.4.0",
     "msw": "^2.15.0",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.70.0",
@@ -51,5 +52,10 @@
     "workerDirectory": [
       "public"
     ]
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
   }
 }

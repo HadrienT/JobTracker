@@ -18,6 +18,14 @@ def index_description(conn: sqlite3.Connection, posting_id: str, description: st
     )
 
 
+def get_description(conn: sqlite3.Connection, posting_id: str) -> str | None:
+    """The full description text for one posting — WP07's detail route."""
+    row = conn.execute(
+        "SELECT description FROM posting_search_text WHERE posting_id = ?", (posting_id,)
+    ).fetchone()
+    return row["description"] if row is not None else None
+
+
 def search_posting_ids(conn: sqlite3.Connection, query: str) -> set[str]:
     """Posting ids whose indexed text matches `query` (already diacritics-folded)."""
     rows = conn.execute(

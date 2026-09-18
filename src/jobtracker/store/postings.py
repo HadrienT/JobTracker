@@ -25,7 +25,14 @@ from jobtracker.core.enums import (
     VisaStatus,
 )
 from jobtracker.core.errors import StorageError
-from jobtracker.core.models import Compensation, Location, MatchVerdict, Posting, RawPosting
+from jobtracker.core.models import (
+    Compensation,
+    Location,
+    MatchVerdict,
+    Posting,
+    RawPosting,
+    Reason,
+)
 
 
 class PostingFilter(BaseModel, frozen=True):
@@ -64,9 +71,11 @@ class PostingRow(BaseModel, frozen=True):
     posting_id: str
     company_slug: str
     company_name: str
+    sector: str
     source: Source
     url: str
     title: str
+    title_raw: str
     role_family: RoleFamily
     seniority: Seniority
     min_years: int | None
@@ -82,6 +91,7 @@ class PostingRow(BaseModel, frozen=True):
     closes_at_raw: str | None
     score: int
     tier: Tier
+    alias_count: int
     is_favorite: bool
     is_hidden: bool
 
@@ -89,6 +99,15 @@ class PostingRow(BaseModel, frozen=True):
 class Page(BaseModel, frozen=True):
     items: tuple[PostingRow, ...]
     next_cursor: str | None
+
+
+class PostingAliasRow(BaseModel, frozen=True):
+    """One `posting_aliases` row — a republication of a canonical posting."""
+
+    source: Source
+    source_job_id: str
+    url: str
+    seen_at: str
 
 
 # (SQL column expression, direction). Every entry gets `posting_id` appended
@@ -249,7 +268,7 @@ def list_postings(
         params.extend(predicate_params)
 
     sql = f"""
-        SELECT p.*, c.company_name AS company_name,
+        SELECT p.*, c.company_name AS company_name, c.sector AS sector,
                COALESCE(uf.is_favorite, 0) AS is_favorite,
                COALESCE(uf.is_hidden, 0) AS is_hidden
         FROM postings p
@@ -290,6 +309,9 @@ def _row_to_posting_row(conn: sqlite3.Connection, row: sqlite3.Row) -> PostingRo
             "SELECT tech FROM posting_tech WHERE posting_id = ?", (row["posting_id"],)
         ).fetchall()
     )
+    alias_count = conn.execute(
+        "SELECT COUNT(*) AS n FROM posting_aliases WHERE canonical_id = ?", (row["posting_id"],)
+    ).fetchone()["n"]
     compensation = Compensation(
         amount_min=Decimal(row["salary_min"]) if row["salary_min"] is not None else None,
         amount_max=Decimal(row["salary_max"]) if row["salary_max"] is not None else None,
@@ -303,9 +325,11 @@ def _row_to_posting_row(conn: sqlite3.Connection, row: sqlite3.Row) -> PostingRo
         posting_id=row["posting_id"],
         company_slug=row["company_slug"],
         company_name=row["company_name"],
+        sector=row["sector"],
         source=Source(row["source"]),
         url=row["url"],
         title=row["title"],
+        title_raw=row["title_raw"],
         role_family=RoleFamily(row["role_family"]),
         seniority=Seniority(row["seniority"]),
         min_years=row["min_years"],
@@ -321,6 +345,7 @@ def _row_to_posting_row(conn: sqlite3.Connection, row: sqlite3.Row) -> PostingRo
         closes_at_raw=row["closes_at"],
         score=row["score"],
         tier=Tier(row["tier"]),
+        alias_count=alias_count,
         is_favorite=bool(row["is_favorite"]),
         is_hidden=bool(row["is_hidden"]),
     )
@@ -616,14 +641,94 @@ def mark_hidden(conn: sqlite3.Connection, posting_id: str, value: bool) -> None:
     )
 
 
+def get_posting_row(conn: sqlite3.Connection, posting_id: str) -> PostingRow | None:
+    """One posting for `GET /postings/{id}` — WP07 (blueprint/03-INTERFACES.md §3.6)."""
+    row = conn.execute(
+        """
+        SELECT p.*, c.company_name AS company_name, c.sector AS sector,
+               COALESCE(uf.is_favorite, 0) AS is_favorite,
+               COALESCE(uf.is_hidden, 0) AS is_hidden
+        FROM postings p
+        JOIN companies c ON c.company_slug = p.company_slug
+        LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
+        WHERE p.posting_id = ?
+        """,
+        (posting_id,),
+    ).fetchone()
+    return _row_to_posting_row(conn, row) if row is not None else None
+
+
+def get_verdict(conn: sqlite3.Connection, posting_id: str) -> MatchVerdict | None:
+    row = conn.execute("SELECT * FROM verdicts WHERE posting_id = ?", (posting_id,)).fetchone()
+    if row is None:
+        return None
+    reasons = tuple(Reason(**r) for r in json.loads(row["reasons_json"]))
+    return MatchVerdict(
+        posting_id=posting_id,
+        score=row["score"],
+        tier=Tier(row["tier"]),
+        reasons=reasons,
+        rejection_reason=row["rejection_reason"],
+        profile_version=row["profile_version"],
+        scored_at=row["scored_at"],
+    )
+
+
+def list_aliases(conn: sqlite3.Connection, canonical_id: str) -> tuple[PostingAliasRow, ...]:
+    rows = conn.execute(
+        "SELECT source, source_job_id, url, seen_at FROM posting_aliases "
+        "WHERE canonical_id = ? ORDER BY seen_at DESC",
+        (canonical_id,),
+    ).fetchall()
+    return tuple(
+        PostingAliasRow(
+            source=Source(row["source"]),
+            source_job_id=row["source_job_id"],
+            url=row["url"],
+            seen_at=row["seen_at"],
+        )
+        for row in rows
+    )
+
+
+def count_active_canonical(conn: sqlite3.Connection) -> int:
+    row = conn.execute(
+        "SELECT COUNT(*) AS n FROM postings WHERE is_canonical = 1 AND is_active = 1"
+    ).fetchone()
+    return int(row["n"])
+
+
+def count_active_by_company(conn: sqlite3.Connection) -> dict[str, int]:
+    """Active canonical posting count per company — `GET /companies` (WP07)."""
+    rows = conn.execute(
+        "SELECT company_slug, COUNT(*) AS n FROM postings "
+        "WHERE is_canonical = 1 AND is_active = 1 GROUP BY company_slug"
+    ).fetchall()
+    return {row["company_slug"]: row["n"] for row in rows}
+
+
+def newest_first_seen_at(conn: sqlite3.Connection) -> str | None:
+    row = conn.execute(
+        "SELECT MAX(first_seen_at) AS newest FROM postings WHERE is_canonical = 1 AND is_active = 1"
+    ).fetchone()
+    return row["newest"] if row is not None else None
+
+
 __all__: Sequence[str] = (
     "Page",
+    "PostingAliasRow",
     "PostingFilter",
     "PostingRow",
     "SortKey",
+    "count_active_by_company",
+    "count_active_canonical",
+    "get_posting_row",
+    "get_verdict",
+    "list_aliases",
     "list_postings",
     "mark_favorite",
     "mark_hidden",
+    "newest_first_seen_at",
     "record_alias",
     "upsert_posting",
 )
