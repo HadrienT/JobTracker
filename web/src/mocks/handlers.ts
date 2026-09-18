@@ -1,17 +1,10 @@
 import { HttpResponse, http } from 'msw'
-import type {
-  CompanyOut,
-  FacetBucket,
-  FacetCounts,
-  Page,
-  PostingOut,
-  Seniority,
-  Tier,
-  VisaStatus,
-} from './contract'
+import type { CompanyOut, FacetCounts, Page, PostingOut } from './contract'
 import { COMPANIES_OUT, HEALTH, POSTINGS, toListItem } from './data'
 
-const API_BASE = '*/api'
+// Wildcard origin: the real API has no path prefix (blueprint/03-INTERFACES.md
+// §3.6), and `apiBase` in `window.__JT_CONFIG__` can point anywhere.
+const API_BASE = '*'
 
 function encodeCursor(offset: number): string {
   return btoa(String(offset))
@@ -40,50 +33,86 @@ const SORTERS: Record<string, (a: PostingOut, b: PostingOut) => number> = {
   company: (a, b) => a.company_name.localeCompare(b.company_name),
 }
 
-function applyFilters(items: PostingOut[], params: URLSearchParams): PostingOut[] {
-  const countries = new Set(params.getAll('countries'))
-  const companies = new Set(params.getAll('companies'))
-  const sectors = new Set(params.getAll('sectors'))
-  const seniorities = new Set(params.getAll('seniorities') as Seniority[])
-  const remoteModes = new Set(params.getAll('remote_modes'))
-  const visa = new Set(params.getAll('visa') as VisaStatus[])
-  const tiers = new Set(params.getAll('tiers') as Tier[])
-  const minScore = Number(params.get('min_score') ?? '0')
-  const query = params.get('query')?.toLowerCase() ?? null
-  const favoritesOnly = params.get('favorites_only') === 'true'
+/**
+ * The same thirteen `PostingFilter` dimensions the real `get_posting_filter`
+ * dependency reads (blueprint/03-INTERFACES.md §3.5), applied to the in-memory
+ * fixture set. `except` drops one dimension from the filter entirely — that's
+ * how `/facets` computes each dimension's counts under every *other* filter
+ * (invariant I6): a count for "country" must never be computed under the
+ * country filter itself, or picking GB would zero out every other country.
+ */
+type ExceptDimension =
+  | 'countries'
+  | 'cities'
+  | 'companies'
+  | 'sectors'
+  | 'sources'
+  | 'role_families'
+  | 'seniorities'
+  | 'remote_modes'
+  | 'tech'
+  | 'visa'
+  | 'tiers'
+  | 'min_score'
+  | 'posted_within_days'
+  | 'query'
+  | 'favorites_only'
+
+function applyFilters(items: PostingOut[], params: URLSearchParams, except?: ExceptDimension): PostingOut[] {
+  const set = (name: ExceptDimension, key: string) => (except === name ? new Set<string>() : new Set(params.getAll(key)))
+  const countries = set('countries', 'countries')
+  const cities = set('cities', 'cities')
+  const companies = set('companies', 'companies')
+  const sectors = set('sectors', 'sectors')
+  const sources = set('sources', 'sources')
+  const roleFamilies = set('role_families', 'role_families')
+  const seniorities = set('seniorities', 'seniorities')
+  const remoteModes = set('remote_modes', 'remote_modes')
+  const visa = set('visa', 'visa')
+  const tiers = set('tiers', 'tiers')
+  const techAll = except === 'tech' ? [] : params.getAll('tech_all')
+  const techAny = except === 'tech' ? [] : params.getAll('tech_any')
+  const minScore = except === 'min_score' ? 0 : Number(params.get('min_score') ?? '0')
+  const postedWithinDays = except === 'posted_within_days' ? null : params.get('posted_within_days')
+  const query = except === 'query' ? null : (params.get('query')?.toLowerCase() ?? null)
+  const favoritesOnly = except === 'favorites_only' ? false : params.get('favorites_only') === 'true'
 
   return items.filter((item) => {
     if (countries.size > 0 && !item.locations.some((l) => l.country !== null && countries.has(l.country))) {
       return false
     }
+    if (cities.size > 0 && !item.locations.some((l) => l.city !== null && cities.has(l.city))) return false
     if (companies.size > 0 && !companies.has(item.company_slug)) return false
     if (sectors.size > 0 && !sectors.has(item.sector)) return false
+    if (sources.size > 0 && !sources.has(item.source)) return false
+    if (roleFamilies.size > 0 && !roleFamilies.has(item.role_family)) return false
     if (seniorities.size > 0 && !seniorities.has(item.seniority)) return false
-    if (
-      remoteModes.size > 0 &&
-      !item.locations.some((l) => remoteModes.has(l.remote_mode))
-    ) {
-      return false
-    }
+    if (remoteModes.size > 0 && !item.locations.some((l) => remoteModes.has(l.remote_mode))) return false
     if (visa.size > 0 && !visa.has(item.visa_sponsorship)) return false
     if (tiers.size > 0 && !tiers.has(item.tier)) return false
+    if (techAll.length > 0 && !techAll.every((t) => item.tech.includes(t))) return false
+    if (techAny.length > 0 && !techAny.some((t) => item.tech.includes(t))) return false
     if (item.score < minScore) return false
+    if (postedWithinDays !== null) {
+      const days = Number(postedWithinDays)
+      const reference = item.posted_at ?? item.first_seen_at
+      const ageDays = (Date.now() - new Date(reference).getTime()) / 86_400_000
+      if (ageDays > days) return false
+    }
     if (favoritesOnly && !item.favorited) return false
-    if (query && !item.title.toLowerCase().includes(query)) return false
+    if (query !== null && query !== '' && !item.title.toLowerCase().includes(query)) return false
     return true
   })
 }
 
-function bucketize(items: PostingOut[], pick: (item: PostingOut) => string[]): FacetBucket[] {
-  const counts = new Map<string, number>()
+function countBy(items: PostingOut[], pick: (item: PostingOut) => string[]): Record<string, number> {
+  const counts: Record<string, number> = {}
   for (const item of items) {
     for (const value of pick(item)) {
-      counts.set(value, (counts.get(value) ?? 0) + 1)
+      counts[value] = (counts[value] ?? 0) + 1
     }
   }
-  return [...counts.entries()]
-    .map(([value, count]) => ({ value, label: value, count }))
-    .sort((a, b) => b.count - a.count)
+  return counts
 }
 
 export const handlers = [
@@ -126,20 +155,19 @@ export const handlers = [
   }),
 
   http.get(`${API_BASE}/facets`, ({ request }) => {
-    const url = new URL(request.url)
+    const params = new URL(request.url).searchParams
     const all = POSTINGS.map(toListItem)
-    const filtered = applyFilters(all, url.searchParams)
+    const notNull = <T,>(value: T | null): value is T => value !== null
     const body: FacetCounts = {
-      countries: bucketize(filtered, (i) => i.locations.map((l) => l.country).filter((c) => c !== null)),
-      cities: bucketize(filtered, (i) => i.locations.map((l) => l.city).filter((c) => c !== null)),
-      companies: bucketize(filtered, (i) => [i.company_slug]),
-      sectors: bucketize(filtered, (i) => [i.sector]),
-      role_families: bucketize(filtered, (i) => [i.role_family]),
-      seniorities: bucketize(filtered, (i) => [i.seniority]),
-      remote_modes: bucketize(filtered, (i) => i.locations.map((l) => l.remote_mode)),
-      tech: bucketize(filtered, (i) => i.tech),
-      visa: bucketize(filtered, (i) => [i.visa_sponsorship]),
-      tiers: bucketize(filtered, (i) => [i.tier]),
+      countries: countBy(applyFilters(all, params, 'countries'), (i) =>
+        i.locations.map((l) => l.country).filter(notNull),
+      ),
+      cities: countBy(applyFilters(all, params, 'cities'), (i) => i.locations.map((l) => l.city).filter(notNull)),
+      companies: countBy(applyFilters(all, params, 'companies'), (i) => [i.company_slug]),
+      sectors: countBy(applyFilters(all, params, 'sectors'), (i) => [i.sector]),
+      seniorities: countBy(applyFilters(all, params, 'seniorities'), (i) => [i.seniority]),
+      sources: countBy(applyFilters(all, params, 'sources'), (i) => [i.source]),
+      tech: countBy(applyFilters(all, params, 'tech'), (i) => i.tech),
     }
     return HttpResponse.json(body)
   }),

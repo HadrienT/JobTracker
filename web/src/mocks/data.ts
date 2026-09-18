@@ -2,7 +2,7 @@ import { monotonicFactory } from 'ulid'
 import type {
   Compensation,
   CompanyOut,
-  HealthOut,
+  HealthSnapshot,
   Location,
   PostingDetailOut,
   PostingOut,
@@ -247,19 +247,27 @@ export const COMPANIES_OUT: CompanyOut[] = COMPANIES.map((company) => ({
   company_name: company.name,
   sector: company.sector,
   hq_country: company.country,
+  source: pick(SOURCES),
+  enabled: rand() < 0.95,
+  last_ok_at: rand() < 0.9 ? daysAgo(Math.floor(rand() * 3)) : null,
   postings_count: POSTINGS.filter((p) => p.company_slug === company.slug).length,
-  last_successful_collect_at: daysAgo(Math.floor(rand() * 3)),
-  status: rand() < 0.9 ? 'ok' : rand() < 0.5 ? 'degraded' : 'down',
 }))
 
-export const HEALTH: HealthOut = {
+export const HEALTH: HealthSnapshot = {
+  schema_version: 1,
+  feed: {
+    active_postings: POSTINGS.length,
+    newest_posting_age_h: 4,
+    stale: false,
+  },
+  alerts: [],
   sources: SOURCES.map((source) => ({
     source,
     status: rand() < 0.9 ? 'ok' : 'degraded',
-    last_success_at: daysAgo(Math.floor(rand() * 2)),
-    consecutive_failures: 0,
+    last_run_at: daysAgo(Math.floor(rand() * 2)),
+    last_count: Math.floor(rand() * 200),
+    boards_ok: Math.floor(rand() * 50),
+    boards_error: rand() < 0.1 ? Math.ceil(rand() * 3) : 0,
+    alert: null,
   })),
-  feed_stale: false,
-  oldest_fresh_run_at: daysAgo(1),
-  schema_version: 1,
 }
