@@ -45,6 +45,19 @@ migrate:
 run-once source="greenhouse":
     uv run jobtracker run-once --source {{source}}
 
+# un passage sur toutes les sources activées (configs/sources.yaml), puis la file LLM ; code 1 si dégradé
+collect:
+    uv run jobtracker collect
+
+# l'interface en local : API + front dans docker, sur http://127.0.0.1:5190 (lit ./data/jobtracker.db)
+up:
+    mkdir -p data
+    HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up -d --build --wait
+    @echo "http://127.0.0.1:${JT_WEB_PORT:-5190}"
+
+down:
+    docker compose down
+
 # ordonnanceur continu
 loop:
     uv run jobtracker loop

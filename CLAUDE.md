@@ -43,6 +43,8 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just test-golden` | corpus doré du normaliseur, hors ligne, avec taux de résolution par étage |
 | `just migrate` | applique `migrations/*.sql` |
 | `just run-once source="greenhouse"` | un cycle de collecte sur une famille de sources |
+| `just collect` | **un passage** sur toutes les sources activées de `configs/sources.yaml`, puis la file LLM ; écrit dans `./data/jobtracker.db` (code 1 si dégradé) |
+| `just up` / `just down` | l'interface en local : API + front dans docker (`docker-compose.yml`), sur `http://127.0.0.1:5190`, lit `./data/jobtracker.db` |
 | `just loop` | ordonnanceur continu |
 | `just discover-employers` | employeurs vus chez les agrégateurs et absents de `companies.yaml` (alimente WP00) |
 | `just replay <date>` | rejeu du normaliseur sur les entrées archivées, **dry-run** : delta par étage, régression signalée |

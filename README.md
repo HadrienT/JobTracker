@@ -6,23 +6,28 @@ Agent de veille sur le marché de l'emploi quant. Il collecte les offres de
 web dense où l'on scrolle, trie et filtre par pays, ville, société, séniorité,
 stack et statut de sponsorship visa.
 
-## Mise en route
+## Mise en route (usage local)
+
+Deux gestes : aller voir toutes les sources, puis parcourir le résultat.
 
 ```bash
 uv sync --all-extras
 cp .env.example .env
-just migrate
-just run-once source=greenhouse
-just api        # API sur 127.0.0.1:8100
-just web        # front sur 127.0.0.1:5190
+just collect    # un passage sur les sources activées → ./data/jobtracker.db
+just up         # API + front dans docker → http://127.0.0.1:5190
+just down       # arrêt
 ```
 
-Tâches de développement : `just lint`, `just arch`, `just test`,
-`just test-golden`, `just ci`.
+Relancer `just collect` met la base à jour ; l'interface la relit sans redémarrage.
+Quelles sources sont interrogées : `configs/sources.yaml` (`enabled: true|false`) et
+`configs/companies.yaml` (le registre des sociétés et de leur ATS).
 
-## Déploiement
+Développement : `just api` (API sur 127.0.0.1:8100), `just web` (front Vite),
+`just lint`, `just arch`, `just test`, `just test-golden`, `just ci`.
 
-Stack `docker compose` auto-hébergée (collecteur, API, nginx) derrière un tunnel
+## Déploiement (optionnel)
+
+À ne regarder que pour un serveur allumé en permanence. Stack `docker compose` auto-hébergée (collecteur, API, nginx) derrière un tunnel
 Cloudflare, sans port ouvert :
 
 ```bash

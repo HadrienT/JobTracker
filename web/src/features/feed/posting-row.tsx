@@ -29,7 +29,7 @@ function meta(posting: PostingOut): string {
 }
 
 const GRID_COLUMNS =
-  'grid-cols-[56px_minmax(0,1fr)_40px_140px_170px_180px_110px_100px_44px_96px_32px]'
+  'grid-cols-[52px_minmax(220px,1fr)_28px_112px_140px_120px_96px_112px_44px_56px_32px]'
 
 interface PostingRowProps {
   posting: PostingOut
@@ -61,7 +61,7 @@ export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen
       onClick={onSelect}
       onDoubleClick={onOpen}
     >
-      <div role="gridcell" className={cn('grid h-full items-center gap-3 px-3 text-sm', GRID_COLUMNS)}>
+      <div role="gridcell" className={cn('grid h-full items-center gap-2 px-3 text-sm', GRID_COLUMNS)}>
         <Score score={posting.score} tier={posting.tier} reasons={reasons} />
 
         <Tooltip>

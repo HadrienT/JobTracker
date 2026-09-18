@@ -105,6 +105,36 @@ def cmd_run_once(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_collect(_args: argparse.Namespace) -> int:
+    """One pass over every enabled source, then the deferred LLM queue — and exit.
+
+    The by-hand counterpart of `loop`: no scheduler, no intervals, just "go and look at
+    everything once and store it". Sources disabled in `configs/sources.yaml` are skipped.
+    """
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    ctx, boards = _build_context(conn, settings)
+    degraded = False
+    for source in sorted({b.source for b in boards}, key=lambda s: s.value):
+        if not ctx.sources_config.is_enabled(source):
+            continue
+        source_boards = boards_for_source(boards, source)
+        with bound_run_id(str(ULID())):
+            run = run_source_cycle(conn, source, source_boards, ctx=ctx)
+        degraded = degraded or run.status != "ok"
+        print(
+            f"source={run.source.value} status={run.status} boards={len(source_boards)} "
+            f"fetched={run.fetched} new={run.new} updated={run.updated} aliased={run.aliased} "
+            f"rejected={run.rejected} requests_made={run.requests_made}",
+            file=sys.stderr,
+        )
+    if ctx.llm is not None:
+        with bound_run_id(str(ULID())):
+            drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
+    conn.close()
+    return 1 if degraded else 0
+
+
 def cmd_loop(_args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
@@ -300,6 +330,10 @@ def _build_parser() -> argparse.ArgumentParser:
     run_once.add_argument("--source", required=True, choices=[s.value for s in Source])
     run_once.add_argument("--company", default=None)
     run_once.set_defaults(func=cmd_run_once)
+
+    subparsers.add_parser(
+        "collect", help="one pass over every enabled source, then exit"
+    ).set_defaults(func=cmd_collect)
 
     subparsers.add_parser("loop", help="run continuously").set_defaults(func=cmd_loop)
 
