@@ -223,9 +223,25 @@ def evaluate(posting: Posting, *, profile: Profile) -> MatchVerdict: ...
 def hard_reject(posting: Posting, *, profile: Profile) -> str | None: ...  # motif, ou None
 
 # WP12 — préfiltre et LLM
-def is_ambiguous(posting: Posting, verdict: MatchVerdict, *, profile: Profile) -> bool: ...
-def classify_llm(posting: Posting, *, timeout_s: int) -> LlmVerdict | None: ...  # None = indisponible
+def is_ambiguous(
+    posting: Posting, verdict: MatchVerdict, *, profile: Profile, description: str
+) -> bool: ...
+def classify_llm(
+    posting: Posting, *, description: str, timeout_s: int, base_url: str, model: str,
+    client: httpx.Client | None = None,  # couture de test uniquement
+) -> LlmVerdict | None: ...  # None = indisponible
+def apply_llm_verdict(posting: Posting, llm_verdict: LlmVerdict) -> Posting: ...  # pur
+def resolve_residual(
+    posting: Posting, verdict: MatchVerdict, *, profile: Profile, settings: Settings,
+    description: str, client: httpx.Client | None = None,
+) -> MatchVerdict: ...  # préfiltre → appel → seuil de confiance → recalcul par evaluate()
 ```
+
+`description` est un paramètre à part parce que `Posting` ne porte pas le texte
+de l'annonce (il vit dans `posting_search_text`, relu par
+`store.search.get_description`). `resolve_residual` n'est pas encore branché
+dans `runtime.pipeline.ingest` : ce câblage est hors du périmètre de WP12
+(`dependencies.md` : `runtime/pipeline.py` y est en lecture seule).
 
 `classify_llm` retourne `None` quand le serveur est occupé ou indisponible :
 **ce n'est pas une erreur**, c'est un tour sauté. L'offre repart en file

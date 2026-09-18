@@ -167,6 +167,7 @@ source_modules = [
     "jobtracker.core", "jobtracker.store", "jobtracker.normalize",
     "jobtracker.match.profile", "jobtracker.match.rules",
     "jobtracker.match.score", "jobtracker.match.reasons",
+    "jobtracker.match.prefilter",
 ]
 # `urllib.request` et `http.client` ne sont pas listables ici (import-linter
 # refuse les sous-paquets externes) : ils sont couverts par un test de
