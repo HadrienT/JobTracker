@@ -45,8 +45,7 @@ migrate:
 run-once source="greenhouse":
     uv run jobtracker run-once --source {{source}}
 
-# un passage sur toutes les sources activées (configs/sources.yaml), puis la file LLM ; code 1 si dégradé.
-# Les sociétés déjà vues récemment sont sautées (cadence par priorité) : `just collect --force` les ré-interroge toutes.
+# un passage sur les sources activées, puis la file LLM (code 1 si dégradé) ; `--force` ignore la cadence par société
 collect *args:
     uv run jobtracker collect {{args}}
 
@@ -64,8 +63,12 @@ loop:
     uv run jobtracker loop
 
 # un passage sur la file LLM différée (serveur occupé/éteint = tour sauté)
-llm-drain:
-    uv run jobtracker llm-drain
+llm-drain *args:
+    uv run jobtracker llm-drain {{args}}
+
+# met en file les offres déjà stockées que le LLM peut encore aider (à faire une fois, serveur allumé)
+llm-enqueue:
+    uv run jobtracker llm-enqueue
 
 # employeurs vus chez les agrégateurs et absents de companies.yaml (alimente WP00)
 discover-employers:
@@ -100,10 +103,22 @@ types:
     uv run python tools/gen_openapi.py web/openapi.json
     cd web && npm run api:types:local
 
-# sauvegarde de la base (jamais `cp` sur une base WAL)
-backup db="jobtracker.db":
-    mkdir -p backups
-    sqlite3 {{db}} ".backup backups/jobtracker-$(date +%Y%m%d).db"
+# sauvegarde à chaud de ./data/jobtracker.db (API de backup SQLite, intégrité vérifiée, 14 jours gardés)
+backup:
+    uv run jobtracker backup --dest backups
+
+# collecte 3 fois par jour + sauvegarde quotidienne, via des minuteries systemd *utilisateur*
+timers-install:
+    mkdir -p ~/.config/systemd/user
+    cp deploy/local/*.service deploy/local/*.timer ~/.config/systemd/user/
+    systemctl --user daemon-reload
+    systemctl --user enable --now jobtracker-collect.timer jobtracker-backup.timer
+    systemctl --user list-timers 'jobtracker-*'
+
+timers-remove:
+    systemctl --user disable --now jobtracker-collect.timer jobtracker-backup.timer
+    rm -f ~/.config/systemd/user/jobtracker-collect.* ~/.config/systemd/user/jobtracker-backup.*
+    systemctl --user daemon-reload
 
 # le front : types, lint, tests unitaires, build + budget de bundle
 web-check:

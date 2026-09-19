@@ -1,0 +1,9 @@
+# An online, integrity-checked SQLite backup of ./data/jobtracker.db into ./backups, keeping the
+# last 14 days. Never `cp` a WAL database while it is open: this uses SQLite's backup API.
+[Unit]
+Description=JobTracker: back up the database
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -lc 'cd %h/JobTracker && just backup'
+Nice=10

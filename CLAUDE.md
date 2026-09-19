@@ -26,7 +26,7 @@ l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 | Qualification | `src/jobtracker/match/` | score déterministe contre le profil cible ; `match.llm` = préfiltre + LLM local pour le seul résidu ambigu |
 | API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
 | Exploitation | `src/jobtracker/runtime/` | ordonnanceur, disjoncteur par source, chien de garde inversé, CLI |
-| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health |
+| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
 
 Le LLM d'inférence est **local** : `llama-server` sur `127.0.0.1:8000`, partagé
 avec OpenHands (`~/AgenticEnv`). JobTracker s'y greffe en second, jamais en
@@ -45,12 +45,15 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just run-once source="greenhouse"` | un cycle de collecte sur une famille de sources |
 | `just collect` | **un passage** sur toutes les sources activées de `configs/sources.yaml`, puis la file LLM ; écrit dans `./data/jobtracker.db` (code 1 si dégradé) |
 | `just up` / `just down` | l'interface en local : API + front dans docker (`docker-compose.yml`), sur `http://127.0.0.1:5190`, lit `./data/jobtracker.db` |
+| `just llm-enqueue` | met en file les offres **déjà stockées** que le LLM peut encore aider (à faire une fois, serveur allumé) ; puis `just llm-drain --all` les traite jusqu'au bout |
+| `just backup` | sauvegarde à chaud de `./data/jobtracker.db` dans `./backups` |
+| `just timers-install` / `timers-remove` | collecte 3×/jour + sauvegarde quotidienne, minuteries systemd **utilisateur** (`deploy/local/`) |
 | `just loop` | ordonnanceur continu |
 | `just discover-employers` | employeurs vus chez les agrégateurs et absents de `companies.yaml` (alimente WP00) |
 | `just replay <date>` | rejeu du normaliseur sur les entrées archivées, **dry-run** : delta par étage, régression signalée |
 | `just report` | rapport hebdomadaire markdown dans `docs/reports/` |
 | `./scripts/deploy.sh` · `backup.sh` · `restore.sh` | déploiement de la stack de prod, sauvegarde à chaud, restauration — voir `deploy/RUNBOOK.md` |
-| `just llm-drain` | un passage sur la file LLM différée (le serveur est partagé et pas toujours levé) |
+| `just llm-drain` | un passage (20 offres) sur la file LLM différée ; `--all` = jusqu'à vider la file ou perdre le serveur |
 | `just status` | santé : sources muettes, sources en erreur, fraîcheur du flux (code retour 1 si dégradé) |
 | `just api` | `uvicorn` sur `127.0.0.1:8100` |
 | `just web` | front seul, Vite sur `127.0.0.1:5190` |

@@ -1,0 +1,12 @@
+[Unit]
+Description=JobTracker: collect a few times a day
+
+[Timer]
+# Board cadences (configs/companies.yaml priorities) decide who is actually refetched each time;
+# this only wakes the collector up.
+OnCalendar=*-*-* 06,12,18:15:00
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

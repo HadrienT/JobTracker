@@ -62,7 +62,7 @@ ignore = [
 python_version = "3.13"
 strict = true
 mypy_path = "src"
-packages = ["jobtracker"]
+files = ["src/jobtracker", "tools"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]

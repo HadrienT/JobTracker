@@ -1,0 +1,15 @@
+# One collection pass over every enabled source, then the LLM queue — the local counterpart of
+# `just collect`. Installed by `just timers-install`; run by jobtracker-collect.timer.
+#
+# A degraded pass (a source in error or silent) makes `collect` exit 1, so the unit shows up as
+# failed in `systemctl --user status jobtracker-collect` — the silent-failure trap made visible.
+[Unit]
+Description=JobTracker: collect every enabled source
+
+[Service]
+Type=oneshot
+# A login shell so `just` and `uv` are on PATH, as they are in your terminal.
+ExecStart=/bin/bash -lc 'cd %h/JobTracker && just collect'
+# The LLM drain can take a while when the shared server is busy; it never blocks the others.
+TimeoutStartSec=3h
+Nice=10
