@@ -128,6 +128,24 @@ def _merge(old: Posting, new: Posting, *, stage: str | None) -> Posting:
     return old.model_copy(update=update)
 
 
+def _comparable(posting: Posting) -> dict[str, Any]:
+    """What the database can actually hold of `posting`: the rest would always look "changed".
+
+    `get_posting` rebuilds `languages_required` and the compensation's bonus / equity / raw text
+    as empty defaults (they are not persisted), while a replay recomputes them — comparing the
+    two reports a change on nearly every posting that no `--apply` could ever write.
+    """
+    data = posting.model_dump(exclude={"normalize_version", "languages_required"})
+    compensation = posting.compensation
+    data["compensation"] = (
+        compensation.amount_min,
+        compensation.amount_max,
+        compensation.currency,
+        compensation.period,
+    )
+    return data
+
+
 def _rate(postings: list[Posting], stage: Stage) -> float:
     return sum(1 for p in postings if stage.resolved(p)) / len(postings) if postings else 0.0
 
@@ -170,9 +188,7 @@ def run_replay(
 
     net: Counter[str] = Counter()
     for old, new in zip(olds, merged, strict=True):
-        if new.model_dump(exclude={"normalize_version"}) != old.model_dump(
-            exclude={"normalize_version"}
-        ):
+        if _comparable(new) != _comparable(old):
             report.changed_postings += 1
         tier_before = evaluate(old, profile=profile).tier.value
         tier_after = evaluate(new, profile=profile).tier.value

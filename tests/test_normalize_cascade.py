@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from jobtracker.core.enums import RoleFamily, Seniority, Source, VisaStatus
 from jobtracker.core.geo import GeoIndex
 from jobtracker.core.models import RawPosting
-from jobtracker.normalize.cascade import normalize
+from jobtracker.normalize.cascade import NORMALIZE_VERSION, normalize
 from jobtracker.normalize.taxonomy import Taxonomy
 
 
@@ -38,7 +38,7 @@ def test_normalize_produces_a_fully_populated_posting(
     assert posting.locations[0].city == "Paris"
     assert "cpp" in posting.tech
     assert posting.content_hash == "hash-1"
-    assert posting.normalize_version == 1
+    assert posting.normalize_version == NORMALIZE_VERSION
     assert posting.resolver_stage == "rules"
 
 

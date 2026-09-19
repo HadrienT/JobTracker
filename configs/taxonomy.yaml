@@ -49,6 +49,9 @@ role_families:
 
   quant_trading:
     keywords:
+      - quantitative trading
+      - quant trading
+      - quantitative execution
       - trader
       - sales trader
       - trading analyst
@@ -63,6 +66,10 @@ role_families:
       - quant research
       - quantitative analyst
       - quant analyst
+      - quantitative strategist
+      - quant strategist
+      - quantamental
+      - quantitative intern
 
   data_eng:
     keywords:
@@ -75,12 +82,15 @@ role_families:
     keywords:
       - risk analyst
       - risk manager
+      - quantitative risk
+      - risk quant
       - model validation
 
   quant_dev:
     # a generic engineer/developer title becomes quant_dev when it also names
     # the trading/research/hardware-alpha context, not swe_platform.
     strong_keywords:
+      - quantitative development
       - quantitative developer
       - quant developer
       - quant software engineer

@@ -1,3 +1,5 @@
+import pytest
+
 from jobtracker.core.enums import RoleFamily
 from jobtracker.normalize.taxonomy import Taxonomy
 from jobtracker.normalize.title import classify_role, clean_title
@@ -58,3 +60,40 @@ def test_campus_ai_research_engineer_is_quant_dev(taxonomy: Taxonomy) -> None:
     assert (
         classify_role("Campus AI Research Engineer", "", taxonomy=taxonomy) == RoleFamily.QUANT_DEV
     )
+
+
+# Real titles from live postings that the taxonomy used to file under `other` — and so the
+# matcher rejected as `not_quant`. Each is a role a quant-junior profile should see.
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        ("Quantitative Trading Internship (Summer 2027 - Shanghai)", RoleFamily.QUANT_TRADING),
+        ("Quantitative Trading Intern - Winter Quarter 2027", RoleFamily.QUANT_TRADING),
+        ("Quantitative Trading Associate", RoleFamily.QUANT_TRADING),
+        ("Quantitative Execution Strategist", RoleFamily.QUANT_TRADING),
+        ("Quantitative Intern (Summer 2027)", RoleFamily.QUANT_RESEARCH),
+        ("Experienced Quantitative Strategist", RoleFamily.QUANT_RESEARCH),
+        ("Quantamental Research Analyst | Trading Team", RoleFamily.QUANT_RESEARCH),
+        ("Quantitative Development & Strategy Intern, Summer 2027", RoleFamily.QUANT_DEV),
+        ("Quantitative Risk Intern - Summer 2027", RoleFamily.RISK),
+        ("Risk Quant, DMFI Quantitative Resources", RoleFamily.RISK),
+    ],
+)
+def test_quantitative_titles_are_not_other(
+    taxonomy: Taxonomy, title: str, expected: RoleFamily
+) -> None:
+    assert classify_role(title, "", taxonomy=taxonomy) == expected
+
+
+# ...and the neighbours that mention "quantitative" but are not quant roles stay out.
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Quantitative Sales Associate",
+        "Campus Recruiter, Machine Learning and Quantitative Research",
+        "Quantitative Project Manager",
+        "WorldQuant Technology Talent Network",
+    ],
+)
+def test_quantitative_in_a_non_quant_title_stays_other(taxonomy: Taxonomy, title: str) -> None:
+    assert classify_role(title, "", taxonomy=taxonomy) == RoleFamily.OTHER

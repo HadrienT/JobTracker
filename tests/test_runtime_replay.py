@@ -277,6 +277,38 @@ def test_the_exact_raw_inputs_are_archived_and_used(
     assert report.changed_postings == 0 and not report.tier_net
 
 
+def test_fields_the_database_does_not_hold_do_not_count_as_changes(
+    store_conn: sqlite3.Connection, taxonomy: Taxonomy, geo_index: GeoIndex, profile: Profile
+) -> None:
+    """Languages, bonus and equity are recomputed by every replay and stored by none."""
+    raw = RawPosting(
+        source=Source.GREENHOUSE,
+        company_slug="acme",
+        source_job_id="job-rich",
+        url="https://example.com/rich",
+        title_raw="Quantitative Developer",
+        description_raw=(
+            "Fluent English is required. Competitive salary, an annual bonus and equity "
+            "in the firm. You will build low-latency trading systems in C++ and Python."
+        ),
+        location_raw="London, United Kingdom",
+        department_raw=None,
+        posted_at_raw="2026-01-02T00:00:00Z",
+        payload=b"{}",
+        fetched_at=datetime(2026, 1, 5, tzinfo=UTC),
+        content_hash="hash-rich",
+    )
+    ingest(store_conn, raw, taxonomy=taxonomy, geo=geo_index, profile=profile, hq_country="GB")
+    fresh = real_normalize(raw, taxonomy=taxonomy, geo=geo_index, hq_country="GB")
+    assert fresh.compensation.bonus_mentioned or fresh.languages_required, (
+        "test needs non-persisted data"
+    )
+
+    report = _run(store_conn, taxonomy, geo_index, profile)
+
+    assert report.changed_postings == 0
+
+
 def test_an_unknown_stage_is_refused(
     store_conn: sqlite3.Connection, taxonomy: Taxonomy, geo_index: GeoIndex, profile: Profile
 ) -> None:

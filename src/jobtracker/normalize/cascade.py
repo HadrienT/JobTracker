@@ -24,7 +24,9 @@ from jobtracker.normalize.techstack import parse_tech
 from jobtracker.normalize.title import classify_role, clean_title
 from jobtracker.normalize.visa import parse_visa
 
-NORMALIZE_VERSION = 1
+NORMALIZE_VERSION = (
+    2  # 2: quant trading / strategist / quantitative-risk titles are no longer "other"
+)
 
 _PHD_REQUIRED_RE = re.compile(
     r"\bphd\s+(?:is\s+)?required\b|\brequires?\s+a\s+phd\b|\bmust\s+have\s+a\s+phd\b",
