@@ -8,6 +8,7 @@ guessed ahead of that lot pinning their shape.
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 from pydantic import BaseModel, model_validator
 
@@ -159,6 +160,16 @@ class Posting(BaseModel, frozen=True):
     content_hash: str  # from the source RawPosting: detects a re-fetch with no real change
     resolver_stage: str
     normalize_version: int
+
+
+class FieldCorrection(BaseModel, frozen=True):
+    """One field the LLM changed: the value before, the value after, and the quote behind it."""
+
+    field: str  # a `Posting` attribute name: "compensation", "locations", "seniority", ...
+    before: Any
+    after: Any
+    evidence: str | None
+    confidence: float
 
 
 class Reason(BaseModel, frozen=True):

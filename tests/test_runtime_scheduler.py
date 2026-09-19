@@ -50,6 +50,21 @@ _PROFILE_DATA = {
         "min_confidence": 0.6,
         "max_description_chars": 6000,
     },
+    "review": {
+        "version": 1,
+        "override_confidence": 0.8,
+        "evidence_min_chars": 6,
+        "max_locations": 8,
+        "max_output_tokens": 1200,
+        "max_description_chars": 12000,
+        "salary_bounds": {
+            "year": [10000, 10000000],
+            "month": [500, 500000],
+            "day": [20, 20000],
+            "hour": [5, 5000],
+        },
+        "currencies": ["USD", "EUR", "GBP", "CHF", "SGD", "HKD"],
+    },
 }
 
 

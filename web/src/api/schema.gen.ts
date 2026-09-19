@@ -314,6 +314,24 @@ export interface components {
             /** Sources */
             sources: components["schemas"]["SourceHealth"][];
         };
+        /**
+         * LlmCorrectionOut
+         * @description A field the local LLM changed on re-reading the posting, with the quote behind it.
+         */
+        LlmCorrectionOut: {
+            /** After */
+            after: unknown;
+            /** Before */
+            before: unknown;
+            /** Confidence */
+            confidence: number;
+            /** Corrected At */
+            corrected_at: string;
+            /** Evidence */
+            evidence: string | null;
+            /** Field */
+            field: string;
+        };
         /** LocationOut */
         LocationOut: {
             /** City */
@@ -379,6 +397,8 @@ export interface components {
             hidden: boolean;
             /** Last Seen At */
             last_seen_at: string;
+            /** Llm Corrections */
+            llm_corrections: components["schemas"]["LlmCorrectionOut"][];
             /** Locations */
             locations: components["schemas"]["LocationOut"][];
             /** Min Years */

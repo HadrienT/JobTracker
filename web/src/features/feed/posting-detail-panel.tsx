@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { usePostingDetail } from '@/api/queries'
 import { cn } from '@/shared/lib/cn'
+import { LlmCorrections } from '@/features/feed/llm-corrections'
 import { TrackingSection } from '@/features/feed/tracking-section'
 import { Age } from '@/shared/ui/age'
 import { Deadline } from '@/shared/ui/deadline'
@@ -149,6 +150,8 @@ export function PostingDetailPanel({ postingId, onClose }: PostingDetailPanelPro
             </dl>
 
             <TrackingSection key={posting.posting_id} posting={posting} />
+
+            <LlmCorrections corrections={posting.llm_corrections} />
 
             {posting.reasons.length > 0 && (
               <section className="flex flex-col gap-2">

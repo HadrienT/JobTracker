@@ -10,6 +10,7 @@ configs/companies.yaml, but `match` never reads that file or imports
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -75,6 +76,18 @@ class LlmRules:
 
 
 @dataclass(frozen=True)
+class ReviewRules:
+    version: int
+    override_confidence: float
+    evidence_min_chars: int
+    max_locations: int
+    max_output_tokens: int
+    max_description_chars: int
+    salary_bounds: Mapping[str, tuple[Decimal, Decimal]]
+    currencies: frozenset[str]
+
+
+@dataclass(frozen=True)
 class Profile:
     version: int
     titles: TitleRules
@@ -84,6 +97,7 @@ class Profile:
     tiers: Tiers
     freshness: FreshnessRules
     llm: LlmRules
+    review: ReviewRules
     company_tiers: Mapping[str, int]
 
 
@@ -186,6 +200,30 @@ def build_profile(
     except KeyError as exc:
         raise ConfigError(f"profile{where}: 'llm' is missing field {exc}") from exc
 
+    raw_review = data.get("review", {})
+    if not isinstance(raw_review, dict):
+        raise ConfigError(f"profile{where}: 'review' must be a mapping")
+    try:
+        raw_bounds = raw_review["salary_bounds"]
+        salary_bounds = {
+            str(period): (Decimal(str(low)), Decimal(str(high)))
+            for period, (low, high) in raw_bounds.items()
+        }
+        review = ReviewRules(
+            version=int(raw_review["version"]),
+            override_confidence=float(raw_review["override_confidence"]),
+            evidence_min_chars=int(raw_review["evidence_min_chars"]),
+            max_locations=int(raw_review["max_locations"]),
+            max_output_tokens=int(raw_review["max_output_tokens"]),
+            max_description_chars=int(raw_review["max_description_chars"]),
+            salary_bounds=salary_bounds,
+            currencies=frozenset(str(code).upper() for code in raw_review["currencies"]),
+        )
+    except KeyError as exc:
+        raise ConfigError(f"profile{where}: 'review' is missing field {exc}") from exc
+    except (TypeError, ValueError, InvalidOperation) as exc:
+        raise ConfigError(f"profile{where}: 'review' has a malformed value: {exc}") from exc
+
     return Profile(
         version=version,
         titles=titles,
@@ -195,6 +233,7 @@ def build_profile(
         tiers=tiers,
         freshness=freshness,
         llm=llm,
+        review=review,
         company_tiers=dict(company_tiers) if company_tiers is not None else {},
     )
 

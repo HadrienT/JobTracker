@@ -356,6 +356,50 @@
         "title": "HealthSnapshot",
         "type": "object"
       },
+      "LlmCorrectionOut": {
+        "description": "A field the local LLM changed on re-reading the posting, with the quote behind it.",
+        "properties": {
+          "after": {
+            "title": "After"
+          },
+          "before": {
+            "title": "Before"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "corrected_at": {
+            "title": "Corrected At",
+            "type": "string"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "before",
+          "after",
+          "evidence",
+          "confidence",
+          "corrected_at"
+        ],
+        "title": "LlmCorrectionOut",
+        "type": "object"
+      },
       "LocationOut": {
         "properties": {
           "city": {
@@ -573,6 +617,13 @@
             "title": "Last Seen At",
             "type": "string"
           },
+          "llm_corrections": {
+            "items": {
+              "$ref": "#/components/schemas/LlmCorrectionOut"
+            },
+            "title": "Llm Corrections",
+            "type": "array"
+          },
           "locations": {
             "items": {
               "$ref": "#/components/schemas/LocationOut"
@@ -707,7 +758,8 @@
           "note",
           "reasons",
           "rejection_reason",
-          "aliases"
+          "aliases",
+          "llm_corrections"
         ],
         "title": "PostingDetailOut",
         "type": "object"

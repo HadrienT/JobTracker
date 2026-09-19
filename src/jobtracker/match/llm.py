@@ -203,6 +203,83 @@ def attempt_llm(
         _concurrency_guard.release()
 
 
+@dataclass(frozen=True)
+class JsonReply:
+    """One schema-constrained completion: the parsed JSON object, or why there is none."""
+
+    status: LlmStatus
+    data: dict[str, Any] | None = None
+
+
+def chat_json(
+    *,
+    system: str,
+    user: str,
+    schema_name: str,
+    schema: dict[str, Any],
+    timeout_s: int,
+    base_url: str,
+    model: str,
+    log_id: str,
+    max_tokens: int,
+    client: httpx.Client | None = None,
+) -> JsonReply:
+    """The same call discipline as `attempt_llm`, for any prompt and any JSON schema.
+
+    Concurrency 1, no remote fallback, never raises: a busy or unreachable server is
+    `UNAVAILABLE` ("try again later"), a reply that is not a JSON object is `NON_CONFORMING`
+    ("retrying the same prompt is pointless"). Validating the object against its own model is
+    the caller's job — this only moves bytes, so a new lane never needs a new socket.
+    """
+    if not _concurrency_guard.acquire(blocking=False):
+        _logger.info("llm_skipped_local_concurrency", posting_id=log_id)
+        return JsonReply(LlmStatus.UNAVAILABLE)
+    try:
+        owned_client = client is None
+        http_client = client if client is not None else httpx.Client()
+        payload = {
+            "model": model,
+            "temperature": 0,
+            "max_tokens": max_tokens,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {"name": schema_name, "schema": schema, "strict": True},
+            },
+        }
+        try:
+            response = _post_completion(
+                http_client, base_url=base_url, payload=payload, timeout_s=timeout_s
+            )
+        except LlmUnavailable:
+            _logger.warning("llm_unavailable", posting_id=log_id, base_url=base_url)
+            return JsonReply(LlmStatus.UNAVAILABLE)
+        except httpx.TimeoutException:
+            _logger.info("llm_skipped_busy_timeout", posting_id=log_id)
+            return JsonReply(LlmStatus.UNAVAILABLE)
+        finally:
+            if owned_client:
+                http_client.close()
+
+        if response.status_code != httpx.codes.OK:
+            _logger.info("llm_skipped_busy_status", posting_id=log_id, status=response.status_code)
+            return JsonReply(LlmStatus.UNAVAILABLE)
+        try:
+            content = response.json()["choices"][0]["message"]["content"]
+            data = jsonlib.loads(content)
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            _logger.warning("llm_response_non_conforming", posting_id=log_id, error=str(exc))
+            return JsonReply(LlmStatus.NON_CONFORMING)
+        if not isinstance(data, dict):
+            return JsonReply(LlmStatus.NON_CONFORMING)
+        return JsonReply(LlmStatus.OK, data)
+    finally:
+        _concurrency_guard.release()
+
+
 def classify_llm(
     posting: Posting,
     *,

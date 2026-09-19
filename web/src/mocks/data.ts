@@ -207,6 +207,7 @@ function buildOne(index: number): PostingDetailOut {
     reasons,
     rejection_reason: tier === 'rejected' ? pick(['senior_only', 'phd_required', 'not_quant']) : null,
     aliases: [],
+    llm_corrections: [],
   }
 }
 

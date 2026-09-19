@@ -69,6 +69,14 @@ class ApplicationStatus(StrEnum):
     WITHDRAWN = "withdrawn"
 
 
+class ReviewOutcome(StrEnum):
+    """What one LLM re-read of a posting concluded (blueprint/wp/WP19-llm-review.md)."""
+
+    CORRECTED = "corrected"  # the reading changed at least one field
+    CONFIRMED = "confirmed"  # read, and the stored values stand
+    SET_ASIDE = "set_aside"  # under-confident or non-conforming: nothing was applied
+
+
 class RemoteMode(StrEnum):
     ONSITE = "onsite"
     HYBRID = "hybrid"

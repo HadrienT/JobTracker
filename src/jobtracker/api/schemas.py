@@ -4,7 +4,7 @@ change what the front already depends on.
 """
 
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel, StringConstraints
 
@@ -116,12 +116,24 @@ class AliasOut(BaseModel):
         )
 
 
+class LlmCorrectionOut(BaseModel):
+    """A field the local LLM changed on re-reading the posting, with the quote behind it."""
+
+    field: str
+    before: Any
+    after: Any
+    evidence: str | None
+    confidence: float
+    corrected_at: str
+
+
 class PostingDetailOut(PostingOut):
     description: str | None
     note: str
     reasons: tuple[Reason, ...]
     rejection_reason: str | None
     aliases: tuple[AliasOut, ...]
+    llm_corrections: tuple[LlmCorrectionOut, ...]
 
 
 class PostingsPage(BaseModel):

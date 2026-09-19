@@ -66,6 +66,10 @@ loop:
 llm-drain *args:
     uv run jobtracker llm-drain {{args}}
 
+# le LLM relit les offres stockées et corrige salaire, lieux, séniorité… (`--dry-run` : n'écrit rien ; `--limit 30`)
+llm-review *args:
+    uv run jobtracker llm-review {{args}}
+
 # met en file les offres déjà stockées que le LLM peut encore aider (à faire une fois, serveur allumé)
 llm-enqueue:
     uv run jobtracker llm-enqueue

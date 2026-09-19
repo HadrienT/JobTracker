@@ -12,6 +12,11 @@
     "remote",
     "unknown"
   ],
+  "ReviewOutcome": [
+    "confirmed",
+    "corrected",
+    "set_aside"
+  ],
   "RoleFamily": [
     "data_eng",
     "other",

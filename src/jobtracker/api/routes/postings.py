@@ -10,6 +10,7 @@ from jobtracker.api.deps import Conn, get_posting_filter
 from jobtracker.api.schemas import (
     AliasOut,
     FlagRequest,
+    LlmCorrectionOut,
     NoteRequest,
     PostingDetailOut,
     PostingOut,
@@ -17,6 +18,7 @@ from jobtracker.api.schemas import (
     StatusRequest,
 )
 from jobtracker.core.errors import StorageError
+from jobtracker.store.llm_reviews import current_corrections
 from jobtracker.store.postings import (
     PostingFilter,
     SortKey,
@@ -69,6 +71,9 @@ def get_posting_detail(posting_id: str, conn: Conn) -> PostingDetailOut:
         reasons=verdict.reasons if verdict is not None else (),
         rejection_reason=verdict.rejection_reason if verdict is not None else None,
         aliases=aliases,
+        llm_corrections=tuple(
+            LlmCorrectionOut(**c.model_dump()) for c in current_corrections(conn, posting_id)
+        ),
     )
 
 

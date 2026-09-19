@@ -33,9 +33,10 @@ from jobtracker.runtime.residual import (
     drain_queue,
     enqueue_backlog,
 )
+from jobtracker.runtime.review import ReviewStats, ReviewStep, review_all
 from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.watchdog import full_health_snapshot
-from jobtracker.store import llm_queue
+from jobtracker.store import llm_queue, llm_reviews
 from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_database
 from jobtracker.store.companies import list_discovered, sync_companies
 from jobtracker.store.retention import run_retention
@@ -191,6 +192,99 @@ def cmd_llm_enqueue(_args: argparse.Namespace) -> int:
     ctx, _boards = _build_context(conn, settings)
     added = enqueue_backlog(conn, profile=ctx.profile)
     print(f"queued={added} depth={llm_queue.depth(conn)}", file=sys.stderr)
+    conn.close()
+    return 0
+
+
+def _print_review_summary(stats: ReviewStats, *, dry_run: bool) -> None:
+    verb = "would change" if dry_run else "changed"
+    print(
+        f"read={stats.read} {verb}={stats.corrected} confirmed={stats.confirmed} "
+        f"set_aside={stats.set_aside} skipped={stats.skipped} "
+        f"server_available={stats.server_available}",
+        file=sys.stderr,
+    )
+    if stats.corrections_by_field:
+        fields = ", ".join(f"{k}={v}" for k, v in stats.corrections_by_field.most_common())
+        print(f"  by field: {fields}", file=sys.stderr)
+    for reason, count in stats.refused.most_common(8):
+        print(f"  refused x{count}: {reason}", file=sys.stderr)
+    if stats.unknown_cities:
+        cities = ", ".join(
+            f"{city} ({country or '?'}) x{n}"
+            for (city, country), n in stats.unknown_cities.most_common(15)
+        )
+        print(f"  cities missing from configs/geo.yaml: {cities}", file=sys.stderr)
+
+
+def cmd_llm_review(args: argparse.Namespace) -> int:
+    """Have the local LLM re-read the stored postings and correct what the text contradicts.
+
+    See `runtime.review` and blueprint/wp/WP19-llm-review.md. `--dry-run` writes nothing.
+    """
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    ctx, _boards = _build_context(conn, settings)
+    if ctx.llm is None:
+        print("JT_LLM_ENABLED=false: nothing to review with", file=sys.stderr)
+        conn.close()
+        return 0
+    report = open(args.report, "w", encoding="utf-8") if args.report else None  # noqa: SIM115
+
+    def show(step: ReviewStep, stats: ReviewStats) -> None:
+        plan = step.plan
+        if plan is None:
+            return
+        if report is not None:
+            report.write(
+                json.dumps(
+                    {
+                        "posting_id": step.posting_id,
+                        "title": step.title,
+                        "outcome": plan.outcome.value,
+                        "confidence": plan.confidence,
+                        "corrections": [c.model_dump(mode="json") for c in plan.corrections],
+                        "refused": list(plan.refused),
+                        "model_said": None
+                        if step.output is None
+                        else step.output.model_dump(mode="json"),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            report.flush()
+        for correction in plan.corrections:
+            print(
+                f"  {step.title[:50]:<50} {correction.field}: "
+                f"{correction.before} -> {correction.after}",
+                file=sys.stderr,
+                flush=True,
+            )
+        if stats.read % args.every == 0:
+            print(f"[{stats.read}] changed={stats.corrected}", file=sys.stderr, flush=True)
+
+    try:
+        with bound_run_id(str(ULID())):
+            stats = review_all(
+                conn,
+                profile=ctx.profile,
+                geo=ctx.geo,
+                cfg=ctx.llm,
+                limit=args.limit,
+                dry_run=args.dry_run,
+                posting_ids=[args.posting_id] if args.posting_id else None,
+                on_step=show,
+            )
+    finally:
+        if report is not None:
+            report.close()
+    _print_review_summary(stats, dry_run=args.dry_run)
+    if not args.dry_run:
+        remaining = len(
+            llm_reviews.unreviewed_posting_ids(conn, review_version=ctx.profile.review.version)
+        )
+        print(f"  still unread: {remaining}", file=sys.stderr)
     conn.close()
     return 0
 
@@ -375,6 +469,18 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "llm-enqueue", help="queue stored postings the LLM could still help with"
     ).set_defaults(func=cmd_llm_enqueue)
+
+    review = subparsers.add_parser(
+        "llm-review", help="have the LLM re-read stored postings and correct their fields"
+    )
+    review.add_argument("--limit", type=int, default=None, help="read at most this many")
+    review.add_argument(
+        "--dry-run", action="store_true", help="show what would change, write nothing"
+    )
+    review.add_argument("--posting-id", default=None, help="read this one posting only")
+    review.add_argument("--report", default=None, help="write one JSON line per posting here")
+    review.add_argument("--every", type=int, default=25, help="progress line every N postings")
+    review.set_defaults(func=cmd_llm_review)
 
     llm_drain = subparsers.add_parser("llm-drain", help="one pass over the deferred LLM queue")
     llm_drain.add_argument(
