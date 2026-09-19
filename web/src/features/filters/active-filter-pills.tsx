@@ -1,5 +1,5 @@
 import type { PostingsFilter } from '@/api/queries'
-import { DEFAULT_TIERS, DEFAULT_VISA, sameStringSet } from '@/features/filters/defaults'
+import { DEFAULT_TIERS, DEFAULT_VISA, sameStringSet, STATUS_OPTIONS } from '@/features/filters/defaults'
 
 interface Pill {
   id: string
@@ -7,7 +7,7 @@ interface Pill {
   onRemove: () => void
 }
 
-type ArrayDimension = 'countries' | 'cities' | 'companies' | 'sectors' | 'seniorities' | 'remote_modes' | 'tech_all' | 'tech_any'
+type ArrayDimension = 'countries' | 'cities' | 'companies' | 'sectors' | 'seniorities' | 'remote_modes' | 'tech_all' | 'tech_any' | 'statuses'
 
 function buildPills(
   filter: PostingsFilter,
@@ -37,6 +37,7 @@ function buildPills(
   arrayDimension('remote_modes')
   arrayDimension('tech_all', (tech) => `${tech} (all)`)
   arrayDimension('tech_any', (tech) => `${tech} (any)`)
+  arrayDimension('statuses', (status) => `Tracking: ${STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}`)
 
   if (!sameStringSet(filter.visa ?? [], DEFAULT_VISA)) {
     pills.push({

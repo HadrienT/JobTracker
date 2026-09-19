@@ -115,3 +115,23 @@ describe('encodeFeedState / decodeFeedState — round trip over all thirteen dim
     expect(params.has('sort')).toBe(false)
   })
 })
+
+describe('application statuses in the URL', () => {
+  it('round-trips a tracking filter', () => {
+    const state: FeedUrlState = {
+      filter: { ...decodeFeedState(new URLSearchParams('')).filter, statuses: ['applied', 'interview'] },
+      sort: 'score',
+    }
+    expect(roundTrip(state).filter.statuses).toEqual(['applied', 'interview'])
+    expect(encodeFeedState(state).getAll('statuses')).toEqual(['applied', 'interview'])
+  })
+
+  it('drops a status it does not know instead of failing', () => {
+    const state = decodeFeedState(new URLSearchParams('statuses=applied&statuses=ghosted'))
+    expect(state.filter.statuses).toEqual(['applied'])
+  })
+
+  it('leaves the URL untouched when nothing is tracked', () => {
+    expect(encodeFeedState(decodeFeedState(new URLSearchParams(''))).has('statuses')).toBe(false)
+  })
+})

@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/export/postings.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Postings */
+        get: operations["export_postings_export_postings_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/facets": {
         parameters: {
             query?: never;
@@ -140,6 +157,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/postings/{posting_id}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save Note */
+        post: operations["save_note_postings__posting_id__note_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/postings/{posting_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Status */
+        post: operations["set_status_postings__posting_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -154,6 +205,12 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * ApplicationStatus
+         * @description Where an application stands — the user's, set by hand. Absent means "not tracked".
+         * @enum {string}
+         */
+        ApplicationStatus: "applied" | "interview" | "offer" | "rejected" | "withdrawn";
         /** CompanyOut */
         CompanyOut: {
             /** Company Name */
@@ -293,12 +350,18 @@ export interface components {
             /** Unplaced */
             unplaced: number;
         };
+        /** NoteRequest */
+        NoteRequest: {
+            /** Note */
+            note: string;
+        };
         /** PostingDetailOut */
         PostingDetailOut: {
             /** Alias Count */
             alias_count: number;
             /** Aliases */
             aliases: components["schemas"]["AliasOut"][];
+            application_status: components["schemas"]["ApplicationStatus"] | null;
             /** Closes At */
             closes_at: string | null;
             /** Company Name */
@@ -320,6 +383,8 @@ export interface components {
             locations: components["schemas"]["LocationOut"][];
             /** Min Years */
             min_years: number | null;
+            /** Note */
+            note: string;
             /** Phd Required */
             phd_required: boolean;
             /** Posted At */
@@ -352,6 +417,7 @@ export interface components {
         PostingOut: {
             /** Alias Count */
             alias_count: number;
+            application_status: components["schemas"]["ApplicationStatus"] | null;
             /** Closes At */
             closes_at: string | null;
             /** Company Name */
@@ -458,6 +524,13 @@ export interface components {
             status: string;
         };
         /**
+         * StatusRequest
+         * @description `status: null` stops tracking the posting.
+         */
+        StatusRequest: {
+            status: components["schemas"]["ApplicationStatus"] | null;
+        };
+        /**
          * Tier
          * @enum {string}
          */
@@ -521,11 +594,63 @@ export interface operations {
             };
         };
     };
+    export_postings_export_postings_csv_get: {
+        parameters: {
+            query?: {
+                sort?: components["schemas"]["SortKey"];
+                countries?: string[];
+                cities?: string[];
+                statuses?: components["schemas"]["ApplicationStatus"][];
+                place_country?: string | null;
+                place_city?: string | null;
+                companies?: string[];
+                sectors?: string[];
+                sources?: components["schemas"]["Source"][];
+                role_families?: components["schemas"]["RoleFamily"][];
+                seniorities?: components["schemas"]["Seniority"][];
+                remote_modes?: components["schemas"]["RemoteMode"][];
+                tech_all?: string[];
+                tech_any?: string[];
+                visa?: components["schemas"]["VisaStatus"][];
+                min_score?: number;
+                tiers?: components["schemas"]["Tier"][];
+                posted_within_days?: number | null;
+                query?: string | null;
+                favorites_only?: boolean;
+                include_hidden?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_facets_facets_get: {
         parameters: {
             query?: {
                 countries?: string[];
                 cities?: string[];
+                statuses?: components["schemas"]["ApplicationStatus"][];
                 place_country?: string | null;
                 place_city?: string | null;
                 companies?: string[];
@@ -595,6 +720,7 @@ export interface operations {
             query?: {
                 countries?: string[];
                 cities?: string[];
+                statuses?: components["schemas"]["ApplicationStatus"][];
                 place_country?: string | null;
                 place_city?: string | null;
                 companies?: string[];
@@ -647,6 +773,7 @@ export interface operations {
                 limit?: number;
                 countries?: string[];
                 cities?: string[];
+                statuses?: components["schemas"]["ApplicationStatus"][];
                 place_country?: string | null;
                 place_city?: string | null;
                 companies?: string[];
@@ -767,6 +894,72 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["FlagRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_note_postings__posting_id__note_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                posting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_status_postings__posting_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                posting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusRequest"];
             };
         };
         responses: {

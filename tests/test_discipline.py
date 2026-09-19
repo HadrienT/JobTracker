@@ -285,7 +285,9 @@ def test_persisted_enum_values_only_change_deliberately() -> None:
     assert not problems, "; ".join(problems)
 
 
-@pytest.mark.parametrize("name", ["Source", "Tier", "VisaStatus", "Seniority", "RoleFamily"])
+@pytest.mark.parametrize(
+    "name", ["Source", "Tier", "VisaStatus", "Seniority", "RoleFamily", "ApplicationStatus"]
+)
 def test_the_snapshot_covers_the_enums_that_reach_the_database(name: str) -> None:
     import json
 

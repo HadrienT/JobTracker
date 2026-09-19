@@ -76,6 +76,10 @@ export const api = {
   listPostings(query: PostingsQuery): Promise<Schemas['PostingsPage']> {
     return request(`/postings${buildSearch(query)}`)
   },
+  /** The address of the CSV of a feed — a plain link the browser downloads, not a fetch. */
+  exportUrl(query: PostingsQuery): string {
+    return `${apiBase()}/export/postings.csv${buildSearch(query)}`
+  },
   getMapPins(query: MapPinsQuery): Promise<Schemas['MapPins']> {
     return request(`/map/pins${buildSearch(query)}`)
   },
@@ -86,6 +90,18 @@ export const api = {
     return request(`/postings/${encodeURIComponent(postingId)}/favorite`, {
       method: 'POST',
       body: JSON.stringify({ value } satisfies Schemas['FlagRequest']),
+    })
+  },
+  setStatus(postingId: string, status: Schemas['ApplicationStatus'] | null): Promise<void> {
+    return request(`/postings/${encodeURIComponent(postingId)}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status } satisfies Schemas['StatusRequest']),
+    })
+  },
+  setNote(postingId: string, note: string): Promise<void> {
+    return request(`/postings/${encodeURIComponent(postingId)}/note`, {
+      method: 'POST',
+      body: JSON.stringify({ note } satisfies Schemas['NoteRequest']),
     })
   },
   setHidden(postingId: string, value: boolean): Promise<void> {

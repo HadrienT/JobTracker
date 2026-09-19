@@ -59,6 +59,16 @@ class VisaStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+class ApplicationStatus(StrEnum):
+    """Where an application stands — the user's, set by hand. Absent means "not tracked"."""
+
+    APPLIED = "applied"
+    INTERVIEW = "interview"
+    OFFER = "offer"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+
+
 class RemoteMode(StrEnum):
     ONSITE = "onsite"
     HYBRID = "hybrid"

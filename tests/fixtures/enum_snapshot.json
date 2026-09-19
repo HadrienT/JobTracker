@@ -1,4 +1,11 @@
 {
+  "ApplicationStatus": [
+    "applied",
+    "interview",
+    "offer",
+    "rejected",
+    "withdrawn"
+  ],
   "RemoteMode": [
     "hybrid",
     "onsite",

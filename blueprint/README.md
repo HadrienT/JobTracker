@@ -76,6 +76,7 @@ commande.
 | [WP12](wp/WP12-match-llm.md) | `match.llm` — préfiltre gratuit + LLM local à décodage contraint | WP05 · WP08 | WP06 · WP10 · WP11 |
 | [WP13](wp/WP13-aggregators.md) | Agrégateurs fragiles — LinkedIn, Indeed, eFinancialCareers, WTTJ | WP03 · WP04 · WP08 | WP11 · WP12 |
 | [WP17](wp/WP17-map.md) | Onglet Carte — pins par ville, liste par pin, mêmes filtres que le feed | WP07, WP10, WP11 | — |
+| [WP18](wp/WP18-tracking.md) | Suivi de candidature — statut, note, pastille « nouveau » | WP07, WP10, WP11 | — |
 | [WP14](wp/WP14-quality.md) | Qualité & tests — corpus doré, invariants, CI, e2e Playwright | WP01 (amorce) | **tout** |
 | [WP15](wp/WP15-deploy.md) | Déploiement auto-hébergé — compose, tunnel Cloudflare, sauvegardes | WP08 · WP11 | WP16 |
 | [WP16](wp/WP16-feedback.md) | Boucle d'amélioration — rejeu du normaliseur, rapport, feedback favoris | WP02 · WP08 | WP15 |

@@ -8,6 +8,8 @@ import { useFeedUrlState } from '@/features/filters/use-feed-url-state'
 import { FeedList } from '@/features/feed/feed-list'
 import { PostingDetailPanel } from '@/features/feed/posting-detail-panel'
 import { usePostingRoute } from '@/features/feed/routing'
+import { SavedViews } from '@/features/filters/saved-views-menu'
+import { api } from '@/api/client'
 import { useEscapeKey } from '@/features/feed/use-keyboard-shortcuts'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
@@ -71,6 +73,14 @@ export function FeedScreen() {
           }}
           className="w-72 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-tier-possible"
         />
+        <SavedViews />
+        <a
+          href={api.exportUrl({ ...filter, sort })}
+          download
+          className="rounded-md border border-border px-2 py-1 text-sm text-text-secondary hover:text-text-primary"
+        >
+          Export CSV
+        </a>
         <label className="ml-auto flex items-center gap-2 text-sm text-text-secondary">
           Sort
           <select

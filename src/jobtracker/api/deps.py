@@ -11,7 +11,15 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query, Request
 
-from jobtracker.core.enums import RemoteMode, RoleFamily, Seniority, Source, Tier, VisaStatus
+from jobtracker.core.enums import (
+    ApplicationStatus,
+    RemoteMode,
+    RoleFamily,
+    Seniority,
+    Source,
+    Tier,
+    VisaStatus,
+)
 from jobtracker.store.postings import PostingFilter
 
 _DEFAULT_VISA = [VisaStatus.SPONSORS, VisaStatus.UNKNOWN]
@@ -29,6 +37,7 @@ Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFilter field
     countries: Annotated[list[str], Query()] = [],  # noqa: B006
     cities: Annotated[list[str], Query()] = [],  # noqa: B006
+    statuses: Annotated[list[ApplicationStatus], Query()] = [],  # noqa: B006
     place_country: Annotated[str | None, Query()] = None,
     place_city: Annotated[str | None, Query()] = None,
     companies: Annotated[list[str], Query()] = [],  # noqa: B006
@@ -53,6 +62,7 @@ def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFi
         )
     return PostingFilter(
         place=(place_country, place_city) if place_country and place_city else None,
+        statuses=frozenset(statuses),
         countries=frozenset(countries),
         cities=frozenset(cities),
         companies=frozenset(companies),

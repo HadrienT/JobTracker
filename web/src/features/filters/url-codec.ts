@@ -10,6 +10,7 @@ const VALID_SENIORITIES = ['intern', 'graduate', 'junior', 'mid', 'senior', 'lea
 const VALID_REMOTE_MODES = ['onsite', 'hybrid', 'remote', 'unknown']
 const VALID_VISA = ['sponsors', 'no', 'unknown']
 const VALID_TIERS = ['strong', 'possible', 'stretch', 'rejected']
+const VALID_STATUSES = ['applied', 'interview', 'offer', 'rejected', 'withdrawn']
 const VALID_SORT = ['score', 'posted', 'seen', 'closes', 'company']
 
 function nonEmptyStrings(values: string[]): string[] {
@@ -73,6 +74,7 @@ export function decodeFeedState(params: URLSearchParams): FeedUrlState {
     posted_within_days: decodePostedWithinDays(params.get('posted_within_days')),
     query,
     favorites_only: params.get('favorites_only') === 'true',
+    statuses: filterToAllowed(params.getAll('statuses'), VALID_STATUSES),
   }
 
   return { filter, sort }
@@ -116,6 +118,7 @@ export function encodeFeedState(state: FeedUrlState): URLSearchParams {
   }
   if (filter.query) params.set('query', filter.query)
   if (filter.favorites_only) params.set('favorites_only', 'true')
+  appendListUnlessDefault(params, 'statuses', filter.statuses, DEFAULT_FILTER.statuses ?? [])
   if (sort !== DEFAULT_SORT) params.set('sort', sort)
 
   return params

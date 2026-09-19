@@ -200,6 +200,8 @@ function buildOne(index: number): PostingDetailOut {
     alias_count: rand() < 0.2 ? Math.ceil(rand() * 3) : 0,
     favorited: rand() < 0.05,
     hidden: false,
+    application_status: null,
+    note: '',
     url: `https://boards.example.com/${company.slug}/jobs/${String(index)}`,
     description: `We are looking for a ${role.title} to join ${company.name}. ${'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(6)}`,
     reasons,
@@ -238,6 +240,7 @@ export function toListItem(posting: PostingDetailOut): PostingOut {
     alias_count: posting.alias_count,
     favorited: posting.favorited,
     hidden: posting.hidden,
+    application_status: posting.application_status,
     url: posting.url,
   }
 }

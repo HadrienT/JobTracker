@@ -1,4 +1,5 @@
 import type { PostingsFilter, SortKey } from '@/api/queries'
+import type { ApplicationStatus } from '@/api/queries'
 import type { RemoteMode, Seniority, Tier, VisaStatus } from '@/mocks/contract'
 
 /**
@@ -26,6 +27,7 @@ export const DEFAULT_FILTER: PostingsFilter = {
   posted_within_days: null,
   query: null,
   favorites_only: false,
+  statuses: [],
 }
 
 export function sameStringSet(a: readonly string[] = [], b: readonly string[] = []): boolean {
@@ -50,7 +52,8 @@ export function isDefaultFilter(filter: PostingsFilter): boolean {
     (filter.min_score ?? 0) === DEFAULT_FILTER.min_score &&
     (filter.posted_within_days ?? null) === DEFAULT_FILTER.posted_within_days &&
     (filter.query ?? null) === DEFAULT_FILTER.query &&
-    (filter.favorites_only ?? false) === DEFAULT_FILTER.favorites_only
+    (filter.favorites_only ?? false) === DEFAULT_FILTER.favorites_only &&
+    sameStringSet(filter.statuses, DEFAULT_FILTER.statuses)
   )
 }
 
@@ -89,6 +92,15 @@ export const TIER_OPTIONS: { value: Tier; label: string }[] = [
   { value: 'possible', label: 'Possible' },
   { value: 'stretch', label: 'Stretch' },
   { value: 'rejected', label: 'Rejected' },
+]
+
+/** The application pipeline, in the order it happens. A posting with none of these is simply not tracked. */
+export const STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] = [
+  { value: 'applied', label: 'Applied' },
+  { value: 'interview', label: 'Interview' },
+  { value: 'offer', label: 'Offer' },
+  { value: 'rejected', label: 'Rejected by them' },
+  { value: 'withdrawn', label: 'Withdrawn' },
 ]
 
 export const POSTED_WITHIN_OPTIONS: { value: number | null; label: string }[] = [

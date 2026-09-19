@@ -9,6 +9,8 @@ import { Score } from '@/shared/ui/score'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { VisaBadge } from '@/shared/ui/visa-badge'
 import { postingMeta } from '@/features/feed/posting-meta'
+import { isNewSinceLastVisit } from '@/features/feed/last-visit'
+import { StatusBadge } from '@/features/feed/status-badge'
 
 const STALE_AFTER_DAYS = 30
 
@@ -52,7 +54,17 @@ export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="truncate text-text-primary">{posting.title}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              {isNewSinceLastVisit(posting.first_seen_at) && (
+                <span
+                  aria-label="New since your last visit"
+                  title="New since your last visit"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-tier-possible"
+                />
+              )}
+              <span className="truncate text-text-primary">{posting.title}</span>
+              {posting.application_status !== null && <StatusBadge status={posting.application_status} />}
+            </span>
           </TooltipTrigger>
           <TooltipContent>{posting.title_raw}</TooltipContent>
         </Tooltip>

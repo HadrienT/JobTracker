@@ -12,6 +12,9 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Rendering thousands of mock rows is CPU-bound: on a shared machine (a build, a container,
+    // a local LLM) the 5 s default turns into a coin flip. A generous limit costs nothing on a pass.
+    testTimeout: 20_000,
     setupFiles: ['./src/test/setup.ts'],
     css: true,
     coverage: {

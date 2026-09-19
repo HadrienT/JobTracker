@@ -8,6 +8,7 @@ import {
   REMOTE_MODE_OPTIONS,
   SECTOR_OPTIONS,
   SENIORITY_OPTIONS,
+  STATUS_OPTIONS,
   TIER_OPTIONS,
   VISA_OPTIONS,
 } from '@/features/filters/defaults'
@@ -111,6 +112,15 @@ export function FiltersPanel({ filter, onChange, onReset }: FiltersPanelProps) {
         selected={filter.visa ?? []}
         onChange={(next) => {
           onChange({ visa: next.length > 0 ? (next as PostingsFilter['visa']) : DEFAULT_VISA })
+        }}
+      />
+
+      <FacetCheckboxGroup
+        title="Tracking"
+        options={STATUS_OPTIONS}
+        selected={filter.statuses ?? []}
+        onChange={(next) => {
+          onChange({ statuses: next as PostingsFilter['statuses'] })
         }}
       />
 

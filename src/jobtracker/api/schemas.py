@@ -4,10 +4,12 @@ change what the front already depends on.
 """
 
 from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 from jobtracker.core.enums import (
+    ApplicationStatus,
     RemoteMode,
     RoleFamily,
     SalaryPeriod,
@@ -18,6 +20,9 @@ from jobtracker.core.enums import (
 )
 from jobtracker.core.models import Reason
 from jobtracker.store.postings import PostingAliasRow, PostingRow
+
+# A note is a reminder, not a document: bounded so one request cannot fill the database.
+NOTE_MAX_LENGTH = 4000
 
 
 class LocationOut(BaseModel):
@@ -64,6 +69,7 @@ class PostingOut(BaseModel):
     alias_count: int
     favorited: bool
     hidden: bool
+    application_status: ApplicationStatus | None
 
     @classmethod
     def from_row(cls, row: PostingRow) -> "PostingOut":
@@ -93,6 +99,7 @@ class PostingOut(BaseModel):
             alias_count=row.alias_count,
             favorited=row.is_favorite,
             hidden=row.is_hidden,
+            application_status=row.application_status,
         )
 
 
@@ -111,6 +118,7 @@ class AliasOut(BaseModel):
 
 class PostingDetailOut(PostingOut):
     description: str | None
+    note: str
     reasons: tuple[Reason, ...]
     rejection_reason: str | None
     aliases: tuple[AliasOut, ...]
@@ -135,6 +143,16 @@ class MapPins(BaseModel):
     pins: tuple[MapPin, ...]
     total: int  # postings matching the filter
     unplaced: int  # of those, the ones with no city to pin (remote, country-only, unresolved)
+
+
+class StatusRequest(BaseModel):
+    """`status: null` stops tracking the posting."""
+
+    status: ApplicationStatus | None
+
+
+class NoteRequest(BaseModel):
+    note: Annotated[str, StringConstraints(max_length=NOTE_MAX_LENGTH)]
 
 
 class CompanyOut(BaseModel):

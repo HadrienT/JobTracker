@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { usePostingDetail } from '@/api/queries'
 import { cn } from '@/shared/lib/cn'
+import { TrackingSection } from '@/features/feed/tracking-section'
 import { Age } from '@/shared/ui/age'
 import { Deadline } from '@/shared/ui/deadline'
 import { LocationCell } from '@/shared/ui/location-cell'
@@ -146,6 +147,8 @@ export function PostingDetailPanel({ postingId, onClose }: PostingDetailPanelPro
                 </dd>
               </div>
             </dl>
+
+            <TrackingSection key={posting.posting_id} posting={posting} />
 
             {posting.reasons.length > 0 && (
               <section className="flex flex-col gap-2">

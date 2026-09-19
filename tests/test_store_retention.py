@@ -5,9 +5,10 @@ from pathlib import Path
 import pytest
 
 from factories_store import make_board, make_posting, make_verdict
+from jobtracker.core.enums import ApplicationStatus
 from jobtracker.store.archive import archive_payload, has_payload
 from jobtracker.store.companies import sync_companies
-from jobtracker.store.postings import upsert_posting
+from jobtracker.store.postings import set_application_status, set_note, upsert_posting
 from jobtracker.store.retention import (
     purge_inactive_postings,
     purge_raw_payloads,
@@ -192,6 +193,25 @@ def test_a_favorite_survives_its_posting_going_inactive_and_old(
     ).fetchone()
     assert flag is not None and flag["is_favorite"] == 1
     assert store_conn.execute("SELECT 1 FROM postings WHERE posting_id = 'loved'").fetchone()
+
+
+def test_a_tracked_application_survives_its_offer_closing(store_conn: sqlite3.Connection) -> None:
+    """The moment an offer closes is when you want to look up what you applied to."""
+    _old_inactive(store_conn, "applied-to")
+    set_application_status(store_conn, "applied-to", ApplicationStatus.INTERVIEW)
+    set_note(store_conn, "applied-to", "spoke to Anna, second round on the 12th")
+    store_conn.commit()
+
+    run_retention(store_conn, now=_NOW)
+    store_conn.commit()
+
+    row = store_conn.execute(
+        "SELECT application_status, note FROM user_flags WHERE posting_id = 'applied-to'"
+    ).fetchone()
+    assert (row["application_status"], row["note"]) == (
+        "interview",
+        "spoke to Anna, second round on the 12th",
+    )
 
 
 def test_retention_never_holds_the_write_lock_between_batches(

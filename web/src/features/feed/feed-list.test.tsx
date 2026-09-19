@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { FeedList } from '@/features/feed/feed-list'
 import { mockViewportDimensions } from '@/features/feed/test-utils'
 import { ToastProvider } from '@/features/favorites/toast'
+import { POSTINGS } from '@/mocks/data'
 import { server } from '@/mocks/server'
 import { TooltipProvider } from '@/shared/ui/tooltip'
 
@@ -133,6 +134,24 @@ describe('FeedList', () => {
     await user.keyboard('f')
 
     expect(await screen.findByText('Could not update favorite — try again.')).toBeInTheDocument()
+  })
+
+  it('shows the status of a tracked posting on its row, and filters on it', async () => {
+    const target = POSTINGS.find((p) => p.tier !== 'rejected')
+    if (!target) throw new Error('no fixture posting to track')
+    await fetch(`/postings/${target.posting_id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'interview' }),
+    })
+
+    renderFeed({ filter: { statuses: ['interview'] } })
+
+    const rows = await screen.findAllByTestId('posting-row')
+    expect(rows).toHaveLength(1)
+    const [row] = rows
+    if (!row) throw new Error('no row rendered')
+    expect(within(row).getByText('Interview')).toBeInTheDocument()
   })
 
   it('opens a posting on a single click, not a double click', async () => {

@@ -106,21 +106,21 @@ function mapCachedPages(
   return { ...data, pages: data.pages.map((page) => ({ ...page, items: transform(page.items) })) }
 }
 
-interface FlagVariables {
+interface FlagVariables<V> {
   postingId: string
-  value: boolean
+  value: V
 }
 
 /** Optimistic update + rollback on failure, per blueprint/05-SEQUENCES.md §5. */
-function useFlagMutation(
-  setFlag: (postingId: string, value: boolean) => Promise<void>,
-  applyOptimistic: (items: PostingOut[], postingId: string, value: boolean) => PostingOut[],
+function useFlagMutation<V>(
+  setFlag: (postingId: string, value: V) => Promise<void>,
+  applyOptimistic: (items: PostingOut[], postingId: string, value: V) => PostingOut[],
 ) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ postingId, value }: FlagVariables) => setFlag(postingId, value),
-    onMutate: async ({ postingId, value }: FlagVariables) => {
+    mutationFn: ({ postingId, value }: FlagVariables<V>) => setFlag(postingId, value),
+    onMutate: async ({ postingId, value }: FlagVariables<V>) => {
       await queryClient.cancelQueries({ queryKey: [POSTINGS_ROOT_KEY] })
       const previousPages = queryClient.getQueriesData<InfiniteData<PostingsPage>>({
         queryKey: [POSTINGS_ROOT_KEY],
@@ -148,7 +148,7 @@ function useFlagMutation(
 }
 
 export function useSetFavorite() {
-  return useFlagMutation(
+  return useFlagMutation<boolean>(
     (postingId, value) => api.setFavorite(postingId, value),
     (items, postingId, value) => items.map((item) => (item.posting_id === postingId ? { ...item, favorited: value } : item)),
   )
@@ -156,8 +156,46 @@ export function useSetFavorite() {
 
 /** Hiding removes the row from the feed on the spot — the default filter excludes hidden postings. */
 export function useSetHidden() {
-  return useFlagMutation(
+  return useFlagMutation<boolean>(
     (postingId, value) => api.setHidden(postingId, value),
     (items, postingId, value) => (value ? items.filter((item) => item.posting_id !== postingId) : items),
   )
+}
+
+export type ApplicationStatus = Schemas['ApplicationStatus']
+
+/**
+ * Where an application stands. Optimistic like the favorite, and the list is refetched afterwards:
+ * a status can move a posting in or out of a status-filtered view, which no local patch can know.
+ */
+export function useSetApplicationStatus() {
+  const queryClient = useQueryClient()
+  const mutation = useFlagMutation<ApplicationStatus | null>(
+    (postingId, value) => api.setStatus(postingId, value),
+    (items, postingId, value) =>
+      items.map((item) => (item.posting_id === postingId ? { ...item, application_status: value } : item)),
+  )
+  return {
+    ...mutation,
+    mutate: (variables: { postingId: string; value: ApplicationStatus | null }) => {
+      mutation.mutate(variables, {
+        onSettled: () => {
+          void queryClient.invalidateQueries({ queryKey: [POSTINGS_ROOT_KEY] })
+        },
+      })
+    },
+  }
+}
+
+/** Saves the note and writes it into the cached detail — the list rows do not carry it. */
+export function useSetNote() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ postingId, note }: { postingId: string; note: string }) => api.setNote(postingId, note),
+    onSuccess: (_data, { postingId, note }) => {
+      const key = ['posting', postingId] as const
+      const detail = queryClient.getQueryData<PostingDetailOut>(key)
+      if (detail) queryClient.setQueryData(key, { ...detail, note })
+    },
+  })
 }

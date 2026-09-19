@@ -18,6 +18,7 @@ from ulid import ULID
 from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import (
     AGGREGATOR_SOURCES,
+    ApplicationStatus,
     RemoteMode,
     RoleFamily,
     Seniority,
@@ -45,6 +46,9 @@ class PostingFilter(BaseModel, frozen=True):
     # location row carries both — unlike `countries` + `cities`, which are two independent
     # tests. This is what a map pin selects (London GB is not London CA).
     place: tuple[str, str] | None = None
+    # Application tracking: only postings in one of these states. Asking for a state also
+    # lifts the "active only" rule — an application outlives the offer that opened it.
+    statuses: frozenset[ApplicationStatus] = frozenset()
     companies: frozenset[str] = frozenset()
     sectors: frozenset[str] = frozenset()
     sources: frozenset[Source] = frozenset()
@@ -99,6 +103,8 @@ class PostingRow(BaseModel, frozen=True):
     alias_count: int
     is_favorite: bool
     is_hidden: bool
+    application_status: ApplicationStatus | None
+    note: str
 
 
 class Page(BaseModel, frozen=True):
@@ -164,6 +170,11 @@ def _order_by(sort: SortKey) -> str:
     # intent instead of relying on an implementation default.
     column, direction = _SORT_COLUMNS[sort]
     return f"{column} {direction} NULLS LAST, p.posting_id {direction}"
+
+
+def requires_active(flt: PostingFilter) -> bool:
+    """Closed offers are hidden from the feed — except the ones you flagged or applied to."""
+    return not flt.favorites_only and not flt.statuses
 
 
 def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
@@ -250,6 +261,10 @@ def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
         )
         params.append(flt.query)
 
+    if flt.statuses:
+        placeholders = ",".join("?" for _ in flt.statuses)
+        clauses.append(f"uf.application_status IN ({placeholders})")
+        params.extend(sorted(status.value for status in flt.statuses))
     if flt.favorites_only:
         clauses.append("uf.is_favorite = 1")
     if not flt.include_hidden:
@@ -264,7 +279,7 @@ def list_postings(
     """Keyset-paginated feed. Never uses OFFSET (ADR-007)."""
     clauses = ["p.is_canonical = 1"]
     params: list[object] = []
-    if not flt.favorites_only:
+    if requires_active(flt):
         clauses.append("p.is_active = 1")
 
     extra_clauses, extra_params = filter_clauses(flt)
@@ -281,7 +296,9 @@ def list_postings(
     sql = f"""
         SELECT p.*, c.company_name AS company_name, c.sector AS sector,
                COALESCE(uf.is_favorite, 0) AS is_favorite,
-               COALESCE(uf.is_hidden, 0) AS is_hidden
+               COALESCE(uf.is_hidden, 0) AS is_hidden,
+               uf.application_status AS application_status,
+               COALESCE(uf.note, '') AS note
         FROM postings p
         JOIN companies c ON c.company_slug = p.company_slug
         LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
@@ -359,6 +376,10 @@ def _row_to_posting_row(conn: sqlite3.Connection, row: sqlite3.Row) -> PostingRo
         alias_count=alias_count,
         is_favorite=bool(row["is_favorite"]),
         is_hidden=bool(row["is_hidden"]),
+        application_status=(
+            ApplicationStatus(row["application_status"]) if row["application_status"] else None
+        ),
+        note=row["note"],
     )
 
 
@@ -715,13 +736,43 @@ def mark_hidden(conn: sqlite3.Connection, posting_id: str, value: bool) -> None:
     )
 
 
+def set_application_status(
+    conn: sqlite3.Connection, posting_id: str, status: ApplicationStatus | None
+) -> None:
+    now = utc_now().isoformat()
+    conn.execute(
+        """
+        INSERT INTO user_flags (posting_id, is_favorite, is_hidden, updated_at,
+                                application_status, status_updated_at)
+        VALUES (?, 0, 0, ?, ?, ?)
+        ON CONFLICT (posting_id) DO UPDATE SET application_status = excluded.application_status,
+            status_updated_at = excluded.status_updated_at, updated_at = excluded.updated_at
+        """,
+        (posting_id, now, status.value if status is not None else None, now),
+    )
+
+
+def set_note(conn: sqlite3.Connection, posting_id: str, note: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO user_flags (posting_id, is_favorite, is_hidden, updated_at, note)
+        VALUES (?, 0, 0, ?, ?)
+        ON CONFLICT (posting_id) DO UPDATE SET note = excluded.note,
+            updated_at = excluded.updated_at
+        """,
+        (posting_id, utc_now().isoformat(), note),
+    )
+
+
 def get_posting_row(conn: sqlite3.Connection, posting_id: str) -> PostingRow | None:
     """One posting for `GET /postings/{id}` — WP07 (blueprint/03-INTERFACES.md §3.6)."""
     row = conn.execute(
         """
         SELECT p.*, c.company_name AS company_name, c.sector AS sector,
                COALESCE(uf.is_favorite, 0) AS is_favorite,
-               COALESCE(uf.is_hidden, 0) AS is_hidden
+               COALESCE(uf.is_hidden, 0) AS is_hidden,
+               uf.application_status AS application_status,
+               COALESCE(uf.note, '') AS note
         FROM postings p
         JOIN companies c ON c.company_slug = p.company_slug
         LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id

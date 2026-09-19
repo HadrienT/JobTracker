@@ -10,7 +10,7 @@ import sqlite3
 
 from pydantic import BaseModel
 
-from jobtracker.store.postings import PostingFilter, filter_clauses
+from jobtracker.store.postings import PostingFilter, filter_clauses, requires_active
 
 
 class FacetCounts(BaseModel, frozen=True):
@@ -26,7 +26,7 @@ class FacetCounts(BaseModel, frozen=True):
 def base_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
     clauses = ["p.is_canonical = 1"]
     params: list[object] = []
-    if not flt.favorites_only:
+    if requires_active(flt):
         clauses.append("p.is_active = 1")
     extra_clauses, extra_params = filter_clauses(flt)
     clauses.extend(extra_clauses)

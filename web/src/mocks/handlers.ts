@@ -8,6 +8,21 @@ import { COMPANIES_OUT, HEALTH, POSTINGS, toListItem } from './data'
 const API_BASE = '*'
 
 /** City centres of the fixture cities (`mocks/data.ts`) — the real API takes them from configs/geo.yaml. */
+/**
+ * What the user has set on a posting this session — the fixtures themselves never change, so
+ * a status or a note lives here and is layered over every response, as the real `user_flags` is.
+ */
+const tracking = new Map<string, { status: PostingOut['application_status']; note: string }>()
+
+export function resetTracking(): void {
+  tracking.clear()
+}
+
+function withTracking<T extends PostingOut>(item: T): T {
+  const mine = tracking.get(item.posting_id)
+  return mine ? { ...item, application_status: mine.status } : item
+}
+
 const CITY_COORDINATES: Record<string, [number, number]> = {
   'NL/Amsterdam': [52.3676, 4.9041],
   'GB/London': [51.5074, -0.1278],
@@ -70,6 +85,7 @@ type ExceptDimension =
   | 'posted_within_days'
   | 'query'
   | 'favorites_only'
+  | 'statuses'
 
 function applyFilters(items: PostingOut[], params: URLSearchParams, except?: ExceptDimension): PostingOut[] {
   const set = (name: ExceptDimension, key: string) => (except === name ? new Set<string>() : new Set(params.getAll(key)))
@@ -90,6 +106,7 @@ function applyFilters(items: PostingOut[], params: URLSearchParams, except?: Exc
   const query = except === 'query' ? null : (params.get('query')?.toLowerCase() ?? null)
   const placeCountry = params.get('place_country')
   const placeCity = params.get('place_city')
+  const statuses = except === 'statuses' ? new Set<string>() : new Set(params.getAll('statuses'))
   const favoritesOnly = except === 'favorites_only' ? false : params.get('favorites_only') === 'true'
 
   return items.filter((item) => {
@@ -120,6 +137,9 @@ function applyFilters(items: PostingOut[], params: URLSearchParams, except?: Exc
       const reference = item.posted_at ?? item.first_seen_at
       const ageDays = (Date.now() - new Date(reference).getTime()) / 86_400_000
       if (ageDays > days) return false
+    }
+    if (statuses.size > 0 && !(item.application_status !== null && statuses.has(item.application_status))) {
+      return false
     }
     if (favoritesOnly && !item.favorited) return false
     if (query !== null && query !== '' && !item.title.toLowerCase().includes(query)) return false
@@ -167,7 +187,7 @@ export const handlers = [
     const limit = Math.min(Number(params.get('limit') ?? '50'), 100)
     const offset = decodeCursor(params.get('cursor'))
 
-    const all = POSTINGS.map(toListItem)
+    const all = POSTINGS.map(toListItem).map(withTracking)
     const filtered = applyFilters(all, params)
     const sorter = SORTERS[sortKey] ?? scoreThenId
     const sorted = [...filtered].sort(sorter)
@@ -183,12 +203,31 @@ export const handlers = [
   http.get(`${API_BASE}/postings/:id`, ({ params }) => {
     const posting = POSTINGS.find((p) => p.posting_id === params.id)
     if (!posting) return new HttpResponse(null, { status: 404 })
-    return HttpResponse.json(posting)
+    const mine = tracking.get(posting.posting_id)
+    return HttpResponse.json(mine ? { ...posting, application_status: mine.status, note: mine.note } : posting)
   }),
 
   http.post(`${API_BASE}/postings/:id/favorite`, ({ params }) => {
     const posting = POSTINGS.find((p) => p.posting_id === params.id)
     if (!posting) return new HttpResponse(null, { status: 404 })
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post(`${API_BASE}/postings/:id/status`, async ({ params, request }) => {
+    const posting = POSTINGS.find((p) => p.posting_id === params.id)
+    if (!posting) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as { status: PostingOut['application_status'] }
+    const previous = tracking.get(posting.posting_id)
+    tracking.set(posting.posting_id, { status: body.status, note: previous?.note ?? '' })
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post(`${API_BASE}/postings/:id/note`, async ({ params, request }) => {
+    const posting = POSTINGS.find((p) => p.posting_id === params.id)
+    if (!posting) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as { note: string }
+    const previous = tracking.get(posting.posting_id)
+    tracking.set(posting.posting_id, { status: previous?.status ?? null, note: body.note })
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -218,7 +257,7 @@ export const handlers = [
 
   http.get(`${API_BASE}/map/pins`, ({ request }) => {
     const params = new URL(request.url).searchParams
-    const filtered = applyFilters(POSTINGS.map(toListItem), params)
+    const filtered = applyFilters(POSTINGS.map(toListItem).map(withTracking), params)
     // As in the real store: the location filters also apply to the pinned row, so a posting
     // open in New York and London leaves no pin in London under `countries=US`.
     const countries = new Set(params.getAll('countries'))
