@@ -23,7 +23,7 @@ class FacetCounts(BaseModel, frozen=True):
     tech: dict[str, int]
 
 
-def _base_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
+def base_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
     clauses = ["p.is_canonical = 1"]
     params: list[object] = []
     if not flt.favorites_only:
@@ -43,7 +43,7 @@ def _count_dimension(
     joins: str = "",
 ) -> dict[str, int]:
     amputated = flt.model_copy(update={exclude_field: frozenset()})
-    clauses, params = _base_clauses(amputated)
+    clauses, params = base_clauses(amputated)
     sql = f"""
         SELECT {select} AS value, COUNT(DISTINCT p.posting_id) AS n
         FROM postings p

@@ -24,9 +24,9 @@ l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 | Collecte | `src/jobtracker/collect/` | un collecteur par **famille d'ATS** (`ats/`), un par agrégateur (`aggregators/`), politique HTTP commune |
 | Normalisation | `src/jobtracker/normalize/` | `RawPosting` → `Posting` : lieu, séniorité, stack, rémunération, visa, empreinte de dédoublonnage. **Zéro I/O**, testable hors ligne |
 | Qualification | `src/jobtracker/match/` | score déterministe contre le profil cible ; `match.llm` = préfiltre + LLM local pour le seul résidu ambigu |
-| API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/companies`, `/health` |
+| API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
 | Exploitation | `src/jobtracker/runtime/` | ordonnanceur, disjoncteur par source, chien de garde inversé, CLI |
-| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual |
+| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health |
 
 Le LLM d'inférence est **local** : `llama-server` sur `127.0.0.1:8000`, partagé
 avec OpenHands (`~/AgenticEnv`). JobTracker s'y greffe en second, jamais en

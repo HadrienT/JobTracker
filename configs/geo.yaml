@@ -1,3 +1,5 @@
+# City referential — each entry carries the coordinates of the city centre (WGS84, degrees):
+# the map tab pins a posting at exactly that point, so a city without them is a config error.
 # City referential — blueprint/06-CONFIG.md §5, blueprint/wp/WP01-core.md §2.
 # Loaded by core.geo.load_geo_index(). Aliases are case-insensitive.
 #
@@ -12,192 +14,300 @@ cities:
   - city: London
     country: GB
     region: emea
+    lat: 51.5074
+    lon: -0.1278
   - city: London
     country: CA
     region: amer
+    lat: 42.9849
+    lon: -81.2453
     aliases: ["London Ontario", "London, Ontario"]
   - city: Cambridge
     country: GB
     region: emea
+    lat: 52.2053
+    lon: 0.1218
   - city: Cambridge
     country: US
     region: amer
+    lat: 42.3736
+    lon: -71.1097
     aliases: ["Cambridge MA", "Cambridge, Massachusetts"]
   - city: Birmingham
     country: GB
     region: emea
+    lat: 52.4862
+    lon: -1.8904
   - city: Birmingham
     country: US
     region: amer
+    lat: 33.5186
+    lon: -86.8104
     aliases: ["Birmingham AL", "Birmingham, Alabama"]
   - city: Saint Petersburg
     country: RU
     region: emea
+    lat: 59.9343
+    lon: 30.3351
     aliases: ["St Petersburg", "St. Petersburg", "Saint-Pétersbourg"]
   - city: Saint Petersburg
     country: US
     region: amer
+    lat: 27.7676
+    lon: -82.6403
     aliases: ["St Petersburg FL", "Saint Petersburg, Florida"]
   - city: Edinburgh
     country: GB
     region: emea
+    lat: 55.9533
+    lon: -3.1883
   - city: Manchester
     country: GB
     region: emea
+    lat: 53.4808
+    lon: -2.2426
   - city: Paris
     country: FR
     region: emea
+    lat: 48.8566
+    lon: 2.3522
   - city: Amsterdam
     country: NL
     region: emea
+    lat: 52.3676
+    lon: 4.9041
   - city: Frankfurt
     country: DE
     region: emea
+    lat: 50.1109
+    lon: 8.6821
     aliases: ["Frankfurt am Main"]
   - city: Munich
     country: DE
     region: emea
+    lat: 48.1351
+    lon: 11.582
     aliases: ["München"]
   - city: Berlin
     country: DE
     region: emea
+    lat: 52.52
+    lon: 13.405
   - city: Zurich
     country: CH
     region: emea
+    lat: 47.3769
+    lon: 8.5417
     aliases: ["Zürich"]
   - city: Geneva
     country: CH
     region: emea
+    lat: 46.2044
+    lon: 6.1432
     aliases: ["Genève"]
   - city: Zug
     country: CH
     region: emea
+    lat: 47.1724
+    lon: 8.517
   - city: Dublin
     country: IE
     region: emea
+    lat: 53.3498
+    lon: -6.2603
   - city: Luxembourg
     country: LU
     region: emea
+    lat: 49.6116
+    lon: 6.1319
   - city: Madrid
     country: ES
     region: emea
+    lat: 40.4168
+    lon: -3.7038
   - city: Milan
     country: IT
     region: emea
+    lat: 45.4642
+    lon: 9.19
     aliases: ["Milano"]
   - city: Stockholm
     country: SE
     region: emea
+    lat: 59.3293
+    lon: 18.0686
   - city: Copenhagen
     country: DK
     region: emea
+    lat: 55.6761
+    lon: 12.5683
     aliases: ["København"]
   - city: Warsaw
     country: PL
     region: emea
+    lat: 52.2297
+    lon: 21.0122
     aliases: ["Warszawa"]
   - city: Prague
     country: CZ
     region: emea
+    lat: 50.0755
+    lon: 14.4378
     aliases: ["Praha"]
   - city: Vienna
     country: AT
     region: emea
+    lat: 48.2082
+    lon: 16.3738
     aliases: ["Wien"]
   - city: Brussels
     country: BE
     region: emea
+    lat: 50.8503
+    lon: 4.3517
     aliases: ["Bruxelles"]
   - city: Moscow
     country: RU
     region: emea
+    lat: 55.7558
+    lon: 37.6173
     aliases: ["Moskva"]
   - city: Dubai
     country: AE
     region: emea
+    lat: 25.2048
+    lon: 55.2708
   - city: Tel Aviv
     country: IL
     region: emea
+    lat: 32.0853
+    lon: 34.7818
     aliases: ["Tel Aviv-Yafo"]
   # --- AMER ---
   - city: New York
     country: US
     region: amer
+    lat: 40.7128
+    lon: -74.006
     aliases: ["NYC", "New York City", "NY"]
   - city: Chicago
     country: US
     region: amer
+    lat: 41.8781
+    lon: -87.6298
   - city: Boston
     country: US
     region: amer
+    lat: 42.3601
+    lon: -71.0589
   - city: San Francisco
     country: US
     region: amer
+    lat: 37.7749
+    lon: -122.4194
     aliases: ["SF"]
   - city: Salt Lake City
     country: US
     region: amer
+    lat: 40.7608
+    lon: -111.891
   - city: Austin
     country: US
     region: amer
+    lat: 30.2672
+    lon: -97.7431
   - city: Greenwich
     country: US
     region: amer
+    lat: 41.0262
+    lon: -73.6282
     aliases: ["Greenwich CT"]
   - city: Stamford
     country: US
     region: amer
+    lat: 41.0534
+    lon: -73.5387
     aliases: ["Stamford CT"]
   - city: Toronto
     country: CA
     region: amer
+    lat: 43.6532
+    lon: -79.3832
   - city: Montreal
     country: CA
     region: amer
+    lat: 45.5017
+    lon: -73.5673
     aliases: ["Montréal"]
   - city: Grand Cayman
     country: KY
     region: amer
+    lat: 19.3133
+    lon: -81.2546
   # --- APAC ---
   - city: Hong Kong
     country: HK
     region: apac
+    lat: 22.3193
+    lon: 114.1694
     aliases: ["HK"]
   - city: Singapore
     country: SG
     region: apac
+    lat: 1.3521
+    lon: 103.8198
   - city: Tokyo
     country: JP
     region: apac
+    lat: 35.6762
+    lon: 139.6503
   - city: Shanghai
     country: CN
     region: apac
+    lat: 31.2304
+    lon: 121.4737
   - city: Beijing
     country: CN
     region: apac
+    lat: 39.9042
+    lon: 116.4074
   - city: Shenzhen
     country: CN
     region: apac
+    lat: 22.5431
+    lon: 114.0579
   - city: Sydney
     country: AU
     region: apac
+    lat: -33.8688
+    lon: 151.2093
   - city: Melbourne
     country: AU
     region: apac
+    lat: -37.8136
+    lon: 144.9631
   - city: Mumbai
     country: IN
     region: apac
+    lat: 19.076
+    lon: 72.8777
   - city: Bangalore
     country: IN
     region: apac
+    lat: 12.9716
+    lon: 77.5946
     aliases: ["Bengaluru"]
   - city: Gurgaon
     country: IN
     region: apac
+    lat: 28.4595
+    lon: 77.0266
     aliases: ["Gurugram"]
   - city: Seoul
     country: KR
     region: apac
+    lat: 37.5665
+    lon: 126.978
 
 ambiguous:
   london:

@@ -41,6 +41,10 @@ class PostingFilter(BaseModel, frozen=True):
 
     countries: frozenset[str] = frozenset()
     cities: frozenset[str] = frozenset()
+    # One precise location, `(country, city)`: matches a posting only when a *single*
+    # location row carries both — unlike `countries` + `cities`, which are two independent
+    # tests. This is what a map pin selects (London GB is not London CA).
+    place: tuple[str, str] | None = None
     companies: frozenset[str] = frozenset()
     sectors: frozenset[str] = frozenset()
     sources: frozenset[Source] = frozenset()
@@ -187,6 +191,12 @@ def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
             f"AND pl.city IN ({placeholders}))"
         )
         params.extend(sorted(flt.cities))
+    if flt.place is not None:
+        clauses.append(
+            "EXISTS (SELECT 1 FROM posting_locations pl WHERE pl.posting_id = p.posting_id "
+            "AND pl.country = ? AND pl.city = ?)"
+        )
+        params.extend(flt.place)
     if flt.remote_modes:
         placeholders = ",".join("?" for _ in flt.remote_modes)
         clauses.append(

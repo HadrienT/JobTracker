@@ -12,6 +12,13 @@ describe('useAppRoute', () => {
     expect(renderHook(() => useAppRoute()).result.current.route).toBe('feed')
   })
 
+  it('resolves /map and its detail URLs to the map, not the feed', () => {
+    window.history.pushState(null, '', '/map')
+    expect(renderHook(() => useAppRoute()).result.current.route).toBe('map')
+    window.history.pushState(null, '', '/map/p/abc')
+    expect(renderHook(() => useAppRoute()).result.current.route).toBe('map')
+  })
+
   it('resolves /companies and /health', () => {
     window.history.pushState(null, '', '/companies')
     expect(renderHook(() => useAppRoute()).result.current.route).toBe('companies')

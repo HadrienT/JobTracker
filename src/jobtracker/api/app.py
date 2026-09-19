@@ -8,14 +8,19 @@ only `lifespan`, which FastAPI runs solely when actually served, does.
 import sqlite3
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from jobtracker.api.routes import companies, facets, health, postings
+from jobtracker.api.routes import map as map_routes
 from jobtracker.core.config import load_settings
 from jobtracker.core.db import apply_migrations, connect
+from jobtracker.core.geo import load_geo_index
 from jobtracker.store.schema import MIGRATIONS_DIR
+
+GEO_CONFIG = Path(__file__).resolve().parents[3] / "configs" / "geo.yaml"
 
 
 @asynccontextmanager
@@ -24,6 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     conn: sqlite3.Connection = connect(settings.db_path)
     apply_migrations(conn, MIGRATIONS_DIR)
     app.state.conn = conn
+    app.state.geo = load_geo_index(GEO_CONFIG)
     try:
         yield
     finally:
@@ -46,3 +52,4 @@ app.include_router(postings.router)
 app.include_router(facets.router)
 app.include_router(companies.router)
 app.include_router(health.router)
+app.include_router(map_routes.router)

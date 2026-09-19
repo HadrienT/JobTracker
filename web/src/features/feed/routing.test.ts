@@ -54,6 +54,28 @@ describe('usePostingRoute', () => {
     expect(window.location.search).toBe('?countries=US&sort=seen')
   })
 
+  it('sits on the map when given its base path: /map/p/{id} in, /map out', () => {
+    window.history.pushState(null, '', '/map?countries=US')
+    const { result } = renderHook(() => usePostingRoute('/map'))
+    expect(result.current.postingId).toBeNull()
+    act(() => {
+      result.current.openPosting('xyz')
+    })
+    expect(window.location.pathname).toBe('/map/p/xyz')
+    expect(window.location.search).toBe('?countries=US')
+    act(() => {
+      result.current.closePosting()
+    })
+    expect(window.location.pathname).toBe('/map')
+    expect(window.location.search).toBe('?countries=US')
+  })
+
+  it('reads a map detail URL on mount, and ignores a feed detail URL', () => {
+    window.history.pushState(null, '', '/map/p/abc')
+    expect(renderHook(() => usePostingRoute('/map')).result.current.postingId).toBe('abc')
+    expect(renderHook(() => usePostingRoute()).result.current.postingId).toBeNull()
+  })
+
   it('follows browser back/forward navigation', () => {
     const { result } = renderHook(() => usePostingRoute())
     act(() => {

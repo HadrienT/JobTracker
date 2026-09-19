@@ -9,7 +9,7 @@ the two can never drift apart on what a given filter means.
 import sqlite3
 from typing import Annotated
 
-from fastapi import Depends, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 
 from jobtracker.core.enums import RemoteMode, RoleFamily, Seniority, Source, Tier, VisaStatus
 from jobtracker.store.postings import PostingFilter
@@ -29,6 +29,8 @@ Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFilter field
     countries: Annotated[list[str], Query()] = [],  # noqa: B006
     cities: Annotated[list[str], Query()] = [],  # noqa: B006
+    place_country: Annotated[str | None, Query()] = None,
+    place_city: Annotated[str | None, Query()] = None,
     companies: Annotated[list[str], Query()] = [],  # noqa: B006
     sectors: Annotated[list[str], Query()] = [],  # noqa: B006
     sources: Annotated[list[Source], Query()] = [],  # noqa: B006
@@ -45,7 +47,12 @@ def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFi
     favorites_only: Annotated[bool, Query()] = False,
     include_hidden: Annotated[bool, Query()] = False,
 ) -> PostingFilter:
+    if (place_country is None) != (place_city is None):
+        raise HTTPException(
+            status_code=422, detail="place_country and place_city go together: one location"
+        )
     return PostingFilter(
+        place=(place_country, place_city) if place_country and place_city else None,
         countries=frozenset(countries),
         cities=frozenset(cities),
         companies=frozenset(companies),

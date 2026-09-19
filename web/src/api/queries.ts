@@ -30,6 +30,36 @@ export function usePostingsFeed(filter: PostingsFilter, sort: SortKey) {
   })
 }
 
+/** One pin per located city, under the same filters as the feed — `placeholderData` keeps the map steady while a filter moves. */
+export function useMapPins(filter: PostingsFilter) {
+  return useQuery({
+    queryKey: ['map-pins', filter] as const,
+    queryFn: () => api.getMapPins(filter),
+    placeholderData: (previous) => previous,
+  })
+}
+
+/** The postings behind one pin: the feed's own route, narrowed to a single `(country, city)`. */
+export function usePinPostings(filter: PostingsFilter, place: { country: string; city: string } | null) {
+  return useInfiniteQuery({
+    queryKey: [POSTINGS_ROOT_KEY, 'pin', filter, place] as const,
+    queryFn: ({ pageParam }) => {
+      if (place === null) throw new Error('usePinPostings: queryFn ran without a place')
+      return api.listPostings({
+        ...filter,
+        place_country: place.country,
+        place_city: place.city,
+        sort: 'score',
+        cursor: pageParam,
+        limit: PAGE_SIZE,
+      })
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
+    enabled: place !== null,
+  })
+}
+
 /** Counts for the filter panel — kept alive across a filter change so checkboxes don't flash to zero mid-request. */
 export function useFacets(filter: PostingsFilter) {
   return useQuery({

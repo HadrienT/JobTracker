@@ -121,6 +121,22 @@ class PostingsPage(BaseModel):
     next_cursor: str | None
 
 
+class MapPin(BaseModel):
+    city: str
+    country: str
+    lat: float
+    lon: float
+    count: int
+    # Set only when the pin holds exactly one posting.
+    posting_id: str | None
+
+
+class MapPins(BaseModel):
+    pins: tuple[MapPin, ...]
+    total: int  # postings matching the filter
+    unplaced: int  # of those, the ones with no city to pin (remote, country-only, unresolved)
+
+
 class CompanyOut(BaseModel):
     company_slug: str
     company_name: str

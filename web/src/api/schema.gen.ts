@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/map/pins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Map Pins */
+        get: operations["get_map_pins_map_pins_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/postings": {
         parameters: {
             query?: never;
@@ -251,6 +268,30 @@ export interface components {
             /** Region */
             region: string | null;
             remote_mode: components["schemas"]["RemoteMode"];
+        };
+        /** MapPin */
+        MapPin: {
+            /** City */
+            city: string;
+            /** Count */
+            count: number;
+            /** Country */
+            country: string;
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /** Posting Id */
+            posting_id: string | null;
+        };
+        /** MapPins */
+        MapPins: {
+            /** Pins */
+            pins: components["schemas"]["MapPin"][];
+            /** Total */
+            total: number;
+            /** Unplaced */
+            unplaced: number;
         };
         /** PostingDetailOut */
         PostingDetailOut: {
@@ -485,6 +526,8 @@ export interface operations {
             query?: {
                 countries?: string[];
                 cities?: string[];
+                place_country?: string | null;
+                place_city?: string | null;
                 companies?: string[];
                 sectors?: string[];
                 sources?: components["schemas"]["Source"][];
@@ -547,6 +590,55 @@ export interface operations {
             };
         };
     };
+    get_map_pins_map_pins_get: {
+        parameters: {
+            query?: {
+                countries?: string[];
+                cities?: string[];
+                place_country?: string | null;
+                place_city?: string | null;
+                companies?: string[];
+                sectors?: string[];
+                sources?: components["schemas"]["Source"][];
+                role_families?: components["schemas"]["RoleFamily"][];
+                seniorities?: components["schemas"]["Seniority"][];
+                remote_modes?: components["schemas"]["RemoteMode"][];
+                tech_all?: string[];
+                tech_any?: string[];
+                visa?: components["schemas"]["VisaStatus"][];
+                min_score?: number;
+                tiers?: components["schemas"]["Tier"][];
+                posted_within_days?: number | null;
+                query?: string | null;
+                favorites_only?: boolean;
+                include_hidden?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapPins"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_postings_postings_get: {
         parameters: {
             query?: {
@@ -555,6 +647,8 @@ export interface operations {
                 limit?: number;
                 countries?: string[];
                 cities?: string[];
+                place_country?: string | null;
+                place_city?: string | null;
                 companies?: string[];
                 sectors?: string[];
                 sources?: components["schemas"]["Source"][];

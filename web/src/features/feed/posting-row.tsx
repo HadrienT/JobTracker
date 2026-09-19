@@ -8,25 +8,9 @@ import { Money } from '@/shared/ui/money'
 import { Score } from '@/shared/ui/score'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { VisaBadge } from '@/shared/ui/visa-badge'
+import { postingMeta } from '@/features/feed/posting-meta'
 
 const STALE_AFTER_DAYS = 30
-
-const SENIORITY_LABEL: Record<PostingOut['seniority'], string> = {
-  intern: 'intern',
-  graduate: 'graduate',
-  junior: 'junior',
-  mid: 'mid',
-  senior: 'senior',
-  lead: 'lead',
-  unknown: 'unknown',
-}
-
-function meta(posting: PostingOut): string {
-  const parts = [SENIORITY_LABEL[posting.seniority]]
-  if (posting.min_years !== null) parts.push(`${String(posting.min_years)}y+`)
-  if (posting.tech.length > 0) parts.push(posting.tech.slice(0, 3).join(' '))
-  return parts.join(' · ')
-}
 
 const GRID_COLUMNS =
   'grid-cols-[52px_minmax(220px,1fr)_28px_112px_140px_120px_96px_112px_44px_56px_32px]'
@@ -84,7 +68,7 @@ export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen
 
         <LocationCell locations={posting.locations} />
 
-        <span className="truncate text-xs text-text-tertiary">{meta(posting)}</span>
+        <span className="truncate text-xs text-text-tertiary">{postingMeta(posting)}</span>
 
         <VisaBadge status={posting.visa_sponsorship} />
 

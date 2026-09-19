@@ -404,6 +404,77 @@
         "title": "LocationOut",
         "type": "object"
       },
+      "MapPin": {
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lon": {
+            "title": "Lon",
+            "type": "number"
+          },
+          "posting_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posting Id"
+          }
+        },
+        "required": [
+          "city",
+          "country",
+          "lat",
+          "lon",
+          "count",
+          "posting_id"
+        ],
+        "title": "MapPin",
+        "type": "object"
+      },
+      "MapPins": {
+        "properties": {
+          "pins": {
+            "items": {
+              "$ref": "#/components/schemas/MapPin"
+            },
+            "title": "Pins",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unplaced": {
+            "title": "Unplaced",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pins",
+          "total",
+          "unplaced"
+        ],
+        "title": "MapPins",
+        "type": "object"
+      },
       "PostingDetailOut": {
         "properties": {
           "alias_count": {
@@ -1129,6 +1200,38 @@
           },
           {
             "in": "query",
+            "name": "place_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Place Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "place_city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Place City"
+            }
+          },
+          {
+            "in": "query",
             "name": "companies",
             "required": false,
             "schema": {
@@ -1379,6 +1482,299 @@
         ]
       }
     },
+    "/map/pins": {
+      "get": {
+        "operationId": "get_map_pins_map_pins_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "countries",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Countries",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cities",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Cities",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "place_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Place Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "place_city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Place City"
+            }
+          },
+          {
+            "in": "query",
+            "name": "companies",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Companies",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sectors",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Sectors",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sources",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/Source"
+              },
+              "title": "Sources",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role_families",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/RoleFamily"
+              },
+              "title": "Role Families",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seniorities",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/Seniority"
+              },
+              "title": "Seniorities",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "remote_modes",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/RemoteMode"
+              },
+              "title": "Remote Modes",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tech_all",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Tech All",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tech_any",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Tech Any",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "visa",
+            "required": false,
+            "schema": {
+              "default": [
+                "sponsors",
+                "unknown"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/VisaStatus"
+              },
+              "title": "Visa",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100,
+              "minimum": 0,
+              "title": "Min Score",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tiers",
+            "required": false,
+            "schema": {
+              "default": [
+                "strong",
+                "possible",
+                "stretch"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/Tier"
+              },
+              "title": "Tiers",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "posted_within_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Posted Within Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "in": "query",
+            "name": "favorites_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Favorites Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_hidden",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Hidden",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapPins"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Map Pins",
+        "tags": [
+          "map"
+        ]
+      }
+    },
     "/postings": {
       "get": {
         "operationId": "get_postings_postings_get",
@@ -1443,6 +1839,38 @@
               },
               "title": "Cities",
               "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "place_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Place Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "place_city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Place City"
             }
           },
           {

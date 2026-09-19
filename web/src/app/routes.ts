@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 
-export type RouteName = 'feed' | 'companies' | 'health'
+export type RouteName = 'feed' | 'map' | 'companies' | 'health'
 
 function routeFor(pathname: string): RouteName {
+  if (pathname.startsWith('/map')) return 'map'
   if (pathname.startsWith('/companies')) return 'companies'
   if (pathname.startsWith('/health')) return 'health'
   return 'feed'
 }
 
 /**
- * Top-level screen routing (`/`, `/companies`, `/health`). `/p/{id}` is not a
- * screen here — it's an overlay `FeedScreen` manages itself on top of the feed
- * (see `features/feed/routing.ts`), so it isn't one of the three route names.
+ * Top-level screen routing (`/`, `/map`, `/companies`, `/health`). `/p/{id}` and
+ * `/map/p/{id}` are not screens — they are the detail overlay the feed / the map manage
+ * themselves on top of their own screen (see `features/feed/routing.ts`).
  */
 export function useAppRoute(): { route: RouteName; navigate: (path: string) => void } {
   const [pathname, setPathname] = useState(() => window.location.pathname)

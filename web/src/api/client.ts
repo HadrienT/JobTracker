@@ -18,6 +18,7 @@ declare global {
 type Schemas = components['schemas']
 type PostingsQuery = NonNullable<operations['get_postings_postings_get']['parameters']['query']>
 type FacetsQuery = NonNullable<operations['get_facets_facets_get']['parameters']['query']>
+type MapPinsQuery = NonNullable<operations['get_map_pins_map_pins_get']['parameters']['query']>
 type CompaniesQuery = NonNullable<operations['get_companies_companies_get']['parameters']['query']>
 
 export class ApiError extends Error {
@@ -75,6 +76,9 @@ export const api = {
   listPostings(query: PostingsQuery): Promise<Schemas['PostingsPage']> {
     return request(`/postings${buildSearch(query)}`)
   },
+  getMapPins(query: MapPinsQuery): Promise<Schemas['MapPins']> {
+    return request(`/map/pins${buildSearch(query)}`)
+  },
   getPostingDetail(postingId: string): Promise<Schemas['PostingDetailOut']> {
     return request(`/postings/${encodeURIComponent(postingId)}`)
   },
@@ -101,4 +105,4 @@ export const api = {
   },
 }
 
-export type { PostingsQuery, FacetsQuery, CompaniesQuery }
+export type { PostingsQuery, FacetsQuery, CompaniesQuery, MapPinsQuery }

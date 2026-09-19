@@ -1,10 +1,23 @@
 import { HttpResponse, http } from 'msw'
 import type { CompanyOut, FacetCounts, Page, PostingOut } from './contract'
+import type { components } from '@/api/schema.gen'
 import { COMPANIES_OUT, HEALTH, POSTINGS, toListItem } from './data'
 
 // Wildcard origin: the real API has no path prefix (blueprint/03-INTERFACES.md
 // §3.6), and `apiBase` in `window.__JT_CONFIG__` can point anywhere.
 const API_BASE = '*'
+
+/** City centres of the fixture cities (`mocks/data.ts`) — the real API takes them from configs/geo.yaml. */
+const CITY_COORDINATES: Record<string, [number, number]> = {
+  'NL/Amsterdam': [52.3676, 4.9041],
+  'GB/London': [51.5074, -0.1278],
+  'FR/Paris': [48.8566, 2.3522],
+  'US/New York': [40.7128, -74.006],
+  'US/Chicago': [41.8781, -87.6298],
+  'SG/Singapore': [1.3521, 103.8198],
+  'HK/Hong Kong': [22.3193, 114.1694],
+  'IE/Dublin': [53.3498, -6.2603],
+}
 
 function encodeCursor(offset: number): string {
   return btoa(String(offset))
@@ -75,6 +88,8 @@ function applyFilters(items: PostingOut[], params: URLSearchParams, except?: Exc
   const minScore = except === 'min_score' ? 0 : Number(params.get('min_score') ?? '0')
   const postedWithinDays = except === 'posted_within_days' ? null : params.get('posted_within_days')
   const query = except === 'query' ? null : (params.get('query')?.toLowerCase() ?? null)
+  const placeCountry = params.get('place_country')
+  const placeCity = params.get('place_city')
   const favoritesOnly = except === 'favorites_only' ? false : params.get('favorites_only') === 'true'
 
   return items.filter((item) => {
@@ -82,6 +97,13 @@ function applyFilters(items: PostingOut[], params: URLSearchParams, except?: Exc
       return false
     }
     if (cities.size > 0 && !item.locations.some((l) => l.city !== null && cities.has(l.city))) return false
+    if (
+      placeCountry !== null &&
+      placeCity !== null &&
+      !item.locations.some((l) => l.country === placeCountry && l.city === placeCity)
+    ) {
+      return false
+    }
     if (companies.size > 0 && !companies.has(item.company_slug)) return false
     if (sectors.size > 0 && !sectors.has(item.sector)) return false
     if (sources.size > 0 && !sources.has(item.source)) return false
@@ -115,7 +137,29 @@ function countBy(items: PostingOut[], pick: (item: PostingOut) => string[]): Rec
   return counts
 }
 
+/**
+ * A one-country stand-in for `world-atlas/countries-50m.json` — enough for the map to draw
+ * something, without shipping 750 KB of coastline into every test run.
+ */
+const TINY_WORLD = {
+  type: 'Topology',
+  objects: {
+    countries: { type: 'GeometryCollection', geometries: [{ type: 'Polygon', arcs: [[0]] }] },
+  },
+  arcs: [
+    [
+      [-20, -20],
+      [20, -20],
+      [20, 20],
+      [-20, 20],
+      [-20, -20],
+    ],
+  ],
+}
+
 export const handlers = [
+  http.get(/countries-50m\.json/, () => HttpResponse.json(TINY_WORLD)),
+
   http.get(`${API_BASE}/postings`, ({ request }) => {
     const url = new URL(request.url)
     const params = url.searchParams
@@ -168,6 +212,50 @@ export const handlers = [
       seniorities: countBy(applyFilters(all, params, 'seniorities'), (i) => [i.seniority]),
       sources: countBy(applyFilters(all, params, 'sources'), (i) => [i.source]),
       tech: countBy(applyFilters(all, params, 'tech'), (i) => i.tech),
+    }
+    return HttpResponse.json(body)
+  }),
+
+  http.get(`${API_BASE}/map/pins`, ({ request }) => {
+    const params = new URL(request.url).searchParams
+    const filtered = applyFilters(POSTINGS.map(toListItem), params)
+    // As in the real store: the location filters also apply to the pinned row, so a posting
+    // open in New York and London leaves no pin in London under `countries=US`.
+    const countries = new Set(params.getAll('countries'))
+    const cities = new Set(params.getAll('cities'))
+    const remoteModes = new Set(params.getAll('remote_modes'))
+    const byPlace = new Map<string, PostingOut[]>()
+    let placed = 0
+    for (const item of filtered) {
+      const keys = new Set<string>()
+      for (const l of item.locations) {
+        if (l.city === null || l.country === null) continue
+        if (countries.size > 0 && !countries.has(l.country)) continue
+        if (cities.size > 0 && !cities.has(l.city)) continue
+        if (remoteModes.size > 0 && !remoteModes.has(l.remote_mode)) continue
+        keys.add(`${l.country}/${l.city}`)
+      }
+      if (keys.size > 0) placed += 1
+      for (const key of keys) byPlace.set(key, [...(byPlace.get(key) ?? []), item])
+    }
+    const pins: components['schemas']['MapPin'][] = []
+    for (const [key, items] of byPlace) {
+      const coordinates = CITY_COORDINATES[key]
+      const [country = '', city = ''] = key.split('/')
+      if (!coordinates) continue
+      pins.push({
+        country,
+        city,
+        lat: coordinates[0],
+        lon: coordinates[1],
+        count: items.length,
+        posting_id: items.length === 1 ? (items[0]?.posting_id ?? null) : null,
+      })
+    }
+    const body: components['schemas']['MapPins'] = {
+      pins,
+      total: filtered.length,
+      unplaced: filtered.length - placed,
     }
     return HttpResponse.json(body)
   }),

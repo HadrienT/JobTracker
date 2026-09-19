@@ -25,6 +25,8 @@ class CityEntry:
     city: str
     country: str
     region: str
+    lat: float  # WGS84 degrees, city centre — where the map pins the city
+    lon: float
 
 
 @dataclass(frozen=True)
@@ -63,11 +65,17 @@ def build_geo_index(data: Mapping[str, Any], *, source: Path | str | None = None
             city = str(entry["city"])
             country = str(entry["country"]).upper()
             region = str(entry["region"])
+            lat = float(entry["lat"])
+            lon = float(entry["lon"])
         except KeyError as exc:
             raise ConfigError(f"geo config{where}: cities[{i}] is missing field {exc}") from exc
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(f"geo config{where}: cities[{i}] lat/lon must be numbers") from exc
+        if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
+            raise ConfigError(f"geo config{where}: cities[{i}] ({city}) lat/lon out of range")
         normalized = _normalize(city)
         by_city.setdefault(normalized, []).append(
-            CityEntry(city=city, country=country, region=region)
+            CityEntry(city=city, country=country, region=region, lat=lat, lon=lon)
         )
         alias_to_city[normalized] = normalized
         for alias in entry.get("aliases", []):
@@ -94,6 +102,14 @@ def build_geo_index(data: Mapping[str, Any], *, source: Path | str | None = None
 def load_geo_index(path: Path) -> GeoIndex:
     """Load and build the `GeoIndex` from `configs/geo.yaml` (or an equivalent)."""
     return build_geo_index(load_yaml(path), source=path)
+
+
+def city_coordinates(index: GeoIndex, city: str, country: str) -> tuple[float, float] | None:
+    """`(lat, lon)` of a resolved city, or None when the referential does not know it."""
+    for entry in index.by_city.get(_normalize(city), ()):
+        if entry.country == country.upper():
+            return entry.lat, entry.lon
+    return None
 
 
 def resolve_city(index: GeoIndex, raw_city: str, *, hq_country: str | None) -> ResolvedCity | None:

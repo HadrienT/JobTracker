@@ -3,6 +3,7 @@ import { cn } from '@/shared/lib/cn'
 
 const LINKS: { route: RouteName; path: string; label: string }[] = [
   { route: 'feed', path: '/', label: 'Feed' },
+  { route: 'map', path: '/map', label: 'Map' },
   { route: 'companies', path: '/companies', label: 'Companies' },
   { route: 'health', path: '/health', label: 'Health' },
 ]
