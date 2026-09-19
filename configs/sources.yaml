@@ -15,10 +15,10 @@ sources:
   greenhouse: { interval_min: 180, enabled: true }
   lever: { interval_min: 180, enabled: true }
   ashby: { interval_min: 180, enabled: true }
-  smartrecruiters: { interval_min: 180, enabled: false } # [À CONFIRMER], 11-SOURCES §3
-  workable: { interval_min: 180, enabled: false } # WP06
-  recruitee: { interval_min: 180, enabled: false } # WP06
-  personio: { interval_min: 180, enabled: false } # WP06
+  smartrecruiters: { interval_min: 180, enabled: true } # one board (flowdesk) confirmed live 2026-09-19; the other 85 stay disabled: their tokens answer 200 with zero postings
+  workable: { interval_min: 180, enabled: true } # confirmed live 2026-09-19 (eagle_seven)
+  recruitee: { interval_min: 180, enabled: true } # confirmed live 2026-09-19 (sfors)
+  personio: { interval_min: 180, enabled: true } # confirmed live 2026-09-19 (kaiko)
   workday: { interval_min: 360, enabled: false, max_requests_per_run: 400 } # WP06
   adzuna: { interval_min: 720, enabled: false } # WP13 — official API, needs a key
   efinancialcareers: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13

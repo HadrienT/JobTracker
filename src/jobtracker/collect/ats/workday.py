@@ -82,7 +82,7 @@ class WorkdayCollector:
         tenant, wd, site = _workday_coordinates(board)
         host = f"https://{tenant}.wd{wd}.myworkdayjobs.com"
         list_url = f"{host}/wday/cxs/{tenant}/{site}/jobs"
-        detail_url_base = f"{host}/wday/cxs/{tenant}/{site}/job"
+        detail_url_base = f"{host}/wday/cxs/{tenant}/{site}"  # externalPath already starts "/job/"
         public_url_base = f"{host}/{site}"
 
         summaries, requests_made, truncated = _paginate(board, session, list_url)
@@ -139,7 +139,9 @@ def _paginate(board: Board, session: HttpSession, list_url: str) -> tuple[list[A
         requests_made += 1
         page = data["jobPostings"]
         page_total = data.get("total")
-        if isinstance(page_total, int):
+        # Workday reports `total` on the first page only and answers 0 on the next ones: the
+        # first figure is the real one, and a later 0 must not read as "that was the last page".
+        if total is None and isinstance(page_total, int):
             total = page_total
         if not page:
             if total is not None and offset < total:

@@ -76,6 +76,30 @@ def test_nominal_response_with_real_fixtures() -> None:
     assert posting.posted_at_raw == "2026-09-17"
 
 
+def test_the_detail_url_is_the_site_plus_the_external_path_and_nothing_between() -> None:
+    """`externalPath` already starts with "/job/": adding another "/job" 422s on the real API."""
+    job = _job("Software Engineer", "/job/NY/Software-Engineer_R123")
+    session = FakeHttpSession(responses=[_list_page([job], total=1), {"jobPostingInfo": {}}])
+
+    WorkdayCollector().fetch(_board(), session)
+
+    detail_url = session.calls[1]
+    assert detail_url.endswith("/job/NY/Software-Engineer_R123")
+    assert "/job/job/" not in detail_url
+
+
+def test_pagination_survives_a_total_of_zero_on_the_later_pages() -> None:
+    """The real API sends `total` with the first page and 0 with the others."""
+    page1 = _list_page([_job("Branch Administrator", "/job/1")], total=3)
+    page2 = _list_page([_job("Teller", "/job/2")], total=0)
+    page3 = _list_page([_job("Loan Officer", "/job/3")], total=0)
+    session = FakeHttpSession(responses=[page1, page2, page3, _list_page([], total=0)])
+
+    result = WorkdayCollector().fetch(_board(), session)
+
+    assert {p.source_job_id for p in result.postings} == {"/job/1", "/job/2", "/job/3"}
+
+
 def test_pagination_across_three_pages_collects_everything() -> None:
     page1 = _list_page([_job("Branch Administrator", "/job/1")], total=3)
     page2 = _list_page([_job("Teller", "/job/2")], total=3)
