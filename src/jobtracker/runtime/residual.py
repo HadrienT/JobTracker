@@ -14,6 +14,7 @@ with a short timeout. It does not jump any queue on the server side.
 
 import sqlite3
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -182,6 +183,69 @@ def drain_queue(
         server_available=available,
         remaining=remaining,
     )
+
+
+def enqueue_backlog(conn: sqlite3.Connection, *, profile: Profile) -> int:
+    """Queue every stored posting the LLM could still help with; return how many were added.
+
+    `pipeline.ingest` only queues a posting when its content is new or changed, so postings
+    collected before the LLM was switched on — or before the prefilter learnt a new rule —
+    would wait forever. This is the catch-up. It never calls the server: it only fills the
+    queue that `drain_queue` empties, at the server's pace.
+    """
+    added = 0
+    for (posting_id,) in conn.execute(
+        "SELECT posting_id FROM postings WHERE is_active = 1 AND is_canonical = 1 "
+        "AND resolver_stage != 'llm'"
+    ).fetchall():
+        posting = get_posting(conn, posting_id)
+        verdict = get_verdict(conn, posting_id)
+        if posting is None or verdict is None:
+            continue
+        description = get_description(conn, posting_id) or ""
+        if not is_ambiguous(posting, verdict, profile=profile, description=description):
+            continue
+        if llm_queue.get_entry(conn, posting_id) is not None:
+            continue  # already waiting: keep its attempts and its place
+        llm_queue.enqueue(
+            conn, posting_id, urgent=is_urgent(posting, verdict, profile=profile), now=utc_now()
+        )
+        added += 1
+    conn.commit()
+    _logger.info("llm_backlog_enqueued", added=added, depth=llm_queue.depth(conn))
+    return added
+
+
+def drain_all(
+    conn: sqlite3.Connection,
+    *,
+    profile: Profile,
+    cfg: LlmClientConfig,
+    batch_size: int = _DRAIN_BATCH,
+    on_batch: Callable[[DrainResult], None] | None = None,
+) -> DrainResult:
+    """Drain until the queue is empty, the server stops answering, or a pass makes no progress.
+
+    The scheduler drains one small batch every half hour; this is for a person at the keyboard
+    who has just switched the server on and wants the backlog cleared now. Still concurrency 1,
+    still no remote fallback, and it stops at the first refused turn.
+    """
+    total = DrainResult()
+    while True:
+        batch = drain_queue(conn, profile=profile, cfg=cfg, limit=batch_size)
+        total = DrainResult(
+            resolved=total.resolved + batch.resolved,
+            quarantined=total.quarantined + batch.quarantined,
+            dropped=total.dropped + batch.dropped,
+            requeued=total.requeued + batch.requeued,
+            server_available=batch.server_available,
+            remaining=batch.remaining,
+        )
+        if on_batch is not None:
+            on_batch(total)
+        progressed = batch.resolved + batch.quarantined + batch.dropped > 0
+        if batch.remaining == 0 or not batch.server_available or not progressed:
+            return total
 
 
 def queue_if_ambiguous(

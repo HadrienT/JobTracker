@@ -22,7 +22,9 @@ from jobtracker.runtime.pipeline import ingest
 from jobtracker.runtime.residual import (
     EntryResult,
     LlmClientConfig,
+    drain_all,
     drain_queue,
+    enqueue_backlog,
     process_entry,
 )
 from jobtracker.store import llm_queue
@@ -380,3 +382,101 @@ def test_concurrency_stays_at_one_call_per_turn(
         _ingest(store_conn, _raw(title), taxonomy, geo_index, profile, cfg)
     assert drain_queue(store_conn, profile=profile, cfg=cfg).resolved == 3
     assert llm.calls == 3  # strictly sequential: the module-level guard is never contended
+
+
+def test_the_backlog_catch_up_queues_what_ingest_never_saw(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    # Collected while the LLM was off: stored, ambiguous, and never queued.
+    ambiguous = _ingest(store_conn, _raw(_DEFERRED), taxonomy, geo_index, profile, None)
+    _ingest(
+        store_conn,
+        _raw("Quantitative Developer", content_hash="h2"),
+        taxonomy,
+        geo_index,
+        profile,
+        None,
+    )
+    assert llm_queue.depth(store_conn) == 0
+
+    assert enqueue_backlog(store_conn, profile=profile) >= 1
+
+    assert llm_queue.get_entry(store_conn, ambiguous) is not None
+    assert enqueue_backlog(store_conn, profile=profile) == 0  # idempotent: nothing new to add
+    assert llm.calls == 0  # filling the queue never touches the server
+
+
+def test_a_backlog_posting_the_llm_already_settled_is_not_queued_again(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    cfg = llm.config()
+    _ingest(store_conn, _raw(_DEFERRED), taxonomy, geo_index, profile, cfg)
+    drain_queue(store_conn, profile=profile, cfg=cfg)
+    assert llm_queue.depth(store_conn) == 0
+
+    assert enqueue_backlog(store_conn, profile=profile) == 0
+
+
+def test_drain_all_clears_more_than_one_batch(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    for i in range(5):
+        _ingest(
+            store_conn,
+            _raw(f"Software Engineer {i}", content_hash=f"h{i}"),
+            taxonomy,
+            geo_index,
+            profile,
+            llm.config(),
+        )
+    assert llm_queue.depth(store_conn) == 5
+    batches: list[int] = []
+
+    result = drain_all(
+        store_conn,
+        profile=profile,
+        cfg=llm.config(),
+        batch_size=2,
+        on_batch=lambda r: batches.append(r.remaining),
+    )
+
+    assert result.resolved == 5 and result.remaining == 0
+    assert batches == [3, 1, 0]  # three passes of at most two, reported as they went
+
+
+def test_drain_all_stops_when_the_server_goes_away(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    cfg = llm.config()
+    for i in range(3):
+        _ingest(
+            store_conn,
+            _raw(f"Software Engineer {i}", content_hash=f"h{i}"),
+            taxonomy,
+            geo_index,
+            profile,
+            cfg,
+        )
+    llm.mode = "down"
+
+    result = drain_all(store_conn, profile=profile, cfg=cfg)
+
+    assert result.server_available is False
+    assert result.remaining == 3  # nothing lost, nothing hammered
+    assert llm.calls == 1

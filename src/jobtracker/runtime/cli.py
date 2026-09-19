@@ -26,9 +26,16 @@ from jobtracker.runtime.aggregator_loader import load_aggregators
 from jobtracker.runtime.pipeline import ingest
 from jobtracker.runtime.replay import UnknownStage, format_report, run_replay
 from jobtracker.runtime.report import build_weekly_report
-from jobtracker.runtime.residual import DRAIN_INTERVAL_MIN, LlmClientConfig, drain_queue
+from jobtracker.runtime.residual import (
+    DRAIN_INTERVAL_MIN,
+    LlmClientConfig,
+    drain_all,
+    drain_queue,
+    enqueue_backlog,
+)
 from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.watchdog import full_health_snapshot
+from jobtracker.store import llm_queue
 from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_database
 from jobtracker.store.companies import list_discovered, sync_companies
 from jobtracker.store.retention import run_retention
@@ -177,7 +184,18 @@ def cmd_loop(_args: argparse.Namespace) -> int:
         conn.close()
 
 
-def cmd_llm_drain(_args: argparse.Namespace) -> int:
+def cmd_llm_enqueue(_args: argparse.Namespace) -> int:
+    """Queue the stored postings the LLM could still help with (see `enqueue_backlog`)."""
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    ctx, _boards = _build_context(conn, settings)
+    added = enqueue_backlog(conn, profile=ctx.profile)
+    print(f"queued={added} depth={llm_queue.depth(conn)}", file=sys.stderr)
+    conn.close()
+    return 0
+
+
+def cmd_llm_drain(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
     ctx, _boards = _build_context(conn, settings)
@@ -186,7 +204,20 @@ def cmd_llm_drain(_args: argparse.Namespace) -> int:
         conn.close()
         return 0
     with bound_run_id(str(ULID())):
-        result = drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
+        if args.all:
+            result = drain_all(
+                conn,
+                profile=ctx.profile,
+                cfg=ctx.llm,
+                on_batch=lambda r: print(
+                    f"  resolved={r.resolved} quarantined={r.quarantined} "
+                    f"dropped={r.dropped} remaining={r.remaining}",
+                    file=sys.stderr,
+                    flush=True,
+                ),
+            )
+        else:
+            result = drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
     print(
         f"resolved={result.resolved} quarantined={result.quarantined} dropped={result.dropped} "
         f"requeued={result.requeued} remaining={result.remaining} "
@@ -341,9 +372,15 @@ def _build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("loop", help="run continuously").set_defaults(func=cmd_loop)
 
-    subparsers.add_parser("llm-drain", help="one pass over the deferred LLM queue").set_defaults(
-        func=cmd_llm_drain
+    subparsers.add_parser(
+        "llm-enqueue", help="queue stored postings the LLM could still help with"
+    ).set_defaults(func=cmd_llm_enqueue)
+
+    llm_drain = subparsers.add_parser("llm-drain", help="one pass over the deferred LLM queue")
+    llm_drain.add_argument(
+        "--all", action="store_true", help="keep going until the queue is empty or the server stops"
     )
+    llm_drain.set_defaults(func=cmd_llm_drain)
 
     subparsers.add_parser(
         "discover-employers", help="employers seen only at aggregators, for the registry"
