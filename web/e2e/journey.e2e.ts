@@ -100,3 +100,17 @@ test('filter, sort, open, favorite, reload — same screen, favorite kept', asyn
   await expect(rows.first().getByRole('button', { name: 'unmark favorite' })).toBeVisible()
   await expect(page.getByTestId('posting-row').first()).toHaveAttribute('id', `posting-row-${first.posting_id}`)
 })
+
+test('a posting the LLM corrected shows what changed, with the words that justify it', async ({ page }) => {
+  await page.goto('/')
+  const rows = page.getByTestId('posting-row')
+  await expect(rows.first()).toBeVisible()
+
+  await rows.first().click() // the demo DB gives its top-scoring posting a correction
+  const section = page.getByRole('region', { name: 'Corrected by the local LLM' })
+
+  await expect(section).toBeVisible()
+  await expect(section).toContainText('Compensation')
+  await expect(section).toContainText('120000–160000 GBP / year')
+  await expect(section).toContainText('120k-160k GBP a year')
+})

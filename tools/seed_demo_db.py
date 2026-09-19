@@ -12,20 +12,25 @@ Usage:
 """
 
 import json
+import sqlite3
 import sys
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from jobtracker.collect.registry import load_registry
 from jobtracker.core.clock import freeze
 from jobtracker.core.db import apply_migrations, connect
-from jobtracker.core.enums import Source
+from jobtracker.core.enums import SalaryPeriod, Source
 from jobtracker.core.geo import load_geo_index
-from jobtracker.core.models import RawPosting
-from jobtracker.match.profile import load_profile
+from jobtracker.core.models import FieldCorrection, RawPosting
+from jobtracker.match.profile import Profile, load_profile
+from jobtracker.match.score import evaluate
 from jobtracker.normalize.taxonomy import load_taxonomy
 from jobtracker.runtime.pipeline import ingest
 from jobtracker.store.companies import sync_companies
+from jobtracker.store.llm_reviews import record_corrections
+from jobtracker.store.postings import get_posting, update_resolution
 from jobtracker.store.schema import MIGRATIONS_DIR
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -34,6 +39,54 @@ CORPUS = REPO_ROOT / "tests" / "fixtures" / "postings" / "corpus.jsonl"
 
 # Every timestamp in the demo database derives from this instant.
 DEMO_NOW = datetime(2026, 9, 1, 9, 0, tzinfo=UTC)
+
+
+def _seed_one_llm_correction(conn: sqlite3.Connection, profile: Profile) -> None:
+    """Give the top-scoring posting a correction, so the e2e can see the panel that shows it."""
+    row = conn.execute(
+        "SELECT posting_id, content_hash FROM postings WHERE is_active = 1 AND is_canonical = 1 "
+        "ORDER BY score DESC, posting_id LIMIT 1"
+    ).fetchone()
+    posting = get_posting(conn, row["posting_id"])
+    assert posting is not None
+    before = posting.compensation
+    after = before.model_copy(
+        update={
+            "amount_min": Decimal("120000"),
+            "amount_max": Decimal("160000"),
+            "currency": "GBP",
+            "period": SalaryPeriod.YEAR,
+        }
+    )
+    with freeze(DEMO_NOW):
+        corrected = posting.model_copy(update={"compensation": after, "resolver_stage": "llm"})
+        update_resolution(conn, corrected, evaluate(corrected, profile=profile))
+        record_corrections(
+            conn,
+            posting.posting_id,
+            [
+                FieldCorrection(
+                    field="compensation",
+                    before={
+                        "amount_min": None,
+                        "amount_max": None,
+                        "currency": None,
+                        "period": None,
+                    },
+                    after={
+                        "amount_min": "120000",
+                        "amount_max": "160000",
+                        "currency": "GBP",
+                        "period": "year",
+                    },
+                    evidence="The base salary range for this role is 120k-160k GBP a year",
+                    confidence=0.93,
+                )
+            ],
+            content_hash=row["content_hash"],
+            review_version=1,
+            now=DEMO_NOW,
+        )
 
 
 def main() -> int:
@@ -78,6 +131,7 @@ def main() -> int:
         with freeze(fetched_at):
             ingest(conn, raw, taxonomy=taxonomy, geo=geo, profile=profile, hq_country=hq_country)
 
+    _seed_one_llm_correction(conn, profile)
     conn.commit()
     conn.close()
     print(f"wrote {output} ({len(entries)} corpus entries)", file=sys.stderr)
