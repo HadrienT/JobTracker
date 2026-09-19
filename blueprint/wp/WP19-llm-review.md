@@ -105,7 +105,7 @@ elle-même**, corrigés puis rejoués :
   si la citation le dit ; le contrôle ne s'appliquait pas au chemin des lieux sans ville.
 - **Années d'expérience** : le modèle prenait le *bas* des fourchettes (« 3 - 8+ ans » → 3), les
   règles le *haut* (→ 8), ce qui pouvait faire rejeter à tort une offre accessible. Défaut des
-  règles, corrigé (la fourchette passe en premier ; NORMALIZE_VERSION 5→…). Deux étiquettes du
+  règles, corrigé (la fourchette passe en premier ; NORMALIZE_VERSION 6). Deux étiquettes du
   corpus doré avaient la même erreur (« 10-15+ ans » → 15, « 3-7+ ans » → 7) et ont été corrigées.
 
 **`llm-revert`** : `just llm-revert --field F [--posting-id ID]` restaure la valeur d'avant,
