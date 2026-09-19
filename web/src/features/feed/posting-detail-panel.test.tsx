@@ -54,6 +54,20 @@ async function renderOpenPanel(postingId: string) {
 }
 
 describe('PostingDetailPanel', () => {
+  it('closes when the dimmed area around the panel is clicked, but not when the panel is', async () => {
+    const posting = POSTINGS[0]
+    if (!posting) throw new Error('fixture is empty')
+    const { user } = await renderOpenPanel(posting.posting_id)
+
+    await user.click(screen.getByRole('dialog'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('posting-detail-overlay'))
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
   it('renders as an accessible modal with no serious axe violations', async () => {
     const target = POSTINGS[0]
     if (!target) throw new Error('fixture is empty')

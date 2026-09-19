@@ -38,7 +38,7 @@ for (const theme of THEMES) {
     })
 
     test('the detail panel has no serious accessibility violation', async ({ page }) => {
-      await page.getByTestId('posting-row').first().dblclick()
+      await page.getByTestId('posting-row').first().click()
       await expect(page.getByRole('dialog')).toBeVisible()
       expect(await seriousViolations(page, '[role="dialog"]')).toEqual([])
     })

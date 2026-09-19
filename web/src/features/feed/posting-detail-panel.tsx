@@ -63,7 +63,14 @@ export function PostingDetailPanel({ postingId, onClose }: PostingDetailPanelPro
   const visaReason = posting?.reasons.find((reason) => reason.code.toLowerCase().includes('sponsor'))
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/50" data-testid="posting-detail-overlay">
+    // A click on the dimmed area (the overlay itself, never the panel or its children) closes.
+    <div
+      className="fixed inset-0 z-40 flex justify-end bg-black/50"
+      data-testid="posting-detail-overlay"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
       <div
         ref={panelRef}
         role="dialog"

@@ -135,6 +135,35 @@ describe('FeedList', () => {
     expect(await screen.findByText('Could not update favorite — try again.')).toBeInTheDocument()
   })
 
+  it('opens a posting on a single click, not a double click', async () => {
+    const user = userEvent.setup()
+    const opened: string[] = []
+    renderFeed({ onOpenPosting: (id) => opened.push(id) })
+    const rows = await screen.findAllByTestId('posting-row')
+
+    const row = rows[0]
+    if (!row) throw new Error('no row rendered')
+
+    await user.click(row)
+
+    expect(opened).toHaveLength(1)
+    expect(`posting-row-${opened[0] ?? ''}`).toBe(row.id)
+  })
+
+  it('does not open a posting when its favorite star is clicked', async () => {
+    const user = userEvent.setup()
+    const opened: string[] = []
+    renderFeed({ onOpenPosting: (id) => opened.push(id) })
+    const rows = await screen.findAllByTestId('posting-row')
+
+    const row = rows[0]
+    if (!row) throw new Error('no row rendered')
+
+    await user.click(within(row).getByRole('button', { name: /favorite/ }))
+
+    expect(opened).toHaveLength(0)
+  })
+
   it('hides a posting and offers an Undo that brings it back', async () => {
     const user = userEvent.setup()
     renderFeed()

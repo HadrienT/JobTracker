@@ -69,15 +69,17 @@ test('filter, sort, open, favorite, reload — same screen, favorite kept', asyn
   expect(seenAt).toEqual([...seenAt].sort().reverse())
   await expect(page).toHaveURL(/sort=seen/)
 
-  // 4. Open the first posting's detail.
+  // 4. Open the first posting's detail — one click.
   const first = seenPage.items[0]
   if (!first) throw new Error('no posting to open')
-  await rows.first().dblclick()
+  await rows.first().click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`/p/${first.posting_id}`))
-  await dialog.getByRole('button', { name: 'Close' }).click()
+  // A click on the dimmed area closes it, and the filters are still in the URL afterwards.
+  await page.mouse.click(20, 450)
   await expect(dialog).toBeHidden()
+  await expect(page).toHaveURL(/countries=US.*sort=seen|sort=seen.*countries=US/)
 
   favorited = first.posting_id
   // 5. Favorite it, and wait for the server to have accepted it.

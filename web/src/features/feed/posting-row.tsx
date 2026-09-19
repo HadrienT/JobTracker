@@ -58,8 +58,10 @@ export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen
         'relative cursor-pointer border-b border-border',
         selected ? 'bg-surface-elevated' : 'hover:bg-surface-elevated/60',
       )}
-      onClick={onSelect}
-      onDoubleClick={onOpen}
+      onClick={() => {
+        onSelect()
+        onOpen()
+      }}
     >
       <div role="gridcell" className={cn('grid h-full items-center gap-2 px-3 text-sm', GRID_COLUMNS)}>
         <Score score={posting.score} tier={posting.tier} reasons={reasons} />
