@@ -23,7 +23,8 @@ _PLACEHOLDER_RE = re.compile(
 )
 _PAREN_QUALIFIER_RE = re.compile(r"\(([^)]*)\)")
 _DASH_QUALIFIER_RE = re.compile(r"(?:remote|hybrid)\s*[-–:]\s*([a-z ]+)$", re.IGNORECASE)
-_SPLIT_RE = re.compile(r"\s*/\s*|\s*;\s*|\s+or\s+", re.IGNORECASE)
+_SPLIT_RE = re.compile(r"\s*/\s*|\s*;\s*|\s+or\s+|\s+and\s+|\s*&\s*", re.IGNORECASE)
+_OFFICE_RE = re.compile(r"\boffices?\b", re.IGNORECASE)  # "Chicago Office" is Chicago
 
 _REGION_WORDS = {"emea": "emea", "amer": "amer", "americas": "amer", "apac": "apac"}
 _COUNTRY_RESTRICTION_WORDS = {
@@ -79,7 +80,7 @@ def _find_region(qualifier: str) -> str | None:
 
 
 def _find_country(qualifier: str) -> str | None:
-    for word, country in _COUNTRY_RESTRICTION_WORDS.items():
+    for word, country in {**_BARE_COUNTRY_NAMES, **_COUNTRY_RESTRICTION_WORDS}.items():
         if re.search(rf"\b{re.escape(word)}\b", qualifier):
             return country
     return None
@@ -129,6 +130,7 @@ def parse_location(
         working = _HYBRID_RE.sub(" ", working)
         working = _ONSITE_RE.sub(" ", working)
 
+    working = _OFFICE_RE.sub(" ", working)
     working = working.strip(" \t-–—,()")
 
     if not working:
@@ -182,10 +184,24 @@ def _resolve_segment(segment: str, geo: GeoIndex, hq_country: str | None) -> lis
     if bare_country is not None:
         return [bare_country]
     if "," not in segment:
-        return [whole]
+        return [_resolve_leading_words(segment, geo, hq_country) or whole]
     distinct: dict[tuple[str | None, str | None], Location] = {}
     for part in segment.split(","):
         candidate = resolve_location(part.strip(), geo, hq_country=hq_country)
         if candidate.city is not None:
             distinct[(candidate.city, candidate.country)] = candidate
     return list(distinct.values()) or [whole]
+
+
+def _resolve_leading_words(segment: str, geo: GeoIndex, hq_country: str | None) -> Location | None:
+    """ "Dublin Ireland" -> Dublin: a city followed by words that only qualify it.
+
+    Tries the longest leading run of words first, so "New York City" still wins over "New".
+    Only ever a *prefix*: a city buried in the middle of a sentence is not read out of it.
+    """
+    words = segment.split()
+    for size in range(len(words) - 1, 0, -1):
+        candidate = resolve_location(" ".join(words[:size]), geo, hq_country=hq_country)
+        if candidate.city is not None:
+            return candidate
+    return None

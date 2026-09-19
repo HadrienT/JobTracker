@@ -221,7 +221,7 @@ cities:
     region: amer
     lat: 41.0262
     lon: -73.6282
-    aliases: ["Greenwich CT"]
+    aliases: ["Greenwich CT", "Old Greenwich", "Greenwich, CT", "Greenwich, Connecticut"]
   - city: Stamford
     country: US
     region: amer
@@ -308,6 +308,110 @@ cities:
     region: apac
     lat: 37.5665
     lon: 126.978
+
+  # --- added 2026-09-19 from the unresolved locations of a real collection (143 postings had no
+  # city): the same fifteen cities kept coming back. Coordinates: city centres, WGS84. ---
+  - city: Barcelona
+    country: ES
+    region: emea
+    lat: 41.3874
+    lon: 2.1686
+  - city: Budapest
+    country: HU
+    region: emea
+    lat: 47.4979
+    lon: 19.0402
+  - city: Sao Paulo
+    country: BR
+    region: amer
+    lat: -23.5505
+    lon: -46.6333
+    aliases: ["São Paulo", "São Paulo, Brazil", "Sao Paulo, Brazil"]
+  - city: Montevideo
+    country: UY
+    region: amer
+    lat: -34.9011
+    lon: -56.1645
+  - city: Jupiter
+    country: US
+    region: amer
+    lat: 26.9342
+    lon: -80.0942
+    aliases: ["Jupiter, FL", "Jupiter, Florida", "Jupiter FL"]
+  - city: Miami
+    country: US
+    region: amer
+    lat: 25.7617
+    lon: -80.1918
+    aliases: ["Miami, FL", "Miami, Florida", "Miami, Florida, United States"]
+  - city: Houston
+    country: US
+    region: amer
+    lat: 29.7604
+    lon: -95.3698
+    aliases: ["Houston, TX", "Houston, Texas"]
+  - city: Sandy
+    country: US
+    region: amer
+    lat: 40.5650
+    lon: -111.8390
+    aliases: ["Sandy, UT", "Sandy, Utah", "Sandy, Utah, United States"]
+  - city: Bristol
+    country: GB
+    region: emea
+    lat: 51.4545
+    lon: -2.5879
+  - city: Hanoi
+    country: VN
+    region: apac
+    lat: 21.0285
+    lon: 105.8542
+  - city: Ho Chi Minh City
+    country: VN
+    region: apac
+    lat: 10.8231
+    lon: 106.6297
+    aliases: ["Saigon", "HCMC"]
+  - city: Yerevan
+    country: AM
+    region: emea
+    lat: 40.1792
+    lon: 44.4991
+  - city: Larnaca
+    country: CY
+    region: emea
+    lat: 34.9229
+    lon: 33.6233
+    # The source spells it with a Cyrillic "с": kept verbatim, or it never matches.
+    aliases: ["Larnaka", "Cyprus, Larnaсa", "Cyprus, Larnaca"]
+  - city: Taipei
+    country: TW
+    region: apac
+    lat: 25.0330
+    lon: 121.5654
+    aliases: ["臺北市", "台北", "Taipei, Taiwan", "Taipei City"]
+  - city: Ramat Gan
+    country: IL
+    region: emea
+    lat: 32.0684
+    lon: 34.8248
+  - city: Abu Dhabi
+    country: AE
+    region: emea
+    lat: 24.4539
+    lon: 54.3773
+  - city: New Delhi
+    country: IN
+    region: apac
+    lat: 28.6139
+    lon: 77.2090
+    aliases: ["Delhi"]
+  - city: GIFT City
+    country: IN
+    region: apac
+    lat: 23.1645
+    lon: 72.6845
+    aliases: ["Gift City", "Gandhinagar"]
 
 ambiguous:
   london:

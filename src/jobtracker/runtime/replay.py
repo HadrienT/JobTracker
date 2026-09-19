@@ -31,6 +31,7 @@ from jobtracker.match.profile import Profile
 from jobtracker.match.score import evaluate
 from jobtracker.normalize.cascade import NORMALIZE_VERSION, normalize
 from jobtracker.normalize.taxonomy import Taxonomy
+from jobtracker.store.llm_reviews import corrected_fields
 from jobtracker.store.postings import get_posting, update_resolution
 from jobtracker.store.replay_inputs import ReplayInput, list_replay_inputs
 
@@ -114,14 +115,24 @@ def _raw_from(item: ReplayInput) -> RawPosting:
     )
 
 
-def _merge(old: Posting, new: Posting, *, stage: str | None) -> Posting:
-    """The old posting with the replayed fields swapped in — identity fields never move."""
+def _merge(
+    old: Posting, new: Posting, *, stage: str | None, protected: frozenset[str] = frozenset()
+) -> Posting:
+    """The old posting with the replayed fields swapped in — identity fields never move.
+
+    `protected` are the fields the LLM re-read corrected (`llm_corrections`): the rules would put
+    back the very value the text contradicted, so a replay leaves them exactly as they are.
+    """
     if stage is None:
         names = [f for s in STAGES.values() for f in s.fields] + list(_UNMEASURED_FIELDS)
     else:
         names = list(STAGES[stage].fields)
     if old.resolver_stage == "llm":
         names = [n for n in names if n not in _LLM_OWNED]
+    if protected:
+        # The quote that justified a visa answer travels with it.
+        held = protected | ({"visa_evidence"} if "visa_sponsorship" in protected else set())
+        names = [n for n in names if n not in held]
     update: dict[str, Any] = {n: getattr(new, n) for n in names}
     if stage is None:
         update["normalize_version"] = new.normalize_version
@@ -175,7 +186,9 @@ def run_replay(
             continue
         new = normalize(_raw_from(item), taxonomy=taxonomy, geo=geo, hq_country=item.hq_country)
         olds.append(old)
-        merged.append(_merge(old, new, stage=stage))
+        merged.append(
+            _merge(old, new, stage=stage, protected=corrected_fields(conn, item.posting_id))
+        )
         report.versions_before[item.normalize_version] = (
             report.versions_before.get(item.normalize_version, 0) + 1
         )

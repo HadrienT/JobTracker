@@ -24,9 +24,13 @@ from jobtracker.normalize.techstack import parse_tech
 from jobtracker.normalize.title import classify_role, clean_title
 from jobtracker.normalize.visa import parse_visa
 
-NORMALIZE_VERSION = (
-    2  # 2: quant trading / strategist / quantitative-risk titles are no longer "other"
-)
+# Bumped whenever a parser or referential change should be replayed onto stored postings.
+#   5: perks (budget, allowance, relocation) are not pay; "€1000" read whole; "$100-200K"
+#   4: salary — company sizes ($14.6 billion) are not pay, labelled min/max, weekly and
+#      period-less small figures are dropped, "between X and Y"
+#   3: more cities in geo.yaml, and "Office" / "and" / "&" read in locations
+#   2: quant trading / strategist / quantitative-risk titles are no longer "other"
+NORMALIZE_VERSION = 5
 
 _PHD_REQUIRED_RE = re.compile(
     r"\bphd\s+(?:is\s+)?required\b|\brequires?\s+a\s+phd\b|\bmust\s+have\s+a\s+phd\b",
