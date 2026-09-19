@@ -84,6 +84,7 @@ review: # the whole-feed LLM re-read — blueprint/wp/WP19-llm-review.md. None o
   override_confidence: 0.8 # to REPLACE a value the rules already found; filling a gap needs only llm.min_confidence
   evidence_min_chars: 6 # a verbatim quote shorter than this proves nothing
   max_locations: 8 # more places than this in one posting is a list of offices, not a location
+  max_per_collect: 300 # a collection reads at most this many new postings; `llm-review` reads the rest
   max_output_tokens: 1200 # a runaway list cannot hold the shared server for long
   max_description_chars: 12000 # a whole-posting read carries more than the ambiguous-residual lane
   salary_bounds: # plausible amounts per period, any currency: a typo guard, not a market model

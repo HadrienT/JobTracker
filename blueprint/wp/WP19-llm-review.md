@@ -74,6 +74,9 @@ just llm-review --posting-id 01M2…                           # une seule offre
   brute du modèle.
 - Le run s'arrête au **premier tour refusé** (serveur occupé ou éteint), tout ce qui précède est
   validé ; le suivant reprend là où il s'est arrêté.
+- **Automatique pour les nouvelles offres** : `just collect` et la boucle relisent, après chaque
+  collecte, jusqu'à `review.max_per_collect` offres non lues (le reste attend `just llm-review`).
+  Serveur éteint : le tour est sauté, rien n'est perdu.
 - Rythme mesuré sur GPU : ~3 s par offre ; sur CPU (service parti avant le pilote), ~17 s.
 - Les offres rejetées sont relues aussi (en dernier) : un rejet est un verdict que la lecture peut
   renverser.

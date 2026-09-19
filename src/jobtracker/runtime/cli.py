@@ -141,6 +141,18 @@ def cmd_collect(args: argparse.Namespace) -> int:
     if ctx.llm is not None:
         with bound_run_id(str(ULID())):
             drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
+            review = review_all(
+                conn,
+                profile=ctx.profile,
+                geo=ctx.geo,
+                cfg=ctx.llm,
+                limit=ctx.profile.review.max_per_collect,
+            )
+        print(
+            f"llm review: read={review.read} corrected={review.corrected} "
+            f"server_available={review.server_available}",
+            file=sys.stderr,
+        )
     conn.close()
     return 1 if degraded else 0
 
@@ -173,6 +185,13 @@ def cmd_loop(_args: argparse.Namespace) -> int:
             if ctx.llm is not None and next_drain <= now_monotonic:
                 with bound_run_id(str(ULID())):
                     drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
+                    review_all(
+                        conn,
+                        profile=ctx.profile,
+                        geo=ctx.geo,
+                        cfg=ctx.llm,
+                        limit=ctx.profile.review.max_per_collect,
+                    )
                 next_drain = time.monotonic() + DRAIN_INTERVAL_MIN * 60
             if next_retention <= now_monotonic:
                 run_retention(conn, now=utc_now())

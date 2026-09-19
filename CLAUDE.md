@@ -43,7 +43,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just test-golden` | corpus doré du normaliseur, hors ligne, avec taux de résolution par étage |
 | `just migrate` | applique `migrations/*.sql` |
 | `just run-once source="greenhouse"` | un cycle de collecte sur une famille de sources |
-| `just collect` | **un passage** sur toutes les sources activées de `configs/sources.yaml`, puis la file LLM ; écrit dans `./data/jobtracker.db` (code 1 si dégradé) |
+| `just collect` | **un passage** sur toutes les sources activées de `configs/sources.yaml`, puis la file LLM et la relecture LLM des nouvelles offres ; écrit dans `./data/jobtracker.db` (code 1 si dégradé) |
 | `just up` / `just down` | l'interface en local : API + front dans docker (`docker-compose.yml`), sur `http://127.0.0.1:5190`, lit `./data/jobtracker.db` |
 | `just llm-enqueue` | met en file les offres **déjà stockées** que le LLM peut encore aider (à faire une fois, serveur allumé) ; puis `just llm-drain --all` les traite jusqu'au bout |
 | `just llm-review` | le LLM **relit toutes les offres** et corrige salaire, lieux, séniorité, visa, doctorat, date limite — chaque correction exige une citation retrouvée dans le texte ; `--dry-run` n'écrit rien, `--limit N`, `--report f.jsonl` (`blueprint/wp/WP19-llm-review.md`) |

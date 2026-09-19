@@ -81,6 +81,7 @@ class ReviewRules:
     override_confidence: float
     evidence_min_chars: int
     max_locations: int
+    max_per_collect: int
     max_output_tokens: int
     max_description_chars: int
     salary_bounds: Mapping[str, tuple[Decimal, Decimal]]
@@ -214,6 +215,7 @@ def build_profile(
             override_confidence=float(raw_review["override_confidence"]),
             evidence_min_chars=int(raw_review["evidence_min_chars"]),
             max_locations=int(raw_review["max_locations"]),
+            max_per_collect=int(raw_review["max_per_collect"]),
             max_output_tokens=int(raw_review["max_output_tokens"]),
             max_description_chars=int(raw_review["max_description_chars"]),
             salary_bounds=salary_bounds,

@@ -49,3 +49,31 @@ def test_status_exits_one_when_the_feed_is_stale(
     assert main(["status"]) == 1
     out = capsys.readouterr().out
     assert '"stale": true' in out
+
+
+def test_llm_review_says_so_when_the_llm_is_switched_off(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert main(["llm-review"]) == 0
+    assert "JT_LLM_ENABLED=false" in capsys.readouterr().err
+
+
+def test_llm_review_on_an_empty_database_reads_nothing_and_exits_zero(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("JT_LLM_ENABLED", "true")
+
+    assert main(["llm-review", "--dry-run"]) == 0
+
+    err = capsys.readouterr().err
+    assert "read=0" in err
+    assert "would change=0" in err
+
+
+def test_llm_enqueue_on_an_empty_database_queues_nothing(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("JT_LLM_ENABLED", "true")
+
+    assert main(["llm-enqueue"]) == 0
+    assert "queued=0" in capsys.readouterr().err

@@ -57,6 +57,7 @@ _PROFILE_DATA = {
         "override_confidence": 0.8,
         "evidence_min_chars": 6,
         "max_locations": 8,
+        "max_per_collect": 300,
         "max_output_tokens": 1200,
         "max_description_chars": 12000,
         "salary_bounds": {
