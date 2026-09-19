@@ -114,6 +114,37 @@ def current_corrections(conn: sqlite3.Connection, posting_id: str) -> list[Store
     return list_corrections(conn, posting_id, content_hash=row["content_hash"])
 
 
+def current_corrections_of_field(
+    conn: sqlite3.Connection, field: str, *, posting_ids: list[str] | None = None
+) -> list[tuple[str, list[StoredCorrection]]]:
+    """`(posting_id, corrections)` for every posting whose current content carries this field's
+    correction — the material of a revert."""
+    rows = conn.execute(
+        """
+        SELECT DISTINCT c.posting_id FROM llm_corrections c
+        JOIN postings p ON p.posting_id = c.posting_id AND p.content_hash = c.content_hash
+        WHERE c.field = ?
+        ORDER BY c.posting_id
+        """,
+        (field,),
+    ).fetchall()
+    wanted = {row["posting_id"] for row in rows}
+    if posting_ids is not None:
+        wanted &= set(posting_ids)
+    return [
+        (posting_id, [c for c in current_corrections(conn, posting_id) if c.field == field])
+        for posting_id in sorted(wanted)
+    ]
+
+
+def forget_field(conn: sqlite3.Connection, posting_id: str, field: str) -> None:
+    """Drop this field's corrections and the review row, so the posting is read again."""
+    conn.execute(
+        "DELETE FROM llm_corrections WHERE posting_id = ? AND field = ?", (posting_id, field)
+    )
+    conn.execute("DELETE FROM llm_reviews WHERE posting_id = ?", (posting_id,))
+
+
 def corrected_fields(conn: sqlite3.Connection, posting_id: str) -> frozenset[str]:
     """Fields the LLM changed on the posting's *current* content: a replay must leave them alone."""
     rows = conn.execute(

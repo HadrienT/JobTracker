@@ -76,6 +76,7 @@ _PROFILE_DATA = {
             "hour": [5, 5000],
         },
         "currencies": ["USD", "EUR", "GBP", "CHF", "SGD", "HKD"],
+        "currency_symbols": {"$": ["USD", "SGD", "HKD"], "£": ["GBP"], "€": ["EUR"]},
     },
 }
 _DESCRIPTION = "We build low latency trading systems and need an engineer to join the desk. " * 4

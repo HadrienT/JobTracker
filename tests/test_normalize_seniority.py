@@ -1,3 +1,5 @@
+import pytest
+
 from jobtracker.core.enums import Seniority
 from jobtracker.normalize.seniority import parse_seniority
 from jobtracker.normalize.taxonomy import Taxonomy
@@ -69,3 +71,22 @@ def test_campus_title_without_years_is_graduate(taxonomy: Taxonomy) -> None:
 def test_bare_intern_title(taxonomy: Taxonomy) -> None:
     seniority, _years = parse_seniority("Software Engineer Intern", "", taxonomy=taxonomy)
     assert seniority == Seniority.INTERN
+
+
+# The LLM re-read disagreed with the rules on 33 postings' minimum years, mostly on ranges.
+@pytest.mark.parametrize(
+    ("text", "years"),
+    [
+        ("Minimum of 3 - 8+ years of finance and accounting experience", 3),
+        ("7–10+ years operating complex production environments", 7),
+        ("You have 2-4 years of experience in C++", 2),
+        ("5+ years of experience required", 5),
+        ("at least 3 years of experience", 3),
+    ],
+)
+def test_a_range_of_years_asks_for_its_lower_bound(
+    text: str, years: int, taxonomy: Taxonomy
+) -> None:
+    _, found = parse_seniority("Software Engineer", text, taxonomy=taxonomy)
+
+    assert found == years

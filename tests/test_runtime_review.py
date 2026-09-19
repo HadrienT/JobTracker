@@ -380,3 +380,109 @@ def test_a_corrected_visa_keeps_the_quote_that_justified_it_through_a_replay(
         "SELECT visa_evidence FROM postings WHERE posting_id = ?", (posting_id,)
     ).fetchone()
     assert row["visa_evidence"] == "Work permit assistance will be provided for the right candidate"
+
+
+# --- revert ---------------------------------------------------------------------------------
+
+
+def _reviewed(store_conn, taxonomy, geo_index, profile, llm) -> str:
+    posting_id = _ingest(store_conn, taxonomy, geo_index, profile)
+    review_all(store_conn, profile=profile, geo=geo_index, cfg=llm.config())
+    return posting_id
+
+
+def test_reverting_a_field_puts_the_value_before_back_and_rescores(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    from jobtracker.runtime.review import revert_corrections
+
+    posting_id = _reviewed(store_conn, taxonomy, geo_index, profile, llm)
+    assert _salary(store_conn, posting_id)[0] is not None
+    corrected = get_verdict(store_conn, posting_id)
+    assert corrected is not None and any(r.code == "salary_disclosed" for r in corrected.reasons)
+
+    reverted = revert_corrections(store_conn, field="compensation", profile=profile, geo=geo_index)
+
+    assert reverted == 1
+    assert _salary(store_conn, posting_id) == (None, None, None, None)
+    after = get_verdict(store_conn, posting_id)
+    assert after is not None and not any(r.code == "salary_disclosed" for r in after.reasons)
+    # The other correction (visa) is untouched, and the salary correction row is gone.
+    fields = {
+        row["field"] for row in store_conn.execute("SELECT field FROM llm_corrections").fetchall()
+    }
+    assert fields == {"visa_sponsorship"}
+
+
+def test_a_reverted_posting_is_read_again(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    from jobtracker.runtime.review import revert_corrections
+
+    posting_id = _reviewed(store_conn, taxonomy, geo_index, profile, llm)
+    assert llm_reviews.unreviewed_posting_ids(store_conn, review_version=1) == []
+
+    revert_corrections(store_conn, field="compensation", profile=profile, geo=geo_index)
+
+    assert llm_reviews.unreviewed_posting_ids(store_conn, review_version=1) == [posting_id]
+
+
+def test_a_revert_can_be_limited_to_named_postings(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    from jobtracker.runtime.review import revert_corrections
+
+    keep = _ingest(
+        store_conn, taxonomy, geo_index, profile, title="Quant A", job="a", content_hash="a"
+    )
+    undo = _ingest(
+        store_conn, taxonomy, geo_index, profile, title="Quant B", job="b", content_hash="b"
+    )
+    review_all(store_conn, profile=profile, geo=geo_index, cfg=llm.config())
+
+    revert_corrections(
+        store_conn, field="compensation", profile=profile, geo=geo_index, posting_ids=[undo]
+    )
+
+    assert _salary(store_conn, undo) == (None, None, None, None)
+    assert _salary(store_conn, keep)[0] is not None
+
+
+def test_reverting_a_visa_restores_the_unknown_and_drops_its_quote(
+    store_conn: sqlite3.Connection,
+    taxonomy: Taxonomy,
+    geo_index: GeoIndex,
+    profile: Profile,
+    llm: FakeLlm,
+) -> None:
+    from jobtracker.runtime.review import revert_corrections
+
+    posting_id = _reviewed(store_conn, taxonomy, geo_index, profile, llm)
+
+    revert_corrections(store_conn, field="visa_sponsorship", profile=profile, geo=geo_index)
+
+    posting = get_posting(store_conn, posting_id)
+    assert posting is not None
+    assert posting.visa_sponsorship.value == "unknown"
+    assert posting.visa_evidence is None
+
+
+def test_an_unknown_field_cannot_be_reverted(
+    store_conn: sqlite3.Connection, geo_index: GeoIndex, profile: Profile
+) -> None:
+    from jobtracker.runtime.review import revert_corrections
+
+    with pytest.raises(ValueError, match="cannot revert"):
+        revert_corrections(store_conn, field="title", profile=profile, geo=geo_index)

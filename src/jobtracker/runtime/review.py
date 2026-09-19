@@ -14,13 +14,17 @@ import sqlite3
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
 
 from pydantic import ValidationError
 
 from jobtracker.core.clock import utc_now
-from jobtracker.core.enums import ReviewOutcome
-from jobtracker.core.geo import GeoIndex
+from jobtracker.core.enums import RemoteMode, ReviewOutcome, SalaryPeriod, Seniority, VisaStatus
+from jobtracker.core.geo import GeoIndex, resolve_city
 from jobtracker.core.logging import get_logger
+from jobtracker.core.models import Compensation, Location, Posting
 from jobtracker.match.llm import LlmStatus, chat_json
 from jobtracker.match.profile import Profile
 from jobtracker.match.review import (
@@ -38,6 +42,87 @@ from jobtracker.store.postings import get_posting, is_active, update_resolution
 from jobtracker.store.search import get_description
 
 _logger = get_logger(__name__)
+
+REVERTIBLE_FIELDS = (
+    "compensation",
+    "locations",
+    "seniority",
+    "min_years",
+    "visa_sponsorship",
+    "phd_required",
+    "closes_at",
+)
+
+
+def _restored(posting: Posting, field: str, before: Any, geo: GeoIndex) -> dict[str, Any]:
+    """The `Posting` updates that put `field` back to the value it had before the LLM changed it."""
+    if field == "compensation":
+        current = posting.compensation
+        return {
+            "compensation": Compensation(
+                amount_min=None if before["amount_min"] is None else Decimal(before["amount_min"]),
+                amount_max=None if before["amount_max"] is None else Decimal(before["amount_max"]),
+                currency=before["currency"],
+                period=None if before["period"] is None else SalaryPeriod(before["period"]),
+                bonus_mentioned=current.bonus_mentioned,
+                equity_mentioned=current.equity_mentioned,
+                raw=current.raw,
+            )
+        }
+    if field == "locations":
+        raw = posting.locations[0].raw if posting.locations else None
+        restored = []
+        for entry in before:
+            city = entry["city"]
+            resolved = (
+                None if city is None else resolve_city(geo, city, hq_country=entry["country"])
+            )
+            restored.append(
+                Location(
+                    city=city,
+                    country=entry["country"],
+                    region=None if resolved is None else resolved.region,
+                    remote_mode=RemoteMode(entry["remote_mode"]),
+                    raw=raw,
+                )
+            )
+        return {"locations": tuple(restored)}
+    if field == "seniority":
+        return {"seniority": Seniority(before)}
+    if field == "visa_sponsorship":
+        return {"visa_sponsorship": VisaStatus(before), "visa_evidence": None}
+    if field == "closes_at":
+        return {"closes_at": None if before is None else datetime.fromisoformat(before)}
+    return {field: before}  # min_years, phd_required: plain values
+
+
+def revert_corrections(
+    conn: sqlite3.Connection,
+    *,
+    field: str,
+    profile: Profile,
+    geo: GeoIndex,
+    posting_ids: list[str] | None = None,
+) -> int:
+    """Undo the LLM's corrections of one field: restore the value before, rescore, and queue the
+    posting for a fresh reading. Returns how many postings were reverted."""
+    if field not in REVERTIBLE_FIELDS:
+        raise ValueError(f"cannot revert {field!r}; one of {', '.join(REVERTIBLE_FIELDS)}")
+    reverted = 0
+    for posting_id, corrections in llm_reviews.current_corrections_of_field(
+        conn, field, posting_ids=posting_ids
+    ):
+        posting = get_posting(conn, posting_id)
+        if posting is None or not corrections:
+            continue
+        # The oldest correction's "before" is what the rules had; later ones stacked on it.
+        updated = posting.model_copy(update=_restored(posting, field, corrections[0].before, geo))
+        update_resolution(conn, updated, evaluate(updated, profile=profile))
+        llm_reviews.forget_field(conn, posting_id, field)
+        reverted += 1
+    conn.commit()
+    _logger.info("llm_corrections_reverted", field=field, postings=reverted)
+    return reverted
 
 
 @dataclass(frozen=True)

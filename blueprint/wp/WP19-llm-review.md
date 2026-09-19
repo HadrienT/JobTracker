@@ -89,11 +89,34 @@ montant unique ; un montant hebdomadaire rangé « par an » ; ~140 offres sans 
 quinze villes absentes de `geo.yaml` et des lieux du type « Chicago Office » / « London and
 Singapore ».
 
-## 6. Limites
+## 6. Premier passage réel : ce qu'il a donné, et ce qu'il a fallu corriger
+
+1 245 offres lues (~1 h sur GPU), 77 corrigées, 1 166 confirmées, 2 mises de côté. L'audit des
+corrections appliquées a trouvé **quatre défauts, dont trois dans les garde-fous de la relecture
+elle-même**, corrigés puis rejoués :
+
+- **Doctorat** : « Advanced degree (Master's or PhD) » était lu comme « doctorat exigé ». Comme
+  c'est un rejet dur (l'offre disparaît du feed), une citation qui offre le doctorat comme *une*
+  option (master, bachelor, « or equivalent », « preferred », « a plus »…) est désormais refusée.
+  9 corrections annulées (`just llm-revert --field phd_required`), relues : 2 restent, légitimes.
+- **Devise** : « between 150,000 and 180,000 » avait reçu l'USD par supposition. La citation doit
+  nommer la devise (code ISO, ou symbole qui ne peut être que cette famille : `review.currency_symbols`).
+- **Mode de travail** : « Virtual » / « Anywhere » étaient lus « remote ». Un mode n'est retenu que
+  si la citation le dit ; le contrôle ne s'appliquait pas au chemin des lieux sans ville.
+- **Années d'expérience** : le modèle prenait le *bas* des fourchettes (« 3 - 8+ ans » → 3), les
+  règles le *haut* (→ 8), ce qui pouvait faire rejeter à tort une offre accessible. Défaut des
+  règles, corrigé (la fourchette passe en premier ; NORMALIZE_VERSION 5→…). Deux étiquettes du
+  corpus doré avaient la même erreur (« 10-15+ ans » → 15, « 3-7+ ans » → 7) et ont été corrigées.
+
+**`llm-revert`** : `just llm-revert --field F [--posting-id ID]` restaure la valeur d'avant,
+recalcule le score et remet l'offre en file de relecture. Ce qui rend une erreur du modèle
+rattrapable.
+
+## 7. Limites
 
 - Ce que le modèle ne cite pas, on ne le corrige pas : une information présente mais que le
   modèle ne sait pas citer reste aux règles.
 - Un modèle qui cite fidèlement mais interprète mal (« we encourage citizens to apply » lu comme
   une exclusion) reste possible : les mots-repères réduisent ce risque, ne l'éliminent pas.
-- Les corrections ne s'annulent pas d'un geste : la valeur d'avant est conservée dans
+- Une correction s'annule avec `just llm-revert` (voir §6).
   `llm_corrections`, mais aucune commande de retour arrière n'existe encore.

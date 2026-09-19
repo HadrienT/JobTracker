@@ -176,12 +176,14 @@ def test_an_implausible_amount_for_its_period_is_refused(
     profile: Profile, geo_index: GeoIndex
 ) -> None:
     sources = ReviewSources(
-        title="Quant", location=None, description="Pay is 120 per year for this internship."
+        title="Quant", location=None, description="Pay is $120 per year for this internship."
     )
     plan = _plan(
         _posting(),
         _output(
-            compensation=_salary(amount_min="120", amount_max=None, evidence="Pay is 120 per year")
+            compensation=_salary(
+                amount_min="120", amount_max=None, currency="USD", evidence="Pay is $120 per year"
+            )
         ),
         profile,
         geo_index,
@@ -845,3 +847,103 @@ def test_a_deadline_the_model_worked_out_itself_is_refused(
 
     assert plan.posting.closes_at is None
     assert any("not written in its quote" in reason for reason in plan.refused)
+
+
+# --- what the first full run taught (audit of 77 applied corrections) ------------------------
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Advanced degree (Master's or PhD) in Machine Learning, Statistics, Physics",
+        "PhD or equivalent experience in a quantitative field",
+        "A PhD degree in mathematics is preferred",
+    ],
+)
+def test_a_phd_offered_as_one_option_or_a_plus_is_not_a_requirement(
+    quote: str, profile: Profile, geo_index: GeoIndex
+) -> None:
+    sources = ReviewSources(title="Quant", location=None, description=quote + ".")
+    plan = _plan(
+        _posting(phd_required=False),
+        _output(phd_required=True, phd_evidence=quote),
+        profile,
+        geo_index,
+        sources=sources,
+    )
+
+    assert plan.posting.phd_required is False
+    assert any("one option" in reason for reason in plan.refused)
+
+
+def test_a_salary_whose_quote_names_no_currency_is_refused(
+    profile: Profile, geo_index: GeoIndex
+) -> None:
+    sources = ReviewSources(
+        title="Quant",
+        location=None,
+        description="Base pay is expected to be between 150,000 and 180,000.",
+    )
+    plan = _plan(
+        _posting(),
+        _output(
+            compensation=_salary(
+                amount_min="150000",
+                amount_max="180000",
+                currency="USD",
+                evidence="Base pay is expected to be between 150,000 and 180,000",
+            )
+        ),
+        profile,
+        geo_index,
+        sources=sources,
+    )
+
+    assert plan.corrections == ()
+    assert any("does not mention USD" in reason for reason in plan.refused)
+
+
+def test_a_symbol_or_a_code_in_the_quote_names_the_currency(
+    profile: Profile, geo_index: GeoIndex
+) -> None:
+    for text, code in [
+        ("Base pay: $150,000-$180,000", "USD"),
+        ("Base pay: 150,000-180,000 USD", "USD"),
+    ]:
+        sources = ReviewSources(title="Quant", location=None, description=text + " a year.")
+        plan = _plan(
+            _posting(),
+            _output(
+                compensation=_salary(
+                    amount_min="150000", amount_max="180000", currency=code, evidence=text
+                )
+            ),
+            profile,
+            geo_index,
+            sources=sources,
+        )
+        assert _fields(plan) == {"compensation"}, text
+
+
+@pytest.mark.parametrize("place", ["Virtual", "Anywhere"])
+def test_remote_is_not_read_into_a_word_that_does_not_say_it(
+    place: str, profile: Profile, geo_index: GeoIndex
+) -> None:
+    sources = ReviewSources(title="Talent community", location=place, description="Join us.")
+    empty = _posting(
+        locations=(
+            Location(
+                city=None, country=None, region=None, remote_mode=RemoteMode.UNKNOWN, raw=place
+            ),
+        )
+    )
+
+    plan = _plan(
+        empty,
+        _output(locations=[_location(None, None, "remote", place)]),
+        profile,
+        geo_index,
+        sources=sources,
+    )
+
+    assert plan.corrections == ()

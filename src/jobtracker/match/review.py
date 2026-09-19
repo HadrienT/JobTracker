@@ -202,6 +202,13 @@ def plan_review(
 # degree in mathematics" says a qualification, "the PhD quant internship is a 10-week program"
 # does not; "we encourage citizens to apply" is not "we cannot sponsor".
 _PHD_RE = re.compile(r"ph\.?\s?d|doctorate|doctoral", re.IGNORECASE)
+# "Master's or PhD", "PhD or equivalent", "PhD preferred": a PhD among the ways in, or a plus — not
+# a requirement. Wrongly reading one as "PhD required" hides the posting (a hard reject).
+_PHD_ALTERNATIVE_RE = re.compile(
+    r"master|msc|m\.sc|bachelor|equivalent|advanced degree|preferred|a plus|nice to have"
+    r"|desirable|advantage|beneficial",
+    re.IGNORECASE,
+)
 _REQUIREMENT_RE = re.compile(
     r"require|must|degree|qualif|holding|hold a|enrolled|pursuing|completing|candidate",
     re.IGNORECASE,
@@ -316,6 +323,9 @@ class _Planner:
         if currency not in self.profile.review.currencies:
             self._refuse("compensation", f"currency {comp.currency!r} is not a known one")
             return
+        if not self._currency_in(evidence, currency):
+            self._refuse("compensation", f"its quote does not mention {currency}")
+            return
         if comp.period is None:
             self._refuse("compensation", "no period")
             return
@@ -363,6 +373,18 @@ class _Planner:
             ),
         )
 
+    def _currency_in(self, quote: str, code: str) -> bool:
+        """The quote names the currency: its ISO code, or a symbol that can only be that family.
+
+        "between 150,000 and 180,000" gives no currency; assuming one is a guess.
+        """
+        if re.search(rf"\b{re.escape(code)}\b", quote):
+            return True
+        return any(
+            symbol in quote and code in codes
+            for symbol, codes in self.profile.review.currency_symbols.items()
+        )
+
     # -- locations --------------------------------------------------------------------------
 
     def locations(self) -> None:
@@ -398,7 +420,7 @@ class _Planner:
             return None
         if entry.city is None:
             # "Remote", or a country on its own: a mode/country fact, no pin.
-            if country is None and entry.remote_mode is RemoteMode.UNKNOWN:
+            if country is None and self._mode(entry) is RemoteMode.UNKNOWN:
                 return None
             if not self._quoted(entry.evidence):
                 self._refuse("locations", "a location's quote is not in the posting")
@@ -407,7 +429,7 @@ class _Planner:
                 city=None,
                 country=country,
                 region=None,
-                remote_mode=entry.remote_mode,
+                remote_mode=self._mode(entry),
                 raw=self.posting.locations[0].raw if self.posting.locations else None,
             )
         if not self._quoted(entry.evidence) or _squash(entry.city) not in _squash(
@@ -524,6 +546,9 @@ class _Planner:
             return
         if not self._quoted(out.phd_evidence) or not _PHD_RE.search(out.phd_evidence or ""):
             self._refuse("phd_required", "its quote does not mention a PhD")
+            return
+        if _PHD_ALTERNATIVE_RE.search(out.phd_evidence or ""):
+            self._refuse("phd_required", "its quote offers a PhD as one option, or as a plus")
             return
         if not _REQUIREMENT_RE.search(out.phd_evidence or ""):
             self._refuse("phd_required", "its quote mentions a PhD but states no requirement")

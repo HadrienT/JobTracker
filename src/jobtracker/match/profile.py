@@ -86,6 +86,7 @@ class ReviewRules:
     max_description_chars: int
     salary_bounds: Mapping[str, tuple[Decimal, Decimal]]
     currencies: frozenset[str]
+    currency_symbols: Mapping[str, frozenset[str]]
 
 
 @dataclass(frozen=True)
@@ -220,6 +221,10 @@ def build_profile(
             max_description_chars=int(raw_review["max_description_chars"]),
             salary_bounds=salary_bounds,
             currencies=frozenset(str(code).upper() for code in raw_review["currencies"]),
+            currency_symbols={
+                str(symbol): frozenset(str(c).upper() for c in codes)
+                for symbol, codes in raw_review["currency_symbols"].items()
+            },
         )
     except KeyError as exc:
         raise ConfigError(f"profile{where}: 'review' is missing field {exc}") from exc

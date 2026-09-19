@@ -195,12 +195,15 @@ seniority:
   # explicit years-of-experience phrasing, checked before any title keyword —
   # the description outranks the title (blueprint/wp/WP03-normalize.md §3).
   years_patterns:
+    # First, so a range reads as its lower bound: "3 - 8+ years" asks for 3, not 8 (the "+"
+    # patterns below would otherwise pick the top of the range and reject a junior-friendly
+    # posting as senior). The optional "+" covers "7-10+ years".
+    - '(\d+)\s*(?:-|–|to)\s*\d+\s*\+?\s*years?'
     - '(\d+)\s*\+\s*years?'
     - '(\d+)\s*years?\s*\+'
     - 'minimum(?:\s+of)?\s+(\d+)\s+years?'
     - 'at least\s+(\d+)\s+years?'
     - 'more than\s+(\d+)\s+years?'
-    - '(\d+)\s*(?:-|–|to)\s*\d+\s*years?'
     - '(\d+)\s*ans?\s+d.exp[eé]rience'
     - 'mindestens\s+(\d+)\s+jahre'
 

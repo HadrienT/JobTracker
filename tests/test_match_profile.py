@@ -53,6 +53,7 @@ _MINIMAL: dict[str, Any] = {
             "hour": [5, 5000],
         },
         "currencies": ["USD", "EUR", "GBP", "CHF", "SGD", "HKD"],
+        "currency_symbols": {"$": ["USD", "SGD", "HKD"], "£": ["GBP"], "€": ["EUR"]},
     },
 }
 

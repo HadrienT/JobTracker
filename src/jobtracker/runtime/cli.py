@@ -33,7 +33,13 @@ from jobtracker.runtime.residual import (
     drain_queue,
     enqueue_backlog,
 )
-from jobtracker.runtime.review import ReviewStats, ReviewStep, review_all
+from jobtracker.runtime.review import (
+    REVERTIBLE_FIELDS,
+    ReviewStats,
+    ReviewStep,
+    revert_corrections,
+    review_all,
+)
 from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.watchdog import full_health_snapshot
 from jobtracker.store import llm_queue, llm_reviews
@@ -308,6 +314,23 @@ def cmd_llm_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_llm_revert(args: argparse.Namespace) -> int:
+    """Undo the LLM's corrections of one field and queue those postings to be read again."""
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    ctx, _boards = _build_context(conn, settings)
+    count = revert_corrections(
+        conn,
+        field=args.field,
+        profile=ctx.profile,
+        geo=ctx.geo,
+        posting_ids=args.posting_id or None,
+    )
+    print(f"reverted={count} field={args.field} (they will be read again)", file=sys.stderr)
+    conn.close()
+    return 0
+
+
 def cmd_llm_drain(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
@@ -500,6 +523,15 @@ def _build_parser() -> argparse.ArgumentParser:
     review.add_argument("--report", default=None, help="write one JSON line per posting here")
     review.add_argument("--every", type=int, default=25, help="progress line every N postings")
     review.set_defaults(func=cmd_llm_review)
+
+    revert = subparsers.add_parser(
+        "llm-revert", help="undo the LLM's corrections of one field and read those postings again"
+    )
+    revert.add_argument("--field", required=True, choices=REVERTIBLE_FIELDS)
+    revert.add_argument(
+        "--posting-id", action="append", default=None, help="only this posting (repeatable)"
+    )
+    revert.set_defaults(func=cmd_llm_revert)
 
     llm_drain = subparsers.add_parser("llm-drain", help="one pass over the deferred LLM queue")
     llm_drain.add_argument(

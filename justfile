@@ -70,6 +70,10 @@ llm-drain *args:
 llm-review *args:
     uv run jobtracker llm-review {{args}}
 
+# annule les corrections du LLM sur un champ (`--field phd_required`) : valeur d'avant restaurée, offre relue
+llm-revert *args:
+    uv run jobtracker llm-revert {{args}}
+
 # met en file les offres déjà stockées que le LLM peut encore aider (à faire une fois, serveur allumé)
 llm-enqueue:
     uv run jobtracker llm-enqueue

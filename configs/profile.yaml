@@ -92,4 +92,11 @@ review: # the whole-feed LLM re-read — blueprint/wp/WP19-llm-review.md. None o
     month: [500, 500000]
     day: [20, 20000]
     hour: [5, 5000]
+  currency_symbols: # a symbol in a quote counts as naming any of these; a bare number names none
+    "$": [USD, CAD, AUD, SGD, HKD, TWD, MXN]
+    "£": [GBP]
+    "€": [EUR]
+    "¥": [JPY, CNY]
+    "kr": [SEK, DKK, NOK]
+    "zł": [PLN]
   currencies: [USD, EUR, GBP, CHF, SGD, HKD, JPY, CNY, AUD, CAD, INR, KRW, AED, ILS, SEK, DKK, NOK, PLN, CZK, HUF, BRL, MXN, ZAR, TWD, THB, VND]

@@ -81,7 +81,7 @@ cities:
     region: emea
     lat: 50.1109
     lon: 8.6821
-    aliases: ["Frankfurt am Main"]
+    aliases: ["Frankfurt am Main", "Frankfurt a. M.", "Frankfurt a.M."]
   - city: Munich
     country: DE
     region: emea
@@ -383,7 +383,7 @@ cities:
     lat: 34.9229
     lon: 33.6233
     # The source spells it with a Cyrillic "с": kept verbatim, or it never matches.
-    aliases: ["Larnaka", "Cyprus, Larnaсa", "Cyprus, Larnaca"]
+    aliases: ["Larnaka", "Larnaсa", "Cyprus, Larnaсa", "Cyprus, Larnaca"]
   - city: Taipei
     country: TW
     region: apac
@@ -412,6 +412,29 @@ cities:
     lat: 23.1645
     lon: 72.6845
     aliases: ["Gift City", "Gandhinagar"]
+  - city: West Palm Beach
+    country: US
+    region: amer
+    lat: 26.7153
+    lon: -80.0534
+    aliases: ["West Palm Beach, FL", "West Palm Beach, Florida"]
+  - city: Hamburg
+    country: DE
+    region: emea
+    lat: 53.5511
+    lon: 9.9937
+  - city: Charleston
+    country: US
+    region: amer
+    lat: 32.7765
+    lon: -79.9311
+    aliases: ["Charleston, SC", "Charleston, South Carolina"]
+  - city: Las Vegas
+    country: US
+    region: amer
+    lat: 36.1699
+    lon: -115.1398
+    aliases: ["Las Vegas, NV"]
 
 ambiguous:
   london:
