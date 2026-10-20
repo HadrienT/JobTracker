@@ -12,6 +12,7 @@ from jobtracker.core.enums import RemoteMode, RoleFamily, Tier, Track
 from jobtracker.core.models import Location, Posting
 from jobtracker.match.profile import Profile, load_tracks
 from jobtracker.runtime.tracks import score_tracks
+from jobtracker.store import llm_reviews
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.facets import facet_counts
 from jobtracker.store.postings import (
@@ -277,3 +278,48 @@ def test_role_family_other_never_reaches_the_track_feed(
     score_tracks(store_conn, tracks)
     verdict = get_track_verdict(store_conn, CH, sales)
     assert verdict is not None and verdict.tier == Tier.REJECTED
+
+
+# --- the LLM re-read --------------------------------------------------------------------------
+
+
+def test_the_llm_reread_skips_off_topic_postings_no_track_shows(
+    store_conn: sqlite3.Connection, seeded: dict[str, str], tracks: dict[Track, Profile]
+) -> None:
+    """Every seeded posting is `off_topic` for the quant feed; only the CUDA one is shown by
+    the track. A worldwide board's Paris role, or a Swiss Java one, is not worth a reading."""
+    score_tracks(store_conn, tracks)
+
+    to_read = llm_reviews.unreviewed_posting_ids(store_conn, review_version=1)
+
+    assert to_read == [seeded["cuda"]]
+
+
+def test_the_llm_reread_takes_track_postings_first(
+    store_conn: sqlite3.Connection, seeded: dict[str, str], tracks: dict[Track, Profile]
+) -> None:
+    sync_companies(
+        store_conn,
+        [
+            make_board(sector="tech", priority=2),
+            make_board(company_slug="fund", sector="hedge_fund"),
+        ],
+    )
+    quant = make_posting(
+        posting_id="01J00000000000000000000P9",
+        fingerprint="fp-9",
+        source_job_id="job-9",
+        company_slug="fund",
+    )
+    upsert_posting(
+        store_conn, quant, make_verdict(posting_id=quant.posting_id, score=50, tier=Tier.POSSIBLE)
+    )
+    store_conn.commit()
+    score_tracks(store_conn, tracks)
+    cuda = get_track_verdict(store_conn, CH, seeded["cuda"])
+    assert cuda is not None and cuda.score > 50
+
+    assert llm_reviews.unreviewed_posting_ids(store_conn, review_version=1) == [
+        seeded["cuda"],
+        quant.posting_id,
+    ]

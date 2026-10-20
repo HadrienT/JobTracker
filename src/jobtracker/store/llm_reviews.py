@@ -167,6 +167,11 @@ def unreviewed_posting_ids(
     last but are not skipped — a rejection is a verdict the reading may overturn. "Best" is the
     best of the quant score and any track's (blueprint/wp/WP20-tracks.md): a strong Swiss C++
     role is rejected by the quant feed, not unimportant.
+
+    Skipped: a posting the quant feed rejects `off_topic` that no track shows either — an
+    AI lab's Tokyo roles, collected only because its board is worldwide. That rejection is
+    the employer's sector or the track's subject, nothing a reading could overturn, and the
+    shared server has better things to read.
     """
     sql = """
         SELECT p.posting_id FROM postings p
@@ -174,6 +179,12 @@ def unreviewed_posting_ids(
         WHERE p.is_active = 1 AND p.is_canonical = 1
           AND (r.posting_id IS NULL OR r.content_hash != p.content_hash
                OR r.review_version != ?)
+          AND NOT (
+              EXISTS (SELECT 1 FROM verdicts v WHERE v.posting_id = p.posting_id
+                      AND v.rejection_reason = 'off_topic')
+              AND NOT EXISTS (SELECT 1 FROM track_verdicts t WHERE t.posting_id = p.posting_id
+                              AND t.tier != 'rejected')
+          )
         ORDER BY MAX(
             COALESCE(p.score, 0),
             COALESCE((SELECT MAX(t.score) FROM track_verdicts t

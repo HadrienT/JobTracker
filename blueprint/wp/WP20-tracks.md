@@ -87,7 +87,10 @@ coûte une requête par piste.
 
 La relecture LLM (WP19) lit « le meilleur score d'abord » : c'est désormais le meilleur du score
 quant et des scores de piste, pour qu'un poste CUDA `strong` rejeté par le quant ne passe pas en
-dernier.
+dernier. Et elle **saute** les offres que le quant rejette `off_topic` et qu'aucune piste ne
+montre : les boards mondiaux (Anthropic, OpenAI, Cohere…) apportent des centaines d'offres hors
+de Suisse, dont le rejet tient au secteur de l'employeur — rien qu'une lecture puisse renverser,
+et le serveur LLM est partagé.
 
 ## 4. Collecte — le registre `tech`
 
