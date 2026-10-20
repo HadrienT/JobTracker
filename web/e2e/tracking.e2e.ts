@@ -37,16 +37,18 @@ test('status and note: set, seen on the row, filterable, still there after a rel
   await note.blur()
   expect((await noteSaved).status()).toBe(204)
 
-  // Closed by the dimmed area: the row now carries its status.
+  // Closed by the dimmed area: a posting with a status has left the feed of what is still to
+  // be decided on…
   await page.mouse.click(20, 450)
   await expect(dialog).toBeHidden()
-  await expect(rows.first().getByText('Interview')).toBeVisible()
+  await expect(page.locator(`[id="posting-row-${id}"]`)).toHaveCount(0)
 
-  // The Tracking filter narrows the feed to it (and only it).
+  // …and the Tracking filter is where it is read back (and only it), carrying its status.
   await page.getByRole('complementary', { name: 'Filters' }).getByRole('checkbox', { name: 'Interview' }).check()
   await expect(page).toHaveURL(/statuses=interview/)
   await expect(rows).toHaveCount(1)
   await expect(rows.first()).toHaveAttribute('id', `posting-row-${id}`)
+  await expect(rows.first().getByText('Interview')).toBeVisible()
 
   // Reload: same filter, same row, and the note is back in the detail.
   await page.reload()
