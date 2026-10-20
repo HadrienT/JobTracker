@@ -104,6 +104,12 @@ export const api = {
       body: JSON.stringify({ note } satisfies Schemas['NoteRequest']),
     })
   },
+  setTriage(postingId: string, triage: Schemas['Triage'] | null): Promise<void> {
+    return request(`/postings/${encodeURIComponent(postingId)}/triage`, {
+      method: 'POST',
+      body: JSON.stringify({ triage } satisfies Schemas['TriageRequest']),
+    })
+  },
   setHidden(postingId: string, value: boolean): Promise<void> {
     return request(`/postings/${encodeURIComponent(postingId)}/hide`, {
       method: 'POST',

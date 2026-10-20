@@ -5,10 +5,10 @@ makes one detail request per posting — for a bank with 800 open roles, that
 is 800 requests a cycle, guaranteed to blow the run's budget. Two guards cut
 that down, in the order the WP06 blueprint prescribes:
 
-1. A coarse, generous title pre-filter: only titles that could plausibly be
-   engineering/quant roles get a detail request at all. A false positive
-   just costs one extra request; a false negative still keeps the posting
-   (with an empty description) rather than dropping it.
+1. A coarse, generous title pre-filter (collect/prefilter.py): only titles
+   that could plausibly be engineering/quant roles get a detail request at
+   all. A false positive just costs one extra request; a false negative still
+   keeps the posting (with an empty description) rather than dropping it.
 2. A summary-hash cache: a posting whose title/location have not changed
    since a previous cycle reuses its previously-fetched description instead
    of asking for it again. The cache is supplied by the caller (`known`) —
@@ -28,6 +28,7 @@ from datetime import datetime
 from typing import Any
 
 from jobtracker.collect.http import BUDGET_EXHAUSTED, NOT_MODIFIED, HttpSession
+from jobtracker.collect.prefilter import looks_relevant
 from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import Source
 from jobtracker.core.errors import BoardNotFound, ConfigError, SourceSchemaChanged
@@ -38,21 +39,6 @@ from jobtracker.core.models import Board, CollectResult, RawPosting
 _logger = get_logger(__name__)
 
 _PAGE_SIZE = 20
-
-# A cheap, deliberately generous request-budget filter — never a role
-# classification (that is normalize's job). Skipping a detail fetch never
-# drops a posting, it only leaves its description empty for this cycle.
-_RELEVANT_TITLE_MARKERS = (
-    "engineer",
-    "developer",
-    "quant",
-    "scientist",
-    "programmer",
-    "software",
-    "technology",
-    "machine learning",
-    "research",
-)
 
 
 @dataclass(frozen=True)
@@ -192,7 +178,7 @@ def _map_summary(
 
     if cached is not None and cached.summary_hash == summary_hash:
         description_raw = cached.description_raw
-    elif not _looks_relevant(title):
+    elif not looks_relevant(str(title)):
         _logger.info(
             "collect_detail_skipped",
             source="workday",
@@ -253,11 +239,6 @@ def _fetch_detail(
     description = info.get("jobDescription") or ""
     posted_at = info.get("startDate")
     return description, posted_at, 1, False
-
-
-def _looks_relevant(title: str) -> bool:
-    title_l = title.lower()
-    return any(marker in title_l for marker in _RELEVANT_TITLE_MARKERS)
 
 
 def _encode(summary: Mapping[str, Any]) -> bytes:

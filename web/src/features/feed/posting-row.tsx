@@ -11,11 +11,13 @@ import { VisaBadge } from '@/shared/ui/visa-badge'
 import { postingMeta } from '@/features/feed/posting-meta'
 import { isNewSinceLastVisit } from '@/features/feed/last-visit'
 import { StatusBadge } from '@/features/feed/status-badge'
+import { rejectionReasonLabel } from '@/features/filters/defaults'
+import { TRIAGE_ACTIONS, type TriageView } from '@/features/feed/triage'
 
 const STALE_AFTER_DAYS = 30
 
 const GRID_COLUMNS =
-  'grid-cols-[52px_minmax(220px,1fr)_28px_112px_140px_120px_96px_112px_44px_56px_32px]'
+  'grid-cols-[52px_minmax(220px,1fr)_28px_112px_140px_120px_96px_112px_44px_56px_88px]'
 
 interface PostingRowProps {
   posting: PostingOut
@@ -25,10 +27,20 @@ interface PostingRowProps {
   onSelect: () => void
   onOpen: () => void
   onToggleFavorite: () => void
+  onTriage: (to: TriageView) => void
 }
 
 /** One row per posting — the single most-read element of the product (blueprint/12-WEB-UI.md §3). */
-export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen, onToggleFavorite }: PostingRowProps) {
+export function PostingRow({
+  posting,
+  reasons,
+  selected,
+  style,
+  onSelect,
+  onOpen,
+  onToggleFavorite,
+  onTriage,
+}: PostingRowProps) {
   // A `grid`/`row` rather than a listbox/option: the favorite toggle is a real button, and
   // an `option` may not contain one (axe `nested-interactive`, `aria-required-children`).
   // A row may hold any number of cells, so the data columns are one cell and the toggle
@@ -64,6 +76,11 @@ export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen
               )}
               <span className="truncate text-text-primary">{posting.title}</span>
               {posting.application_status !== null && <StatusBadge status={posting.application_status} />}
+              {posting.rejection_reason !== null && (
+                <span className="shrink-0 rounded-full border border-tier-rejected/60 px-1.5 py-0.5 text-[10px] font-medium leading-none text-tier-rejected">
+                  {rejectionReasonLabel(posting.rejection_reason)}
+                </span>
+              )}
             </span>
           </TooltipTrigger>
           <TooltipContent>{posting.title_raw}</TooltipContent>
@@ -98,6 +115,21 @@ export function PostingRow({ posting, reasons, selected, style, onSelect, onOpen
         <span aria-hidden="true" />
       </div>
       <div role="gridcell" className="absolute right-3 top-0 flex h-full items-center">
+        {TRIAGE_ACTIONS.filter((action) => action.value !== posting.triage).map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            aria-label={action.label}
+            title={action.label}
+            className="h-8 w-7 text-sm leading-none text-text-tertiary hover:text-text-primary"
+            onClick={(event) => {
+              event.stopPropagation()
+              onTriage(action.value)
+            }}
+          >
+            {action.glyph}
+          </button>
+        ))}
         <button
           type="button"
           aria-pressed={posting.favorited}

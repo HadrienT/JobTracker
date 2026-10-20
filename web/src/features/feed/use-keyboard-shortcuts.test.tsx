@@ -12,6 +12,7 @@ function Harness({ enabled, onFocusSearch }: { enabled: boolean; onFocusSearch: 
       onOpenSource: vi.fn(),
       onToggleFavorite: vi.fn(),
       onHide: vi.fn(),
+      onTriage: vi.fn(),
       onFocusSearch,
       onEscape: vi.fn(),
     },
@@ -34,6 +35,7 @@ describe('useFeedKeyboardShortcuts', () => {
       onOpenSource: vi.fn(),
       onToggleFavorite: vi.fn(),
       onHide: vi.fn(),
+      onTriage: vi.fn(),
       onFocusSearch: vi.fn(),
       onEscape: vi.fn(),
     }
@@ -65,6 +67,7 @@ describe('useFeedKeyboardShortcuts', () => {
       onOpenSource: vi.fn(),
       onToggleFavorite: vi.fn(),
       onHide: vi.fn(),
+      onTriage: vi.fn(),
       onFocusSearch: vi.fn(),
       onEscape: vi.fn(),
     }

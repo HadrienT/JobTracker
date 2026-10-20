@@ -11,6 +11,7 @@ from pathlib import Path
 import httpx
 from ulid import ULID
 
+from jobtracker.collect.browser import BrowserClient
 from jobtracker.collect.http import PolicedHttpSession, load_sources_config
 from jobtracker.collect.registry import boards_for_source, load_registry
 from jobtracker.core.clock import utc_now
@@ -81,10 +82,12 @@ def _build_context(
         user_agent=settings.user_agent,
         llm=LlmClientConfig.from_settings(settings),
     )
+    # `source: custom` reads pages as rendered by a headless browser (collect/browser.py).
+    ctx.client_factories = {Source.CUSTOM: BrowserClient}
     aggregators = load_aggregators(settings, boards, configs_dir=CONFIGS_DIR)
     if aggregators is not None:
         ctx.collectors.update(aggregators.collectors)
-        ctx.client_factories = aggregators.client_factories
+        ctx.client_factories = {**ctx.client_factories, **aggregators.client_factories}
         ctx.resolve_employer = aggregators.resolve_employer
         boards = [*boards, *aggregators.boards]
     return ctx, boards
@@ -108,7 +111,8 @@ def cmd_run_once(args: argparse.Namespace) -> int:
         source_boards = [b for b in source_boards if b.company_slug == args.company]
 
     with bound_run_id(str(ULID())):
-        run = run_source_cycle(conn, source, source_boards, ctx=ctx)
+        # Naming one company means "look at it now", whatever its refetch cadence says.
+        run = run_source_cycle(conn, source, source_boards, ctx=ctx, force=bool(args.company))
     print(
         f"source={run.source.value} status={run.status} fetched={run.fetched} "
         f"new={run.new} updated={run.updated} aliased={run.aliased} rejected={run.rejected} "

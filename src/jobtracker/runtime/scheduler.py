@@ -25,14 +25,15 @@ from jobtracker.collect.ats.personio import PersonioCollector
 from jobtracker.collect.ats.recruitee import RecruiteeCollector
 from jobtracker.collect.ats.smartrecruiters import SmartRecruitersCollector
 from jobtracker.collect.ats.workable import WorkableCollector
-from jobtracker.collect.ats.workday import WorkdayCollector
+from jobtracker.collect.ats.workday import KnownWorkdaySummary, WorkdayCollector
 from jobtracker.collect.base import Collector
-from jobtracker.collect.custom import CustomCollector
+from jobtracker.collect.custom import CustomCollector, KnownCustomPosting
 from jobtracker.collect.http import HttpClient, PolicedHttpSession, SourcesConfig
 from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import Source, Tier
 from jobtracker.core.errors import BoardNotFound, CollectError, SourceBlocked, SourceUnavailable
 from jobtracker.core.geo import GeoIndex
+from jobtracker.core.hashing import content_hash
 from jobtracker.core.logging import get_logger
 from jobtracker.core.models import Board, RawPosting, SourceRun
 from jobtracker.match.profile import Profile
@@ -40,7 +41,7 @@ from jobtracker.normalize.taxonomy import Taxonomy
 from jobtracker.runtime.breaker import BreakerStatus, compute_state
 from jobtracker.runtime.pipeline import ingest
 from jobtracker.runtime.residual import LlmClientConfig
-from jobtracker.store.postings import deactivate_missing
+from jobtracker.store.postings import deactivate_missing, known_descriptions
 from jobtracker.store.runs import last_run_at_for_board, recent_runs, record_run
 
 _logger = get_logger(__name__)
@@ -59,6 +60,9 @@ DEFAULT_COLLECTORS: dict[Source, Collector] = {
 
 _PRIORITY_INTERVALS = {2: timedelta(days=1), 3: timedelta(days=7)}
 _BREAKER_HISTORY_DEPTH = 50
+# Sources whose boards each live on a host of their own: a 403 there says nothing
+# about the other boards, where on a shared API it means the whole source is refused.
+_ONE_HOST_PER_BOARD = frozenset({Source.WORKDAY, Source.CUSTOM})
 
 
 @dataclass
@@ -91,6 +95,33 @@ class CycleContext:
     client_factories: Mapping[Source, Callable[[], HttpClient]] = field(default_factory=dict)
     resolve_employer: Callable[[RawPosting], RawPosting] = lambda raw: raw
     collectors: dict[Source, Collector] = field(default_factory=lambda: dict(DEFAULT_COLLECTORS))
+
+
+def _with_known_descriptions(
+    conn: sqlite3.Connection, source: Source, collector: Collector
+) -> Collector:
+    """Hand a one-request-per-description collector what the store already holds.
+
+    `collect` has no store access (contract D5), so the runtime is where a previous
+    cycle's descriptions reach it: an unchanged posting then costs no detail request.
+    """
+    if isinstance(collector, WorkdayCollector):
+        return WorkdayCollector(
+            known={
+                (slug, job_id): KnownWorkdaySummary(
+                    summary_hash=content_hash(title, "", location), description_raw=description
+                )
+                for slug, job_id, title, location, description in known_descriptions(conn, source)
+            }
+        )
+    if isinstance(collector, CustomCollector):
+        return CustomCollector(
+            known={
+                (slug, job_id): KnownCustomPosting(title, location, description)
+                for slug, job_id, title, location, description in known_descriptions(conn, source)
+            }
+        )
+    return collector
 
 
 def is_board_due(conn: sqlite3.Connection, board: Board, *, now: datetime) -> bool:
@@ -143,7 +174,7 @@ def run_source_cycle(
     if breaker.status == BreakerStatus.HALF_OPEN and due:
         due = [random.choice(due)]
 
-    collector = ctx.collectors[source]
+    collector = _with_known_descriptions(conn, source, ctx.collectors[source])
     http_config = ctx.sources_config.for_source(source)
     client_factory: Callable[[], HttpClient] = ctx.client_factories.get(source, httpx.Client)
     session = PolicedHttpSession(
@@ -176,6 +207,8 @@ def run_source_cycle(
                 ),
             )
             conn.commit()
+            if source in _ONE_HOST_PER_BOARD:
+                continue  # that wall is one company's: the next board is another site
             blocked = True
             break
         except (SourceUnavailable, BoardNotFound, CollectError) as exc:
@@ -225,11 +258,12 @@ def run_source_cycle(
             if outcome.tier == Tier.REJECTED:
                 board_stats.rejected += 1
 
-        if result.postings:
+        if result.postings and not result.truncated:
             # blueprint/05-SEQUENCES.md §4: only a *non-empty* result may
             # deactivate postings absent from it — a zero-offer response
             # never deactivates anything, indistinguishable as it is from a
-            # broken token.
+            # broken token. Nor may a truncated one: a posting the budget kept
+            # this cycle from reaching is not a posting that closed.
             seen_ids = {posting.source_job_id for posting in result.postings}
             deactivate_missing(conn, source, board.company_slug, seen_ids)
 
@@ -249,6 +283,11 @@ def run_source_cycle(
             ),
         )
         conn.commit()
+
+    # A rendering client holds a browser process; `httpx.Client` a connection pool.
+    close = getattr(session.client, "close", None)
+    if callable(close):
+        close()
 
     aggregate_status = _aggregate_status(blocked, any_attempt_succeeded, totals, bool(due))
     aggregate = _make_run(

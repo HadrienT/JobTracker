@@ -54,7 +54,9 @@ def test_setting_a_status_shows_up_in_the_list_and_the_detail(
 ) -> None:
     assert _status(api_client, "p-a", "applied").status_code == 204
 
-    assert _listed(api_client) == {"p-a": "applied", "p-b": None}
+    # A tracked posting leaves the main feed; its status reads it back.
+    assert _listed(api_client) == {"p-b": None}
+    assert _listed(api_client, "statuses=applied") == {"p-a": "applied"}
     assert api_client.get("/postings/p-a").json()["application_status"] == "applied"
 
 
@@ -63,7 +65,7 @@ def test_the_status_moves_along_and_null_stops_tracking(
 ) -> None:
     for status in ("applied", "interview", "offer"):
         _status(api_client, "p-a", status)
-        assert _listed(api_client)["p-a"] == status
+        assert _listed(api_client, f"statuses={status}")["p-a"] == status
     _status(api_client, "p-a", None)
     assert _listed(api_client)["p-a"] is None
 

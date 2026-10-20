@@ -58,7 +58,7 @@ describe('FiltersPanel', () => {
 
   it('renders a zero-count option greyed out, never hidden', async () => {
     renderPanel({ ...DEFAULT_FILTER, companies: ['jane_street'] })
-    const bankLabel = (await screen.findByText('Bank')).closest('label')
+    const bankLabel = (await screen.findByText('Sell-side bank')).closest('label')
     if (!bankLabel) throw new Error('Bank label not rendered')
     expect(bankLabel.className).toContain('opacity-50')
     expect(within(bankLabel).getByRole('checkbox')).not.toBeDisabled()

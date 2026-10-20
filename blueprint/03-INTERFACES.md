@@ -70,7 +70,7 @@ class Board(BaseModel, frozen=True):
     source: Source
     token: str                 # jeton du board : slug Greenhouse, tenant Workday…
     extra: Mapping[str, str]   # paramètres propres à la source (site Workday, etc.)
-    sector: str                # "hedge_fund" | "prop_trading" | "bank" | "asset_manager" | "vendor" | "crypto"
+    sector: str                # "hedge_fund" | "prop_trading" | "bank" (sell-side) | "bank_other" | "asset_manager" | "vendor" | "crypto"
     hq_country: str            # ISO-3166 alpha-2
     priority: int              # 1 = sondé à chaque cycle, 3 = hebdomadaire
     enabled: bool

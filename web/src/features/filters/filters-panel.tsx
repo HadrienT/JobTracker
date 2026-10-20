@@ -1,15 +1,17 @@
 import type { PostingsFilter } from '@/api/queries'
 import { useCompanies, useFacets } from '@/api/queries'
 import {
-  DEFAULT_TIERS,
   DEFAULT_VISA,
+  feedViewOf,
   isDefaultFilter,
   POSTED_WITHIN_OPTIONS,
+  rejectionReasonLabel,
   REMOTE_MODE_OPTIONS,
   SECTOR_OPTIONS,
   SENIORITY_OPTIONS,
   STATUS_OPTIONS,
   TIER_OPTIONS,
+  VIEW_TIERS,
   VISA_OPTIONS,
 } from '@/features/filters/defaults'
 import { FacetCheckboxGroup } from '@/features/filters/facet-checkbox-group'
@@ -25,6 +27,7 @@ interface FiltersPanelProps {
 /** The thirteen dimensions of blueprint/12-WEB-UI.md §4, each backed by the URL, not a store. */
 export function FiltersPanel({ filter, onChange, onReset }: FiltersPanelProps) {
   const facets = useFacets(filter)
+  const view = feedViewOf(filter)
   const companies = useCompanies()
   const companyNameBySlug = new Map((companies.data ?? []).map((c) => [c.company_slug, c.company_name]))
 
@@ -124,14 +127,26 @@ export function FiltersPanel({ filter, onChange, onReset }: FiltersPanelProps) {
         }}
       />
 
-      <FacetCheckboxGroup
-        title="Tier"
-        options={TIER_OPTIONS}
-        selected={filter.tiers ?? []}
-        onChange={(next) => {
-          onChange({ tiers: next.length > 0 ? (next as PostingsFilter['tiers']) : DEFAULT_TIERS })
-        }}
-      />
+      {view === 'rejected' ? (
+        // Filtered out is one tier by definition; what splits it is why the pipeline said no.
+        <FacetCheckboxGroup
+          title="Filtered out because"
+          options={mergeFacetOptions(facets.data?.rejection_reasons, filter.rejection_reasons ?? [], rejectionReasonLabel)}
+          selected={filter.rejection_reasons ?? []}
+          onChange={(next) => {
+            onChange({ rejection_reasons: next })
+          }}
+        />
+      ) : (
+        <FacetCheckboxGroup
+          title="Tier"
+          options={TIER_OPTIONS}
+          selected={filter.tiers ?? []}
+          onChange={(next) => {
+            onChange({ tiers: next.length > 0 ? (next as PostingsFilter['tiers']) : VIEW_TIERS[view] })
+          }}
+        />
+      )}
 
       <fieldset className="flex flex-col gap-2 border-t border-border pt-4">
         <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-text-secondary">Score min</legend>

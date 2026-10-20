@@ -14,13 +14,17 @@ const API_BASE = '*'
  */
 const tracking = new Map<string, { status: PostingOut['application_status']; note: string }>()
 
+const triaged = new Map<string, NonNullable<PostingOut['triage']>>()
+
 export function resetTracking(): void {
   tracking.clear()
+  triaged.clear()
 }
 
 function withTracking<T extends PostingOut>(item: T): T {
   const mine = tracking.get(item.posting_id)
-  return mine ? { ...item, application_status: mine.status } : item
+  const triage = triaged.get(item.posting_id) ?? null
+  return mine ? { ...item, triage, application_status: mine.status } : { ...item, triage }
 }
 
 const CITY_COORDINATES: Record<string, [number, number]> = {
@@ -81,6 +85,7 @@ type ExceptDimension =
   | 'tech'
   | 'visa'
   | 'tiers'
+  | 'rejection_reasons'
   | 'min_score'
   | 'posted_within_days'
   | 'query'
@@ -99,6 +104,7 @@ function applyFilters(items: PostingOut[], params: URLSearchParams, except?: Exc
   const remoteModes = set('remote_modes', 'remote_modes')
   const visa = set('visa', 'visa')
   const tiers = set('tiers', 'tiers')
+  const rejectionReasons = set('rejection_reasons', 'rejection_reasons')
   const techAll = except === 'tech' ? [] : params.getAll('tech_all')
   const techAny = except === 'tech' ? [] : params.getAll('tech_any')
   const minScore = except === 'min_score' ? 0 : Number(params.get('min_score') ?? '0')
@@ -108,8 +114,13 @@ function applyFilters(items: PostingOut[], params: URLSearchParams, except?: Exc
   const placeCity = params.get('place_city')
   const statuses = except === 'statuses' ? new Set<string>() : new Set(params.getAll('statuses'))
   const favoritesOnly = except === 'favorites_only' ? false : params.get('favorites_only') === 'true'
+  // Absent = the feed, i.e. what is not triaged yet — the same reading as the API's.
+  const triage = params.get('triage')
 
   return items.filter((item) => {
+    if ((triaged.get(item.posting_id) ?? null) !== triage) return false
+    // A tracked posting has left the feed; a status filter (or the favorites) reads it back.
+    if (triage === null && statuses.size === 0 && !favoritesOnly && item.application_status !== null) return false
     if (countries.size > 0 && !item.locations.some((l) => l.country !== null && countries.has(l.country))) {
       return false
     }
@@ -129,6 +140,9 @@ function applyFilters(items: PostingOut[], params: URLSearchParams, except?: Exc
     if (remoteModes.size > 0 && !item.locations.some((l) => remoteModes.has(l.remote_mode))) return false
     if (visa.size > 0 && !visa.has(item.visa_sponsorship)) return false
     if (tiers.size > 0 && !tiers.has(item.tier)) return false
+    if (rejectionReasons.size > 0 && !(item.rejection_reason !== null && rejectionReasons.has(item.rejection_reason))) {
+      return false
+    }
     if (techAll.length > 0 && !techAll.every((t) => item.tech.includes(t))) return false
     if (techAny.length > 0 && !techAny.some((t) => item.tech.includes(t))) return false
     if (item.score < minScore) return false
@@ -204,7 +218,10 @@ export const handlers = [
     const posting = POSTINGS.find((p) => p.posting_id === params.id)
     if (!posting) return new HttpResponse(null, { status: 404 })
     const mine = tracking.get(posting.posting_id)
-    return HttpResponse.json(mine ? { ...posting, application_status: mine.status, note: mine.note } : posting)
+    const triage = triaged.get(posting.posting_id) ?? null
+    return HttpResponse.json(
+      mine ? { ...posting, triage, application_status: mine.status, note: mine.note } : { ...posting, triage },
+    )
   }),
 
   http.post(`${API_BASE}/postings/:id/favorite`, ({ params }) => {
@@ -231,6 +248,15 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
+  http.post(`${API_BASE}/postings/:id/triage`, async ({ params, request }) => {
+    const posting = POSTINGS.find((p) => p.posting_id === params.id)
+    if (!posting) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as { triage: PostingOut['triage'] }
+    if (body.triage === null) triaged.delete(posting.posting_id)
+    else triaged.set(posting.posting_id, body.triage)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.post(`${API_BASE}/postings/:id/hide`, ({ params }) => {
     const posting = POSTINGS.find((p) => p.posting_id === params.id)
     if (!posting) return new HttpResponse(null, { status: 404 })
@@ -251,6 +277,9 @@ export const handlers = [
       seniorities: countBy(applyFilters(all, params, 'seniorities'), (i) => [i.seniority]),
       sources: countBy(applyFilters(all, params, 'sources'), (i) => [i.source]),
       tech: countBy(applyFilters(all, params, 'tech'), (i) => i.tech),
+      rejection_reasons: countBy(applyFilters(all, params, 'rejection_reasons'), (i) =>
+        i.rejection_reason === null ? [] : [i.rejection_reason],
+      ),
     }
     return HttpResponse.json(body)
   }),

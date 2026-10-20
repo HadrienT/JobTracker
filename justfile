@@ -58,6 +58,10 @@ up:
 down:
     docker compose down
 
+# Chromium pour les boards `source: custom` (pages rendues, collect/browser.py) — une fois par machine
+browser-install:
+    uv run playwright install chromium
+
 # ordonnanceur continu
 loop:
     uv run jobtracker loop

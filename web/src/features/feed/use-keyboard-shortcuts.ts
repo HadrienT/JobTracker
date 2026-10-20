@@ -16,11 +16,12 @@ export interface FeedShortcutHandlers {
   onOpenSource: () => void
   onToggleFavorite: () => void
   onHide: () => void
+  onTriage: (view: 'maybe' | 'no' | null) => void
   onFocusSearch: () => void
   onEscape: () => void
 }
 
-/** `j`/`k`/`Enter`/`o`/`f`/`h`/`/` — gated by `enabled` (e.g. off while the detail modal is open). */
+/** `j`/`k`/`Enter`/`o`/`f`/`h`/`m`/`n`/`u`/`/` — gated by `enabled` (e.g. off while the detail modal is open). */
 export function useFeedKeyboardShortcuts(handlers: FeedShortcutHandlers, enabled: boolean): void {
   useEffect(() => {
     if (!enabled) return undefined
@@ -53,6 +54,15 @@ export function useFeedKeyboardShortcuts(handlers: FeedShortcutHandlers, enabled
           break
         case 'h':
           handlers.onHide()
+          break
+        case 'm':
+          handlers.onTriage('maybe')
+          break
+        case 'n':
+          handlers.onTriage('no')
+          break
+        case 'u':
+          handlers.onTriage(null)
           break
         case 'Escape':
           handlers.onEscape()

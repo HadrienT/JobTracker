@@ -208,8 +208,10 @@ def test_sources_config_loads_the_real_file() -> None:
     assert config.defaults.jitter_s == (2.0, 7.0)
     assert config.defaults.max_requests_per_run == 200
     assert config.is_enabled("greenhouse") is True
-    assert config.is_enabled("workday") is False
-    assert config.for_source("workday").max_requests_per_run == 400
+    assert config.is_enabled("workday") is True
+    assert config.is_enabled("linkedin") is False
+    assert config.for_source("workday").max_requests_per_run == 20000
+    assert config.for_source("workday").jitter_s == (1.0, 3.0)
     assert config.empty_runs_before_alert == 3
 
 
@@ -224,3 +226,21 @@ def test_sources_config_source_override_falls_back_to_defaults() -> None:
     )
     assert config.for_source("greenhouse").timeout_s == 20.0
     assert config.for_source("unconfigured_source") is config.defaults
+
+
+def test_a_json_call_says_so_and_a_page_read_does_not() -> None:
+    # collect/browser.py tells an API call from a page to render by this header.
+    seen: list[tuple[str, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.method, request.headers.get("Accept")))
+        return httpx.Response(200, json={})
+
+    session = _session(httpx.MockTransport(handler))
+    session.get_json("https://example.com/jobs")
+    session.post_json("https://example.com/jobs", json={})
+    session.get_text("https://example.com/careers")
+
+    assert seen[0] == ("GET", "application/json")
+    assert seen[1] == ("POST", "application/json")
+    assert seen[2][1] != "application/json"

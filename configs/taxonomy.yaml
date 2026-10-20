@@ -70,6 +70,26 @@ role_families:
       - quant strategist
       - quantamental
       - quantitative intern
+      - # sell-side names for the same desk: a bank's quants are its "strats" and its
+      - # "quantitative analytics" team, and a French posting says it in French
+      - " strat "
+      - " strats "
+      - " strat,"
+      - " strats,"
+      - quantitative analytics
+      - quant analytics
+      - quantitative finance
+      - quantitative modelling
+      - quantitative modeling
+      - quantitative specialist
+      - quantitative associate
+      - quantitative investment
+      - desk quant
+      - ingénierie financière
+      - analyste quantitatif
+      - analyste quantitative
+      - recherche quantitative
+      - quantitatif
 
   data_eng:
     keywords:
@@ -99,6 +119,19 @@ role_families:
       - trading systems engineer
       - algorithmic trading
       - critical engineering
+      - quantitative engineer
+      - quant engineer
+      - strats developer
+      - pricing developer
+      - développeur quantitatif
+      # an engineer by title, a quant by trade: named here so the engineering track
+      # below does not file them under platform work
+      - ingénieur quantitatif
+      - ingenieur quantitatif
+      - financial engineer
+      - ingénieur financier
+      - developpeur quantitatif
+      - développeur pricing
     context_keywords:
       - " ai "
       - "ai engineer"
@@ -145,7 +178,11 @@ engineering_head_words:
   - " dev "
   - ingénieur
   - développeur
+  - developpeur
   - développement
+  - entwickler
+  - programmer
+  - programmeur
 
 research_head_words:
   - researcher
@@ -168,6 +205,10 @@ seniority:
     - rotational program
     - graduate scheme
     - nouvellement diplômé
+    # a V.I.E. is a graduate contract (normalize/seniority.py reads the acronym itself)
+    - volontariat international
+    - international volunteer
+    - jeune diplômé
 
   # `intern` and `graduate` are resolved directly by normalize/seniority.py
   # (the intern regex and the program_keywords/campus check above); only the

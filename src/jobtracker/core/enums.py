@@ -69,6 +69,17 @@ class ApplicationStatus(StrEnum):
     WITHDRAWN = "withdrawn"
 
 
+class Triage(StrEnum):
+    """The user's verdict on a posting they do not want in the main feed any more.
+
+    Absent means "not triaged yet". Both values take the posting out of the feed and
+    into a list of its own, from which the verdict can be changed or cleared.
+    """
+
+    NO = "no"
+    MAYBE = "maybe"
+
+
 class ReviewOutcome(StrEnum):
     """What one LLM re-read of a posting concluded (blueprint/wp/WP19-llm-review.md)."""
 

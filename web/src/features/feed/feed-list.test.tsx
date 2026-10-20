@@ -204,6 +204,34 @@ describe('FeedList', () => {
     })
   })
 
+  it('moves a posting to Maybe, out of the inbox and into its own list, and back', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderFeed()
+    const rows = await screen.findAllByTestId('posting-row')
+    const firstRow = rows[0]
+    if (!firstRow) throw new Error('no posting rows rendered')
+    const firstId = firstRow.id
+
+    await user.click(within(firstRow).getByRole('button', { name: /^maybe/i }))
+    await waitFor(() => {
+      expect(document.getElementById(firstId)).toBeNull()
+    })
+    expect(await screen.findByText('Moved to Maybe.')).toBeInTheDocument()
+    unmount()
+
+    // The Maybe list holds exactly that posting, and offers the two other places.
+    renderFeed({ filter: { triage: 'maybe' } })
+    const maybeRows = await screen.findAllByTestId('posting-row')
+    expect(maybeRows.map((row) => row.id)).toEqual([firstId])
+    const moved = maybeRows[0]
+    if (!moved) throw new Error('the Maybe list is empty')
+    expect(within(moved).queryByRole('button', { name: /^maybe/i })).toBeNull()
+    expect(within(moved).getByRole('button', { name: /^no/i })).toBeInTheDocument()
+
+    await user.click(within(moved).getByRole('button', { name: /back to inbox/i }))
+    expect(await screen.findByTestId('feed-empty')).toHaveTextContent('Nothing in this list.')
+  })
+
   it('keeps earlier pages visible and offers a retry when loading more postings fails', async () => {
     renderFeed()
     const initialRows = await screen.findAllByTestId('posting-row')

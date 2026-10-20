@@ -24,7 +24,16 @@ from jobtracker.normalize.taxonomy import SeniorityRules, Taxonomy
 
 _logger = get_logger(__name__)
 
-_INTERN_RE = re.compile(r"\bintern(?:ship)?\b|\bstagiaire\b|working student", re.IGNORECASE)
+_INTERN_RE = re.compile(
+    r"\bintern(?:ship)?\b|\bstagiaire\b|working student|werkstudent|\bpraktik\w+"
+    r"|\boff[- ]cycle\b|\balternan(?:ce|t|te)\b|\bapprenti(?:e|ssage)?\b"
+    # French "stage", not the English word ("late stage"): it opens the title or a clause.
+    r"|^\s*stage\b|\bstage\s*(?:[-–:(]|de\b|en\b|d['’])",
+    re.IGNORECASE,
+)
+# "V.I.E." / "VIE": the French international graduate contract. Upper case only, on the
+# title as posted — "assurance vie" is life insurance.
+_VIE_RE = re.compile(r"\bV\.?I\.?E\b")
 _CAMPUS_RE = re.compile(r"\bcampus\b", re.IGNORECASE)
 _GRADUATE_TITLE_RE = re.compile(r"\bgraduate\b", re.IGNORECASE)
 _COMPANY_HISTORY_DISQUALIFIERS = (
@@ -62,11 +71,12 @@ def _find_years(text: str, patterns: tuple[str, ...]) -> int | None:
     return None
 
 
-def _title_category(title_l: str, rules: SeniorityRules) -> Seniority | None:
-    if _INTERN_RE.search(title_l):
+def _title_category(title_l: str, rules: SeniorityRules, *, title: str = "") -> Seniority | None:
+    if _INTERN_RE.search(title_l.strip()):
         return Seniority.INTERN
     if (
-        _CAMPUS_RE.search(title_l)
+        _VIE_RE.search(title)
+        or _CAMPUS_RE.search(title_l)
         or _GRADUATE_TITLE_RE.search(title_l)
         or any(kw in title_l for kw in rules.program_keywords)
     ):
@@ -88,7 +98,7 @@ def parse_seniority(
     years = _find_years(description_l, rules.years_patterns)
     if years is not None:
         derived = _years_to_seniority(years)
-        title_hint = _title_category(title_l, rules)
+        title_hint = _title_category(title_l, rules, title=title)
         if title_hint is None or title_hint == derived:
             return derived, years
         if title_hint in (Seniority.GRADUATE, Seniority.INTERN) and derived == Seniority.JUNIOR:
@@ -104,7 +114,7 @@ def parse_seniority(
         )
         return derived, years
 
-    title_hint = _title_category(title_l, rules)
+    title_hint = _title_category(title_l, rules, title=title)
     if title_hint is not None:
         return title_hint, None
 

@@ -1,5 +1,12 @@
 import type { PostingsFilter } from '@/api/queries'
-import { DEFAULT_TIERS, DEFAULT_VISA, sameStringSet, STATUS_OPTIONS } from '@/features/filters/defaults'
+import {
+  DEFAULT_VISA,
+  feedViewOf,
+  rejectionReasonLabel,
+  sameStringSet,
+  STATUS_OPTIONS,
+  VIEW_TIERS,
+} from '@/features/filters/defaults'
 
 interface Pill {
   id: string
@@ -7,7 +14,7 @@ interface Pill {
   onRemove: () => void
 }
 
-type ArrayDimension = 'countries' | 'cities' | 'companies' | 'sectors' | 'seniorities' | 'remote_modes' | 'tech_all' | 'tech_any' | 'statuses'
+type ArrayDimension = 'countries' | 'cities' | 'companies' | 'sectors' | 'seniorities' | 'remote_modes' | 'tech_all' | 'tech_any' | 'statuses' | 'rejection_reasons'
 
 function buildPills(
   filter: PostingsFilter,
@@ -48,12 +55,16 @@ function buildPills(
       },
     })
   }
-  if (!sameStringSet(filter.tiers ?? [], DEFAULT_TIERS)) {
+  arrayDimension('rejection_reasons', (reason) => `Filtered out: ${rejectionReasonLabel(reason)}`)
+
+  // Each tab shows its own tiers by itself; only a selection narrower than that is a filter.
+  const viewTiers = VIEW_TIERS[feedViewOf(filter)]
+  if (!sameStringSet(filter.tiers ?? [], viewTiers)) {
     pills.push({
       id: 'tiers',
       label: `Tier: ${(filter.tiers ?? []).join(', ') || 'none'}`,
       onRemove: () => {
-        onChange({ tiers: DEFAULT_TIERS })
+        onChange({ tiers: viewTiers })
       },
     })
   }

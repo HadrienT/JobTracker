@@ -17,6 +17,7 @@ dependencies = [
 [project.optional-dependencies]
 api = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
 aggregators = ["curl_cffi>=0.7"]
+browser = ["playwright>=1.47"]
 
 [project.scripts]
 jobtracker = "jobtracker.runtime.cli:main"

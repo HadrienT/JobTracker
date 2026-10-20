@@ -21,7 +21,7 @@ l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 |---|---|---|
 | Noyau | `src/jobtracker/core/` | config, logging, erreurs, base SQLite, DTO pydantic, horloge, monnaie, hachage, référentiel géographique |
 | Persistance | `src/jobtracker/store/` | dépôts par agrégat (`postings`, `companies`, `runs`), requêtes de facettes, FTS5 |
-| Collecte | `src/jobtracker/collect/` | un collecteur par **famille d'ATS** (`ats/`), un par agrégateur (`aggregators/`), politique HTTP commune |
+| Collecte | `src/jobtracker/collect/` | un collecteur par **famille d'ATS** (`ats/`), un par agrégateur (`aggregators/`), politique HTTP commune ; `custom.py` + `browser.py` lisent en **page rendue** (Chromium sans tête) les portails sans API : une entrée `source: custom` du registre = l'URL de la liste (`token`) + la forme d'un lien d'offre (`extra.link`), ou l'endpoint JSON du portail lui-même (`extra.api` + les chemins des champs : Oracle HCM, Eightfold, BrassRing, portails maison), aucun code par société ; `prefilter.py` décide quels intitulés valent une requête de description |
 | Normalisation | `src/jobtracker/normalize/` | `RawPosting` → `Posting` : lieu, séniorité, stack, rémunération, visa, empreinte de dédoublonnage. **Zéro I/O**, testable hors ligne |
 | Qualification | `src/jobtracker/match/` | score déterministe contre le profil cible ; `match.llm` = préfiltre + LLM local pour le seul résidu ambigu |
 | API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
@@ -42,7 +42,8 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just test` | pytest, hors marqueur `live` |
 | `just test-golden` | corpus doré du normaliseur, hors ligne, avec taux de résolution par étage |
 | `just migrate` | applique `migrations/*.sql` |
-| `just run-once source="greenhouse"` | un cycle de collecte sur une famille de sources |
+| `just run-once greenhouse` | un cycle de collecte sur une famille de sources |
+| `just browser-install` | installe Chromium pour les boards `source: custom` — **une fois par machine**, après `just sync` |
 | `just collect` | **un passage** sur toutes les sources activées de `configs/sources.yaml`, puis la file LLM et la relecture LLM des nouvelles offres ; écrit dans `./data/jobtracker.db` (code 1 si dégradé) |
 | `just up` / `just down` | l'interface en local : API + front dans docker (`docker-compose.yml`), sur `http://127.0.0.1:5190`, lit `./data/jobtracker.db` |
 | `just llm-enqueue` | met en file les offres **déjà stockées** que le LLM peut encore aider (à faire une fois, serveur allumé) ; puis `just llm-drain --all` les traite jusqu'au bout |

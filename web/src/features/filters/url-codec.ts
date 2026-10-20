@@ -1,5 +1,12 @@
-import type { PostingsFilter, SortKey } from '@/api/queries'
-import { DEFAULT_FILTER, DEFAULT_SORT, DEFAULT_TIERS, DEFAULT_VISA, sameStringSet } from '@/features/filters/defaults'
+import type { PostingsFilter, SortKey, Triage } from '@/api/queries'
+import {
+  DEFAULT_FILTER,
+  DEFAULT_SORT,
+  DEFAULT_TIERS,
+  DEFAULT_VISA,
+  REJECTION_REASON_OPTIONS,
+  sameStringSet,
+} from '@/features/filters/defaults'
 
 export interface FeedUrlState {
   filter: PostingsFilter
@@ -10,6 +17,7 @@ const VALID_SENIORITIES = ['intern', 'graduate', 'junior', 'mid', 'senior', 'lea
 const VALID_REMOTE_MODES = ['onsite', 'hybrid', 'remote', 'unknown']
 const VALID_VISA = ['sponsors', 'no', 'unknown']
 const VALID_TIERS = ['strong', 'possible', 'stretch', 'rejected']
+const VALID_REJECTION_REASONS = REJECTION_REASON_OPTIONS.map((option) => option.value)
 const VALID_STATUSES = ['applied', 'interview', 'offer', 'rejected', 'withdrawn']
 const VALID_SORT = ['score', 'posted', 'seen', 'closes', 'company']
 
@@ -46,6 +54,10 @@ function decodePostedWithinDays(raw: string | null): number | null {
   return Number.isInteger(parsed) && parsed >= 1 ? parsed : null
 }
 
+function decodeTriage(raw: string | null): Triage | null {
+  return raw === 'no' || raw === 'maybe' ? raw : null
+}
+
 /**
  * Tolerant by design (blueprint/wp/WP11-web-filters.md §2): an unknown param is
  * simply never read here, and an invalid value for a known param falls back to
@@ -70,11 +82,13 @@ export function decodeFeedState(params: URLSearchParams): FeedUrlState {
     tech_any: nonEmptyStrings(params.getAll('tech_any')),
     visa: decodeEnumListOrDefault(params, 'visa', VALID_VISA, DEFAULT_VISA),
     tiers: decodeEnumListOrDefault(params, 'tiers', VALID_TIERS, DEFAULT_TIERS),
+    rejection_reasons: filterToAllowed(params.getAll('rejection_reasons'), VALID_REJECTION_REASONS),
     min_score: decodeMinScore(params.get('min_score')),
     posted_within_days: decodePostedWithinDays(params.get('posted_within_days')),
     query,
     favorites_only: params.get('favorites_only') === 'true',
     statuses: filterToAllowed(params.getAll('statuses'), VALID_STATUSES),
+    triage: decodeTriage(params.get('triage')),
   }
 
   return { filter, sort }
@@ -111,6 +125,7 @@ export function encodeFeedState(state: FeedUrlState): URLSearchParams {
   appendListUnlessDefault(params, 'tech_any', filter.tech_any, DEFAULT_FILTER.tech_any ?? [])
   appendListUnlessDefault(params, 'visa', filter.visa, DEFAULT_VISA)
   appendListUnlessDefault(params, 'tiers', filter.tiers, DEFAULT_TIERS)
+  appendListUnlessDefault(params, 'rejection_reasons', filter.rejection_reasons, DEFAULT_FILTER.rejection_reasons ?? [])
 
   if ((filter.min_score ?? 0) !== 0) params.set('min_score', String(filter.min_score))
   if (filter.posted_within_days !== null && filter.posted_within_days !== undefined) {
@@ -119,6 +134,7 @@ export function encodeFeedState(state: FeedUrlState): URLSearchParams {
   if (filter.query) params.set('query', filter.query)
   if (filter.favorites_only) params.set('favorites_only', 'true')
   appendListUnlessDefault(params, 'statuses', filter.statuses, DEFAULT_FILTER.statuses ?? [])
+  if (filter.triage) params.set('triage', filter.triage)
   if (sort !== DEFAULT_SORT) params.set('sort', sort)
 
   return params

@@ -19,7 +19,8 @@ sources:
   workable: { interval_min: 180, enabled: true } # confirmed live 2026-09-19 (eagle_seven)
   recruitee: { interval_min: 180, enabled: true } # confirmed live 2026-09-19 (sfors)
   personio: { interval_min: 180, enabled: true } # confirmed live 2026-09-19 (kaiko)
-  workday: { interval_min: 360, enabled: false, max_requests_per_run: 400 } # WP06
+  workday: { interval_min: 480, enabled: true, max_requests_per_run: 20000, jitter_s: [1, 3] } # 48 tenants, ~25 000 open postings: ~1 300 list pages a cycle plus one detail call per new relevant title. Each tenant is its own host, hence the shorter jitter
+  custom: { interval_min: 480, enabled: true, max_requests_per_run: 3000, jitter_s: [1, 3], timeout_s: 60 } # rendered listings (collect/browser.py): one browser page per listing page, then one per posting not yet stored
   adzuna: { interval_min: 720, enabled: false } # WP13 — official API, needs a key
   efinancialcareers: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13
   wttj: { interval_min: 720, enabled: false, jitter_s: [20, 90] } # WP13

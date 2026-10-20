@@ -18,6 +18,7 @@ from jobtracker.core.enums import (
     Seniority,
     Source,
     Tier,
+    Triage,
     VisaStatus,
 )
 from jobtracker.store.postings import PostingFilter
@@ -51,10 +52,12 @@ def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFi
     visa: Annotated[list[VisaStatus], Query()] = _DEFAULT_VISA,
     min_score: Annotated[int, Query(ge=0, le=100)] = 0,
     tiers: Annotated[list[Tier], Query()] = _DEFAULT_TIERS,
+    rejection_reasons: Annotated[list[str], Query()] = [],  # noqa: B006
     posted_within_days: Annotated[int | None, Query(ge=1)] = None,
     query: Annotated[str | None, Query()] = None,
     favorites_only: Annotated[bool, Query()] = False,
     include_hidden: Annotated[bool, Query()] = False,
+    triage: Annotated[Triage | None, Query()] = None,
 ) -> PostingFilter:
     if (place_country is None) != (place_city is None):
         raise HTTPException(
@@ -76,8 +79,10 @@ def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFi
         visa=frozenset(visa),
         min_score=min_score,
         tiers=frozenset(tiers),
+        rejection_reasons=frozenset(rejection_reasons),
         posted_within_days=posted_within_days,
         query=query,
         favorites_only=favorites_only,
         include_hidden=include_hidden,
+        triage=triage,
     )

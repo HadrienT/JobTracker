@@ -63,6 +63,10 @@
     "stretch",
     "strong"
   ],
+  "Triage": [
+    "maybe",
+    "no"
+  ],
   "VisaStatus": [
     "no",
     "sponsors",

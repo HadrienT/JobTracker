@@ -17,14 +17,19 @@ RUN pip install --no-cache-dir "uv==0.12.9"
 WORKDIR /app
 
 # Dependencies first: this layer is only rebuilt when pyproject/uv.lock change.
-# `api` = FastAPI/uvicorn; `aggregators` = curl_cffi (TLS impersonation, WP13).
+# `api` = FastAPI/uvicorn; `aggregators` = curl_cffi (TLS impersonation, WP13);
+# `browser` = Playwright, for the boards read as rendered pages (collect/browser.py).
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev --no-install-project --extra api --extra aggregators
+RUN uv sync --frozen --no-dev --no-install-project --extra api --extra aggregators --extra browser
 
 COPY src ./src
 COPY configs ./configs
 COPY migrations ./migrations
-RUN uv sync --frozen --no-dev --extra api --extra aggregators
+RUN uv sync --frozen --no-dev --extra api --extra aggregators --extra browser
+
+# Chromium and its system libraries, outside any home directory so the non-root user finds it.
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+RUN playwright install --with-deps chromium && chmod -R a+rX /opt/ms-playwright
 
 # Non-root. /data holds jobtracker.db (a named volume, never a network mount:
 # SQLite in WAL mode on NFS corrupts silently) and /backups the online backups.

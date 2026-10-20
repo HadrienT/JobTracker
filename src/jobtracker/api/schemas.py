@@ -16,6 +16,7 @@ from jobtracker.core.enums import (
     Seniority,
     Source,
     Tier,
+    Triage,
     VisaStatus,
 )
 from jobtracker.core.models import Reason
@@ -66,9 +67,12 @@ class PostingOut(BaseModel):
     closes_at: str | None
     score: int
     tier: Tier
+    # Why the pipeline set it aside; set if and only if `tier` is `rejected` (invariant I5).
+    rejection_reason: str | None
     alias_count: int
     favorited: bool
     hidden: bool
+    triage: Triage | None
     application_status: ApplicationStatus | None
 
     @classmethod
@@ -96,9 +100,11 @@ class PostingOut(BaseModel):
             closes_at=row.closes_at_raw,
             score=row.score,
             tier=row.tier,
+            rejection_reason=row.rejection_reason,
             alias_count=row.alias_count,
             favorited=row.is_favorite,
             hidden=row.is_hidden,
+            triage=row.triage,
             application_status=row.application_status,
         )
 
@@ -131,7 +137,6 @@ class PostingDetailOut(PostingOut):
     description: str | None
     note: str
     reasons: tuple[Reason, ...]
-    rejection_reason: str | None
     aliases: tuple[AliasOut, ...]
     llm_corrections: tuple[LlmCorrectionOut, ...]
 
@@ -161,6 +166,12 @@ class StatusRequest(BaseModel):
     """`status: null` stops tracking the posting."""
 
     status: ApplicationStatus | None
+
+
+class TriageRequest(BaseModel):
+    """`triage: null` puts the posting back in the main feed."""
+
+    triage: Triage | None
 
 
 class NoteRequest(BaseModel):

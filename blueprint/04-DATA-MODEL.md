@@ -202,6 +202,7 @@ se relit depuis `raw_payloads` ou depuis FTS.
 | `idx_postings_fingerprint` | `(fingerprint)` | dédoublonnage à l'insertion |
 | `idx_postings_company` | `(company_slug, is_active)` | page société, comptes |
 | `idx_locations_country` | `(country, city)` | filtres et facettes géographiques |
+| `idx_locations_posting` | `(posting_id)` | lieux d'une offre : hydratation des lignes, facettes pays/ville |
 | `idx_tech` | `(tech, posting_id)` | filtre par stack |
 | `idx_runs_source` | `(source, started_at DESC)` | santé, chien de garde |
 

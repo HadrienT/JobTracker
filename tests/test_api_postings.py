@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from factories_store import make_board, make_posting, make_verdict
-from jobtracker.core.enums import RemoteMode, RoleFamily, VisaStatus
+from jobtracker.core.enums import RemoteMode, RoleFamily, Tier, VisaStatus
 from jobtracker.core.models import Location, Reason
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import upsert_posting
@@ -249,3 +249,97 @@ def test_hide_removes_from_the_default_feed(
     assert resp.status_code == 204
     assert api_client.get("/postings").json()["items"] == []
     assert len(api_client.get("/postings", params={"include_hidden": True}).json()["items"]) == 1
+
+
+def test_triage_moves_a_posting_out_of_the_feed_and_into_its_own_list(
+    api_client: TestClient, api_conn: sqlite3.Connection
+) -> None:
+    posting_id = _seed(api_conn)
+    resp = api_client.post(f"/postings/{posting_id}/triage", json={"triage": "maybe"})
+    assert resp.status_code == 204
+    assert api_client.get("/postings").json()["items"] == []
+    assert api_client.get("/postings", params={"triage": "no"}).json()["items"] == []
+    maybe = api_client.get("/postings", params={"triage": "maybe"}).json()["items"]
+    assert [item["triage"] for item in maybe] == ["maybe"]
+
+    # A change of mind: "no" moves it to the other list, null puts it back in the feed.
+    api_client.post(f"/postings/{posting_id}/triage", json={"triage": "no"})
+    assert api_client.get("/postings", params={"triage": "maybe"}).json()["items"] == []
+    assert len(api_client.get("/postings", params={"triage": "no"}).json()["items"]) == 1
+    api_client.post(f"/postings/{posting_id}/triage", json={"triage": None})
+    feed = api_client.get("/postings").json()["items"]
+    assert [item["triage"] for item in feed] == [None]
+
+
+def test_triage_rejects_an_unknown_verdict_and_an_unknown_posting(
+    api_client: TestClient, api_conn: sqlite3.Connection
+) -> None:
+    posting_id = _seed(api_conn)
+    assert (
+        api_client.post(f"/postings/{posting_id}/triage", json={"triage": "later"}).status_code
+        == 422
+    )
+    assert (
+        api_client.post("/postings/does-not-exist/triage", json={"triage": "no"}).status_code == 404
+    )
+
+
+def test_a_tracked_posting_leaves_the_feed_and_is_read_back_by_its_status(
+    api_client: TestClient, api_conn: sqlite3.Connection
+) -> None:
+    posting_id = _seed(api_conn)
+    api_client.post(f"/postings/{posting_id}/favorite", json={"value": True})
+    api_client.post(f"/postings/{posting_id}/status", json={"status": "applied"})
+
+    assert api_client.get("/postings").json()["items"] == []
+    for params in ({"statuses": "applied"}, {"favorites_only": True}):
+        items = api_client.get("/postings", params=params).json()["items"]
+        assert [item["application_status"] for item in items] == ["applied"]
+
+    api_client.post(f"/postings/{posting_id}/status", json={"status": None})
+    assert len(api_client.get("/postings").json()["items"]) == 1
+
+
+def _seed_one_kept_two_rejected(conn: sqlite3.Connection) -> None:
+    sync_companies(conn, [make_board()])
+    verdicts = {"p-kept": None, "p-senior": "senior_only", "p-other": "not_quant"}
+    for posting_id, reason in verdicts.items():
+        posting = make_posting(
+            posting_id=posting_id, source_job_id=f"j-{posting_id}", fingerprint=f"fp-{posting_id}"
+        )
+        if reason is None:
+            verdict = make_verdict(posting_id=posting_id)
+        else:
+            verdict = make_verdict(
+                posting_id=posting_id, score=0, tier=Tier.REJECTED, rejection_reason=reason
+            )
+        upsert_posting(conn, posting, verdict)
+    conn.commit()
+
+
+def test_rejected_postings_are_kept_and_read_back_with_their_reason(
+    api_client: TestClient, api_conn: sqlite3.Connection
+) -> None:
+    _seed_one_kept_two_rejected(api_conn)
+
+    feed = api_client.get("/postings").json()["items"]
+    assert [(item["posting_id"], item["rejection_reason"]) for item in feed] == [("p-kept", None)]
+
+    rejected = api_client.get("/postings", params={"tiers": "rejected"}).json()["items"]
+    assert {item["posting_id"]: item["rejection_reason"] for item in rejected} == {
+        "p-senior": "senior_only",
+        "p-other": "not_quant",
+    }
+
+
+def test_rejection_reason_filter_narrows_the_rejected_list(
+    api_client: TestClient, api_conn: sqlite3.Connection
+) -> None:
+    _seed_one_kept_two_rejected(api_conn)
+    resp = api_client.get(
+        "/postings", params={"tiers": "rejected", "rejection_reasons": "senior_only"}
+    )
+    assert [item["posting_id"] for item in resp.json()["items"]] == ["p-senior"]
+
+    detail = api_client.get("/postings/p-senior").json()
+    assert detail["rejection_reason"] == "senior_only"

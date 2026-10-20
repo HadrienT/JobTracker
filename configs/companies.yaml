@@ -10,12 +10,13 @@
 
 - slug: citadel_securities
   name: Citadel Securities
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "citadel-securities"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://www.citadelsecurities.com/careers/open-opportunities/page/{page}/"
+  extra: { link: "citadelsecurities\\.com/careers/details/([^/?#]+)", pages: "40" }
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: jane_street
   name: Jane Street
@@ -37,12 +38,12 @@
 
 - slug: hudson_river_trading
   name: Hudson River Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "hudson-river-trading"
+  source: greenhouse  # verified 2026-10-07
+  token: "wehrtyou"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: optiver
   name: Optiver
@@ -55,12 +56,12 @@
 
 - slug: imc_trading
   name: IMC Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "imc-trading"
+  source: greenhouse  # verified 2026-10-07
+  token: "imc"
   sector: prop_trading
   hq_country: NL
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: flow_traders
   name: Flow Traders
@@ -73,21 +74,22 @@
 
 - slug: drw
   name: DRW
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "drw"
+  source: greenhouse  # verified 2026-10-07
+  token: "drweng"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: sig_susquehanna
   name: SIG (Susquehanna)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "sig-susquehanna"
+  source: custom  # verified 2026-10-08 — rendered listing (iCIMS)
+  token: "https://careers.sig.com/jobs?page={page}"
+  extra: { link: "careers\\.sig\\.com/jobs/(\\d+)", pages: "40" }
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: tower_research
   name: Tower Research Capital
@@ -100,21 +102,21 @@
 
 - slug: xtx_markets
   name: XTX Markets
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "xtx-markets"
+  source: greenhouse  # verified 2026-10-07
+  token: "xtxmarketstechnologies"
   sector: prop_trading
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: old_mission
   name: Old Mission
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "old-mission"
+  source: greenhouse  # verified 2026-10-07
+  token: "oldmissioncapital"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: akuna_capital
   name: Akuna Capital
@@ -127,21 +129,21 @@
 
 - slug: five_rings
   name: Five Rings
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "five-rings"
+  source: greenhouse  # verified 2026-10-07
+  token: "fiveringsllc"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: headlands_technologies
   name: Headlands Technologies
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "headlands-technologies"
+  source: greenhouse  # verified 2026-10-08 (token read off the rendered career page)
+  token: "headlandstechnologiesllc"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: belvedere_trading
   name: Belvedere Trading
@@ -163,12 +165,13 @@
 
 - slug: peak6
   name: Peak6
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "peak6"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://peak6.com/careers/?size=n_100_n"
+  extra: { link: "peak6-prod\\.ongig\\.com/jobs/.+/(JR\\d+)" }
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: quantlab
   name: Quantlab
@@ -181,21 +184,21 @@
 
 - slug: virtu_financial
   name: Virtu Financial
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "virtu-financial"
+  source: greenhouse  # verified 2026-10-07
+  token: "virtu"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: maven_securities
   name: Maven Securities
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "maven-securities"
+  source: greenhouse  # verified 2026-10-07
+  token: "mavensecuritiesholdingltd"
   sector: prop_trading
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: vatic_labs
   name: Vatic Labs
@@ -208,21 +211,39 @@
 
 - slug: radix_trading
   name: Radix Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "radix-trading"
+  source: greenhouse  # verified 2026-10-07
+  token: "radixexperienced"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
+
+- slug: radix_trading_university
+  name: Radix Trading (University)
+  source: greenhouse  # verified 2026-10-07 — Radix keeps campus roles on a second board
+  token: "radixuniversity"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: simplex_trading
+  name: Simplex Trading
+  source: greenhouse  # verified 2026-10-07 — the Chicago options market maker, not Simplex Investment Advisors
+  token: "simplextrading"
+  sector: prop_trading
+  hq_country: US
+  priority: 1
+  enabled: true
 
 - slug: grasshopper_trading
   name: Grasshopper
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "grasshopper"
+  source: greenhouse  # verified 2026-10-07
+  token: "grasshopperasia"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: transmarket
   name: TransMarket Group
@@ -235,12 +256,12 @@
 
 - slug: da_vinci_trading
   name: Da Vinci Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "da-vinci-trading"
+  source: greenhouse  # verified 2026-10-07
+  token: "davinciderivatives"
   sector: prop_trading
   hq_country: NL
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: webb_traders
   name: Webb Traders
@@ -253,26 +274,28 @@
 
 - slug: all_options
   name: All Options
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "all-options"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://www.alloptions-international.com/careers/"
+  extra: { link: "alloptions-international\\.com/vacancies/([a-z0-9-]+)/", title: heading }
   sector: prop_trading
   hq_country: NL
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: gts
   name: GTS (Global Trading Systems)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "gts-global-trading-systems"
+  source: custom  # verified 2026-10-08 — rendered listing (iCIMS)
+  token: "https://careers-gtsx.icims.com/jobs/search?ss=1&in_iframe=1&pr={page}"
+  extra: { link: "careers-gtsx\\.icims\\.com/jobs/(\\d+)/[^/]+/job", pages: "5", page_start: "0", title: heading }
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: tibra_trading
   name: Tibra Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "tibra-trading"
+  source: workable  # token confirmed on the rendered career page 2026-10-08, board empty that day — [À CONFIRMER] re-probe
+  token: "tibra-capital-1"
   sector: prop_trading
   hq_country: AU
   priority: 1
@@ -289,12 +312,12 @@
 
 - slug: ctc_chicago_trading
   name: CTC (Chicago Trading Company)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "ctc-chicago-trading-company"
+  source: greenhouse  # verified 2026-10-07
+  token: "chicagotrading"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: eagle_seven
   name: Eagle Seven
@@ -316,12 +339,12 @@
 
 - slug: three_red_trading
   name: 3Red Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "3red-trading"
+  source: greenhouse  # verified 2026-10-07
+  token: "3redpartners"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: spot_trading
   name: Spot Trading
@@ -343,12 +366,12 @@
 
 - slug: trillium_trading
   name: Trillium Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "trillium-trading"
+  source: greenhouse  # verified 2026-10-07
+  token: "trillium"
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: geneva_trading
   name: Geneva Trading
@@ -379,59 +402,73 @@
 
 - slug: mako_trading
   name: Mako Trading (Mako Global)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "mako-trading-mako-global"
+  source: greenhouse  # verified 2026-10-07
+  token: "mako"
   sector: prop_trading
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 # --- Rank 1 — quantitative hedge funds ---
 
 - slug: two_sigma
   name: Two Sigma
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "two-sigma"
+  source: custom  # verified 2026-10-08 — rendered listing (Avature)
+  token: "https://careers.twosigma.com/careers/OpenRoles/?jobOffset={page}"
+  extra: { link: "careers\\.twosigma\\.com/careers/JobDetail/[^/]+/(\\d+)", pages: "40", page_start: "0", page_step: "10" }
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: de_shaw
   name: D. E. Shaw
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "d-e-shaw"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://www.deshaw.com/careers/choose-your-path"
+  extra: { link: "deshaw\\.com/careers/([a-z0-9-]+-\\d+)$", title: heading }
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: citadel
   name: Citadel
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "citadel"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://www.citadel.com/careers/open-opportunities/page/{page}/"
+  extra: { link: "citadel\\.com/careers/details/([^/?#]+)", pages: "40" }
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: millennium
   name: Millennium Management
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "millennium-management"
+  source: custom  # verified 2026-10-13 — Eightfold endpoint (mlp.eightfold.ai): 220 postings, ten per call
+  token: "https://mlp.eightfold.ai/careers"
+  extra:
+    api: "https://mlp.eightfold.ai/api/apply/v2/jobs?domain=mlp.com&start={offset}&num={size}&sort_by=timestamp"
+    size: "10"
+    items: positions
+    total: count
+    id: id
+    title: name
+    location: locations
+    url: "{canonicalPositionUrl}"
+    detail: "https://mlp.eightfold.ai/api/apply/v2/jobs/{id}?domain=mlp.com"
+    detail_description: job_description
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: point72_cubist
   name: Point72 / Cubist
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "point72-cubist"
+  source: greenhouse  # verified 2026-10-07
+  token: "point72"
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: balyasny
   name: Balyasny Asset Management
@@ -471,30 +508,31 @@
 
 - slug: qube_rt
   name: Qube Research & Technologies
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "qube-research-technologies"
+  source: greenhouse  # verified 2026-10-07
+  token: "quberesearchandtechnologies"
   sector: hedge_fund
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: g_research
   name: G-Research
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "g-research"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://www.gresearch.com/vacancies/"
+  extra: { link: "gresearch\\.com/vacancies/([a-z0-9-]+)/$", title: heading }
   sector: hedge_fund
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: man_group_ahl
   name: Man Group / AHL
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "man-group-ahl"
+  source: greenhouse  # verified 2026-10-07
+  token: "mangroup"
   sector: hedge_fund
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: marshall_wace
   name: Marshall Wace
@@ -507,21 +545,22 @@
 
 - slug: brevan_howard
   name: Brevan Howard
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "brevan-howard"
+  source: workday  # verified 2026-10-07
+  token: "brevanhoward"
+  extra: { wd: "3", site: BH_ExternalCareers }
   sector: hedge_fund
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: capula
   name: Capula Investment Management
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "capula-investment-management"
+  source: workable  # verified 2026-10-08 (token read off the rendered career page)
+  token: "capula-investment-management-ltd"
   sector: hedge_fund
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: winton
   name: Winton
@@ -561,16 +600,16 @@
 
 - slug: verition
   name: Verition Fund Management
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "verition-fund-management"
+  source: greenhouse  # verified 2026-10-07
+  token: "veritiongroupllc"
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: walleye
   name: Walleye Capital
-  source: greenhouse  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: greenhouse  # token confirmed on the career page 2026-10-07, board empty that day — [À CONFIRMER] re-probe
   token: "walleyecapital"
   sector: hedge_fund
   hq_country: US
@@ -579,21 +618,21 @@
 
 - slug: aqr
   name: AQR Capital Management
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "aqr-capital-management"
+  source: greenhouse  # verified 2026-10-07
+  token: "aqr"
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: bridgewater
   name: Bridgewater Associates
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "bridgewater-associates"
+  source: greenhouse  # verified 2026-10-08 (token read off the rendered career page)
+  token: "bridgewater89"
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: voleon
   name: The Voleon Group
@@ -615,12 +654,13 @@
 
 - slug: renaissance_technologies
   name: Renaissance Technologies
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "renaissance-technologies"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://www.rentec.com/Careers.action?jobs=true"
+  extra: { link: "rentec\\.com/Careers\\.action\\?jobs=true&selectedPosition=(\\w+)" }
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: worldquant
   name: WorldQuant
@@ -660,12 +700,13 @@
 
 - slug: systematica
   name: Systematica Investments
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "systematica-investments"
+  source: custom  # verified 2026-10-08 — rendered listing (Pinpoint)
+  token: "https://systematica.pinpointhq.com/"
+  extra: { link: "systematica\\.pinpointhq\\.com/en/postings/([0-9a-f-]+)" }
   sector: hedge_fund
   hq_country: GB
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: capstone_investment
   name: Capstone Investment Advisors
@@ -714,12 +755,12 @@
 
 - slug: graham_global
   name: Graham Global Investment
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "graham-global-investment"
+  source: greenhouse  # verified 2026-10-07
+  token: "grahamcapitalmanagement"
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: voloridge
   name: Voloridge Investment Management
@@ -734,12 +775,13 @@
 
 - slug: goldman_sachs
   name: Goldman Sachs
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://higher.gs.com/results?page={page}&sort=RELEVANCE"
+  extra: { link: "higher\\.gs\\.com/roles/(\\d+)", pages: "60" }
   sector: bank
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: morgan_stanley
   name: Morgan Stanley
@@ -753,174 +795,245 @@
 
 - slug: jpmorgan
   name: J.P. Morgan
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — Oracle HCM REST endpoint: 7 268 postings in 37 list calls, one detail call per relevant title
+  token: "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions"
+  extra:
+    api: "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/{Id}"
+    detail: "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=CX_1001"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
   sector: bank
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: bank_of_america
   name: Bank of America
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "ghr"
+  extra: { wd: "1", site: Lateral-US }
   sector: bank
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: citi
   name: Citi
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "citi"
+  extra: { wd: "5", site: "2" }
   sector: bank
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: barclays
   name: Barclays
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "barclays"
+  extra: { wd: "3", site: External_Career_Site_Barclays }
   sector: bank
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: hsbc
   name: HSBC
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — Eightfold endpoint behind portal.careers.hsbc.com: 1 439 postings, ten per call (the API caps it)
+  token: "https://portal.careers.hsbc.com/careers"
+  extra:
+    api: "https://portal.careers.hsbc.com/api/apply/v2/jobs?domain=hsbc.com&start={offset}&num={size}&sort_by=timestamp"
+    size: "10"
+    items: positions
+    total: count
+    id: id
+    title: name
+    location: locations
+    url: "{canonicalPositionUrl}"
+    detail: "https://portal.careers.hsbc.com/api/apply/v2/jobs/{id}?domain=hsbc.com"
+    detail_description: job_description
   sector: bank
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: bnp_paribas
   name: BNP Paribas
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — rendered listing, ten cards a page over ~320 pages (all entities, VIE and internships included); the site turns away anything but a full browser
+  token: "https://group.bnpparibas/en/careers/all-job-offers?page={page}"
+  extra: { link: "^https://group\\.bnpparibas/en/careers/job-offer/([^/?#]+)", title_line: "2", pages: "340" }
   sector: bank
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: societe_generale
   name: Société Générale
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — rendered listing, ten cards a page over ~110 pages; English and French postings carry two link shapes
+  token: "https://careers.societegenerale.com/en/search?page={page}"
+  extra: { link: "^https://careers\\.societegenerale\\.com/(?:en/job-offers|offres-d-emploi)/([^/?#]+)", pages: "130" }
   sector: bank
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: natixis
   name: Natixis
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — the BPCE portal's own search endpoint: 178 postings, descriptions in the listing
+  token: "https://recrutement.natixis.com/en/our-job-offers"
+  extra:
+    api: "https://recrutement.natixis.com/app/wp-json/bpce/v1/search/jobs"
+    body: '{"lang":"en","keyword":"","tax_sector":"","tax_contract":"","tax_place":"","tax_job":"","tax_experience":"","tax_degree":"","tax_brands":"","tax_department":"","tax_city":"","tax_country":"","tax_channel":"","jobcode":"","tax_community_job":"","external":false,"userID":"","from":{offset},"size":{size}}'
+    items: data.items
+    total: data.total
+    id: job_number
+    title: title
+    location: localisation
+    posted: date
+    url: "https://recrutement.natixis.com{link.url}"
+    description: description
   sector: bank
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: credit_agricole_cib
   name: Crédit Agricole CIB
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing (Talentsoft)
+  token: "https://jobs.ca-cib.com/job/list-of-jobs.aspx?page={page}&LCID=2057"
+  extra: { link: "jobs\\.ca-cib\\.com/job/job-[^/]*_(\\d+)\\.aspx", pages: "40" }
   sector: bank
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: deutsche_bank
   name: Deutsche Bank
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "db"
+  extra: { wd: "3", site: DBWebsite }
   sector: bank
   hq_country: DE
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: ubs
   name: UBS
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — BrassRing search endpoint, site 5012 (experienced professionals): 529 postings, fifty per call
+  token: "https://jobs.ubs.com/TGnewUI/Search/Home/Home?partnerid=25008&siteid=5012#home"
+  extra:
+    api: "https://jobs.ubs.com/TgNewUI/Search/Ajax/ProcessSortAndShowMoreJobs"
+    body: '{"PartnerId":"25008","SiteId":"5012","Keyword":"","Location":"","KeywordCustomSolrFields":"FORMTEXT2,AutoReq,Department,JobTitle","LocationCustomSolrFields":"FORMTEXT2","TurnOffHttps":false,"Latitude":0,"Longitude":0,"EncryptedSessionValue":"","FacetFilterFields":{"Facet":[]},"PowerSearchOptions":{"PowerSearchOption":[]},"SortType":"LastUpdated","pageNumber":"{page}","linkId":""}'
+    size: "50"
+    page_start: "1"
+    items: Jobs.Job
+    total: JobsCount
+    id: Questions.QuestionName=reqid.Value
+    title: Questions.QuestionName=jobtitle.Value
+    location: Questions.QuestionName=formtext23.Value
+    posted: Questions.QuestionName=lastupdated.Value
+    url: "{Link}"
   sector: bank
   hq_country: CH
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: nomura
   name: Nomura
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — rendered listing (SuccessFactors), a hundred rows a page
+  token: "https://careers.nomura.com/Nomura/search/?q=&startrow={page}"
+  extra: { link: "^https://careers\\.nomura\\.com/Nomura/job/[^/]+/(\\d+)", pages: "20", page_start: "0", page_step: "100" }
   sector: bank
   hq_country: JP
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: mufg
   name: MUFG
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "mufgub"
+  extra: { wd: "3", site: MUFG-Careers }
   sector: bank
   hq_country: JP
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: standard_chartered
   name: Standard Chartered
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — SuccessFactors search endpoint: 1 141 postings, ten per call, sorted by date (the default order repeats postings from one page to the next and skips others); descriptions from the rendered posting page
+  token: "https://jobs.standardchartered.com/search/"
+  extra:
+    api: "https://jobs.standardchartered.com/services/recruiting/v1/jobs"
+    body: '{"locale":"en_GB","pageNumber":{page},"sortBy":"date","keywords":"","location":"","facetFilters":{},"brand":"","skills":[],"categoryId":0,"alertId":"","rcmCandidateId":""}'
+    size: "10"
+    items: jobSearchResult
+    total: totalJobs
+    id: response.id
+    title: response.unifiedStandardTitle
+    location: response.jobLocationShort
+    posted: response.unifiedStandardStart
+    url: "https://jobs.standardchartered.com/job/{response.unifiedUrlTitle}/{response.id}-en_GB"
   sector: bank
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: macquarie
   name: Macquarie
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing (Avature)
+  token: "https://recruitment.macquarie.com/en_US/careers/SearchJobs/?jobRecordsPerPage=9&jobOffset={page}"
+  extra: { link: "recruitment\\.macquarie\\.com/en_US/careers/JobDetail\\?jobId=(\\d+)", pages: "40", page_start: "0", page_step: "9" }
   sector: bank
   hq_country: AU
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: rbc
   name: RBC
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "rbc"
+  extra: { wd: "3", site: RBCGLOBAL1 }
   sector: bank
   hq_country: CA
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: scotiabank
   name: Scotiabank
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing (SuccessFactors)
+  token: "https://jobs.scotiabank.com/search/?q=&startrow={page}"
+  extra: { link: "jobs\\.scotiabank\\.com/job/[^/]+/(\\d+)", pages: "40", page_start: "0", page_step: "25" }
   sector: bank
   hq_country: CA
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: bmo
   name: BMO
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "bmo"
+  extra: { wd: "3", site: External }
   sector: bank
   hq_country: CA
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: td_securities
   name: TD Securities
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "td"
+  extra: { wd: "3", site: TD_Bank_Careers }
   sector: bank
   hq_country: CA
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: jefferies
   name: Jefferies
@@ -933,93 +1046,111 @@
 
 - slug: mizuho
   name: Mizuho
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "mizuho"
+  extra: { wd: "1", site: mizuhoamericas }
   sector: bank
   hq_country: JP
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: ing
   name: ING
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "ing"
+  extra: { wd: "3", site: ICSGBLCOR }
   sector: bank
   hq_country: NL
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: rabobank
   name: Rabobank
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
-  sector: bank
+  source: workday  # verified 2026-10-07
+  token: "rabobank"
+  extra: { wd: "3", site: jobs }
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: NL
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: commerzbank
   name: Commerzbank
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — the job board's own search endpoint: 468 postings in one call; descriptions from the rendered posting page
+  token: "https://jobs.commerzbank.com/index.php?ac=search_result"
+  extra:
+    api: "https://api-jobs.commerzbank.com/search/"
+    body: '{"LanguageCode":"EN","SearchParameters":{"FirstItem":1,"CountItem":2000,"Sort":[{"Criterion":"PublicationStartDate","Direction":"DESC"}],"MatchedObjectDescriptor":["ID","PositionTitle","PositionURI","PositionLocation.CountryName","PositionLocation.CityName","PublicationStartDate"]},"SearchCriteria":[{"CriterionName":"PublicationChannel.Code","CriterionValue":["12"]}]}'
+    items: SearchResult.SearchResultItems
+    total: SearchResult.SearchResultCountAll
+    id: MatchedObjectId
+    title: MatchedObjectDescriptor.PositionTitle
+    location: MatchedObjectDescriptor.PositionLocation.CityName,MatchedObjectDescriptor.PositionLocation.CountryName
+    posted: MatchedObjectDescriptor.PublicationStartDate
+    url: "{MatchedObjectDescriptor.PositionURI}"
   sector: bank
   hq_country: DE
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: abn_amro
   name: ABN AMRO
   source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
   token: ""
-  sector: bank
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: NL
   priority: 2
   enabled: false
 
 - slug: unicredit
   name: UniCredit
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — rendered listing (Avature), fifteen rows a page
+  token: "https://careers.unicredit.eu/en_GB/jobsuche/SearchJobs/?jobRecordsPerPage=15&jobOffset={page}"
+  extra: { link: "^https://careers\\.unicredit\\.eu/en_GB/jobsuche/JobDetail/[^/]+/(\\d+)", pages: "100", page_start: "0", page_step: "15" }
   sector: bank
   hq_country: IT
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: intesa_sanpaolo
   name: Intesa Sanpaolo
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing (SuccessFactors)
+  token: "https://jobs.intesasanpaolo.com/search/?q=&startrow={page}"
+  extra: { link: "jobs\\.intesasanpaolo\\.com/job/[^/]+/(\\d+)", pages: "20", page_start: "0", page_step: "25" }
   sector: bank
   hq_country: IT
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: santander
   name: Santander
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "santander"
+  extra: { wd: "3", site: SantanderCareers }
   sector: bank
   hq_country: ES
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: bbva
   name: BBVA
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "bbva"
+  extra: { wd: "3", site: BBVA }
   sector: bank
   hq_country: ES
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: dbs_bank
   name: DBS Bank
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
-  sector: bank
+  source: workday  # verified 2026-10-07
+  token: "dbs"
+  extra: { wd: "3", site: DBS_Careers }
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: SG
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: wells_fargo
   name: Wells Fargo
@@ -1036,46 +1167,61 @@
   source: workday  # verified 2026-09-18
   token: "statestreet"
   extra: { wd: "1", site: Global }
-  sector: bank
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: US
   priority: 2
   enabled: true
 
 - slug: bny_mellon
   name: BNY Mellon
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
-  sector: bank
+  source: custom  # verified 2026-10-13 — Oracle HCM REST endpoint: 1 348 postings
+  token: "https://eofe.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/BNY-Careers/jobs"
+  extra:
+    api: "https://eofe.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=BNY-Careers,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://eofe.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/BNY-Careers/job/{Id}"
+    detail: "https://eofe.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=BNY-Careers"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: northern_trust
   name: Northern Trust
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
-  sector: bank
+  source: workday  # verified 2026-10-07
+  token: "ntrs"
+  extra: { wd: "1", site: northerntrust }
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: cibc
   name: CIBC
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "cibc"
+  extra: { wd: "3", site: search }
   sector: bank
   hq_country: CA
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: national_australia_bank
   name: National Australia Bank
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
-  sector: bank
+  source: workday  # verified 2026-10-07
+  token: "nab"
+  extra: { wd: "3", site: nab_careers }
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: AU
   priority: 2
-  enabled: false
+  enabled: true
 
 # --- Rank 2 — asset managers & insurance (Workday, unconfirmed — see WP06) ---
 
@@ -1091,12 +1237,13 @@
 
 - slug: pimco
   name: PIMCO
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "pimco"
+  extra: { wd: "1", site: pimco-careers }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: vanguard
   name: Vanguard
@@ -1120,21 +1267,23 @@
 
 - slug: wellington_management
   name: Wellington Management
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "wellington"
+  extra: { wd: "5", site: External }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: amundi
   name: Amundi
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing (Talentsoft)
+  token: "https://jobs.amundi.com/job/list-of-jobs.aspx?page={page}&LCID=2057"
+  extra: { link: "jobs\\.amundi\\.com/job/job-[^/]*_(\\d+)\\.aspx", pages: "20" }
   sector: asset_manager
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: axa_im
   name: AXA IM
@@ -1147,57 +1296,74 @@
 
 - slug: robeco
   name: Robeco
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "robeco"
+  extra: { wd: "3", site: robecoexternalcareers }
   sector: asset_manager
   hq_country: NL
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: apg
   name: APG
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://werkenbij.apg.nl/en/job-openings/"
+  extra: { link: "werkenbij\\.apg\\.nl/en/job-openings/([a-z0-9-]+)/", title: heading }
   sector: asset_manager
   hq_country: NL
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: pggm
   name: PGGM
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://www.werkenbijpggm.nl/en/search-jobs"
+  extra: { link: "werkenbijpggm\\.nl/en/job/[^/]+/[^/]+/\\d+/(\\d+)" }
   sector: asset_manager
   hq_country: NL
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: nuveen
   name: Nuveen
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07 — TIAA's tenant, the board mixes Nuveen and TIAA postings
+  token: "tiaa"
+  extra: { wd: "1", site: Search }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: schroders
   name: Schroders
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-13 — Oracle HCM REST endpoint: 88 postings
+  token: "https://ekbq.fa.em2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2/jobs"
+  extra:
+    api: "https://ekbq.fa.em2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_2,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://ekbq.fa.em2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2/job/{Id}"
+    detail: "https://ekbq.fa.em2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=CX_2"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
   sector: asset_manager
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: legal_general
   name: Legal & General
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-08 — rendered listing, first screen only (the listing loads the rest on scroll or by script)
+  token: "https://careers.legalandgeneral.com/jobs"
+  extra: { link: "careers\\.legalandgeneral\\.com/job/([a-z0-9-]+)" }
   sector: asset_manager
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: allianz_gi
   name: Allianz Global Investors
@@ -1228,12 +1394,13 @@
 
 - slug: capital_group
   name: Capital Group
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "capgroup"
+  extra: { wd: "1", site: capitalgroupcareers }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: t_rowe_price
   name: T. Rowe Price
@@ -1286,59 +1453,65 @@
 
 - slug: pgim
   name: PGIM
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "pru"
+  extra: { wd: "5", site: PGIM_Careers }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: baillie_gifford
   name: Baillie Gifford
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "bailliegifford"
+  extra: { wd: "3", site: BaillieGiffordCareers }
   sector: asset_manager
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: mg_investments
   name: M&G Investments
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "mgpru"
+  extra: { wd: "3", site: mandgprudential }
   sector: asset_manager
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: abrdn
   name: abrdn
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: workday  # verified 2026-10-07
+  token: "abrdn"
+  extra: { wd: "3", site: abrdn }
   sector: asset_manager
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 # --- Rank 2 — vendors & market data ---
 
 - slug: bloomberg
   name: Bloomberg
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "bloomberg"
+  source: custom  # verified 2026-10-08 — rendered listing (Avature)
+  token: "https://bloomberg.avature.net/careers/SearchJobs/?jobOffset={page}"
+  extra: { link: "bloomberg\\.avature\\.net/careers/JobDetail/[^/]+/(\\d+)", pages: "80", page_start: "0", page_step: "12" }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: sp_global
   name: S&P Global
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "s-p-global"
+  source: workday  # verified 2026-10-07
+  token: "spgi"
+  extra: { wd: "5", site: SPGI_Careers }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: msci
   name: MSCI
@@ -1351,66 +1524,72 @@
 
 - slug: factset
   name: FactSet
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "factset"
+  extra: { wd: "108", site: FactSetCareers }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: ice
   name: Intercontinental Exchange (ICE)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "intercontinental-exchange-ice"
+  source: custom  # verified 2026-10-08 — rendered listing (iCIMS)
+  token: "https://careers.ice.com/jobs?page={page}"
+  extra: { link: "careers\\.ice\\.com/jobs/(\\d+)", pages: "30" }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: nasdaq
   name: Nasdaq
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "nasdaq"
+  extra: { wd: "1", site: Global_External_Site }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: lseg
   name: London Stock Exchange Group (LSEG)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "london-stock-exchange-group-lseg"
+  source: workday  # verified 2026-10-07
+  token: "lseg"
+  extra: { wd: "3", site: Careers }
   sector: vendor
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: murex
   name: Murex
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "murex"
+  extra: { wd: "3", site: MurexCareerPage1 }
   sector: vendor
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: finastra
   name: Finastra
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "finastra"
+  extra: { wd: "3", site: FINC }
   sector: vendor
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: ion_group
   name: ION Group
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "ion-group"
+  source: lever  # verified 2026-10-07
+  token: "ion"
   sector: vendor
   hq_country: IE
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: numerix
   name: Numerix
@@ -1432,7 +1611,7 @@
 
 - slug: opengamma
   name: OpenGamma
-  source: greenhouse  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: greenhouse  # token confirmed on the rendered career page 2026-10-08, board empty that day — [À CONFIRMER] re-probe
   token: "opengamma"
   sector: vendor
   hq_country: GB
@@ -1459,48 +1638,53 @@
 
 - slug: milliman
   name: Milliman
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "milliman"
+  source: custom  # verified 2026-10-08 — rendered listing (UKG)
+  token: "https://recruiting2.ultipro.com/MIL1017/JobBoard/f54234e9-dfde-b183-fd20-4fbdb19cba7a/?q=&o=postedDateDesc"
+  extra: { link: "recruiting2\\.ultipro\\.com/MIL1017/JobBoard/[0-9a-f-]+/OpportunityDetail\\?opportunityId=([0-9a-f-]+)" }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: kepler_cheuvreux
   name: Kepler Cheuvreux
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "kepler-cheuvreux"
+  source: custom  # verified 2026-10-08 — rendered listing (Teamtailor)
+  token: "https://keplercheuvreux.teamtailor.com/jobs"
+  extra: { link: "keplercheuvreux\\.teamtailor\\.com/jobs/(\\d+)-" }
   sector: vendor
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: simcorp
   name: SimCorp
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "simcorp"
+  extra: { wd: "3", site: SimCorp_Jobs }
   sector: vendor
   hq_country: DK
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: broadridge
   name: Broadridge
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "broadridge"
+  extra: { wd: "5", site: Careers }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: ssc_technologies
   name: SS&C Technologies
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "ss-c-technologies"
+  source: workday  # verified 2026-10-07
+  token: "ssctech"
+  extra: { wd: "1", site: SSCTechnologies }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: iress
   name: Iress
@@ -1513,57 +1697,62 @@
 
 - slug: temenos
   name: Temenos
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "temenos"
+  extra: { wd: "103", site: Temenoscareers }
   sector: vendor
   hq_country: CH
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: fis
   name: FIS
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-07
   token: "fis"
+  extra: { wd: "5", site: SearchJobs }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: nice_actimize
   name: NICE Actimize
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "nice-actimize"
+  source: greenhouse  # verified 2026-10-07 — NICE's group board, Actimize postings are a subset
+  token: "nice"
   sector: vendor
   hq_country: IL
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: trading_technologies
   name: Trading Technologies
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "trading-technologies"
+  source: custom  # verified 2026-10-08 — rendered listing
+  token: "https://tradingtechnologies.com/about-us/careers/"
+  extra: { link: "tradingtechnologies\\.com/job/([a-z0-9-]+)/" }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: enfusion
   name: Enfusion
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "enfusion"
+  source: workday  # verified 2026-10-08 (token read off the rendered career page) — Enfusion now hires through Clearwater Analytics' board
+  token: "clearwateranalytics"
+  extra: { wd: "1", site: Clearwater_Analytics_Careers }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: confluence_technologies
   name: Confluence Technologies
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "confluence-technologies"
+  source: custom  # verified 2026-10-08 — rendered listing (Pinpoint)
+  token: "https://confluence.pinpointhq.com/"
+  extra: { link: "confluence\\.pinpointhq\\.com/en/postings/([0-9a-f-]+)" }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: n26
   name: N26
@@ -1594,12 +1783,12 @@
 
 - slug: scalable_capital
   name: Scalable Capital
-  source: personio  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "scalablecapital"
+  source: smartrecruiters  # verified 2026-10-07 — token read off the career page (not Personio)
+  token: "ScalableGmbH"
   sector: vendor
   hq_country: DE
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: raisin
   name: Raisin
@@ -1623,12 +1812,12 @@
 
 - slug: gsr
   name: GSR
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "gsr"
+  source: greenhouse  # verified 2026-10-07
+  token: "gsrmarkets"
   sector: crypto
   hq_country: US
   priority: 3
-  enabled: false
+  enabled: true
 
 - slug: wintermute
   name: Wintermute
@@ -1686,12 +1875,12 @@
 
 - slug: galaxy_digital
   name: Galaxy Digital
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "galaxy-digital"
+  source: greenhouse  # verified 2026-10-07
+  token: "galaxydigitalservices"
   sector: crypto
   hq_country: US
   priority: 3
-  enabled: false
+  enabled: true
 
 - slug: qcp_capital
   name: QCP Capital
@@ -1704,12 +1893,12 @@
 
 - slug: auros
   name: Auros
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "auros"
+  source: greenhouse  # verified 2026-10-07
+  token: "aurosglobal"
   sector: crypto
   hq_country: SG
   priority: 3
-  enabled: false
+  enabled: true
 
 # --- Discovered during WP06 recon: real Recruitee board, proprietary trading ---
 
@@ -1720,4 +1909,107 @@
   sector: prop_trading
   hq_country: AE
   priority: 3
+  enabled: true
+
+# --- Sell-side recon of 2026-10-13: tokens read off each firm's own career page ---
+
+- slug: lazard
+  name: Lazard
+  source: custom  # verified 2026-10-13 — Oracle HCM REST endpoint: 124 postings
+  token: "https://icbpjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/LazardProfessionalCareers"
+  extra:
+    api: "https://icbpjb.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=LazardProfessionalCareers,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://icbpjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/LazardProfessionalCareers/job/{Id}"
+    detail: "https://icbpjb.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=LazardProfessionalCareers"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: lombard_odier
+  name: Lombard Odier
+  source: workday  # verified 2026-10-13 — 70 postings
+  token: "lombardodier"
+  extra: { wd: "3", site: "Lombard_Odier_Careers" }
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: vontobel
+  name: Vontobel
+  source: workday  # verified 2026-10-13 — 36 postings
+  token: "vontobel"
+  extra: { wd: "3", site: "Vontobel_External_Career" }
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: trafigura
+  name: Trafigura
+  source: workday  # verified 2026-10-13 — 75 postings
+  token: "trafigura"
+  extra: { wd: "3", site: "TrafiguraCareerSite" }
+  sector: prop_trading  # a commodity house trades its own book; the registry has no finer tag
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: gunvor
+  name: Gunvor
+  source: workday  # verified 2026-10-13 — 31 postings
+  token: "gunvor"
+  extra: { wd: "3", site: "Gunvor_Careers" }
+  sector: prop_trading  # a commodity house trades its own book; the registry has no finer tag
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: vitol
+  name: Vitol
+  source: smartrecruiters  # verified 2026-10-13 — 34 postings
+  token: "Vitol"
+  sector: prop_trading  # a commodity house trades its own book; the registry has no finer tag
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: rothschild
+  name: Rothschild & Co
+  source: workday  # verified 2026-10-13 — 118 postings; the career page builds its links by script, so the tenant was confirmed by its own answer (Rothschild roles), not read off the page
+  token: "rothschildandco"
+  extra: { wd: "3", site: "RothschildAndCo_Lateral" }
+  sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
+  hq_country: FR
+  priority: 2
+  enabled: true
+
+- slug: ubs_campus
+  name: UBS (graduates and interns)
+  source: custom  # verified 2026-10-13 — the same BrassRing endpoint as `ubs`, site 5131: 103 internship and graduate postings, absent from the experienced-hire site
+  token: "https://jobs.ubs.com/TGnewUI/Search/Home/Home?partnerid=25008&siteid=5131#home"
+  extra:
+    api: "https://jobs.ubs.com/TgNewUI/Search/Ajax/ProcessSortAndShowMoreJobs"
+    body: '{"PartnerId":"25008","SiteId":"5131","Keyword":"","Location":"","KeywordCustomSolrFields":"FORMTEXT2,AutoReq,Department,JobTitle","LocationCustomSolrFields":"FORMTEXT2","TurnOffHttps":false,"Latitude":0,"Longitude":0,"EncryptedSessionValue":"","FacetFilterFields":{"Facet":[]},"PowerSearchOptions":{"PowerSearchOption":[]},"SortType":"LastUpdated","pageNumber":"{page}","linkId":""}'
+    size: "50"
+    page_start: "1"
+    items: Jobs.Job
+    total: JobsCount
+    id: Questions.QuestionName=reqid.Value
+    title: Questions.QuestionName=jobtitle.Value
+    location: Questions.QuestionName=formtext23.Value
+    posted: Questions.QuestionName=lastupdated.Value
+    url: "{Link}"
+  sector: bank
+  hq_country: CH
+  priority: 2
   enabled: true

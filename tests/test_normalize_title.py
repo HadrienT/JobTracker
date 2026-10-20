@@ -97,3 +97,32 @@ def test_quantitative_titles_are_not_other(
 )
 def test_quantitative_in_a_non_quant_title_stays_other(taxonomy: Taxonomy, title: str) -> None:
     assert classify_role(title, "", taxonomy=taxonomy) == RoleFamily.OTHER
+
+
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        # A bank's quants are its "strats" and its "quantitative analytics" team.
+        ("Corporate Bank Strat", RoleFamily.QUANT_RESEARCH),
+        (
+            "Global Banking & Markets - Execution Solutions Strats - Associate",
+            RoleFamily.QUANT_RESEARCH,
+        ),
+        (
+            "Quantitative Analytics Associate Off Cycle Internship Programme",
+            RoleFamily.QUANT_RESEARCH,
+        ),
+        ("Stage - Analyste Quantitatif H/F", RoleFamily.QUANT_RESEARCH),
+        ("Ingénieur Quantitatif - Dérivés Actions", RoleFamily.QUANT_DEV),
+        ("Développeur Quantitatif C++", RoleFamily.QUANT_DEV),
+        ("Financial Engineer - Structured Products", RoleFamily.QUANT_DEV),
+        ("V.I.E. Programmer Analyst Pre-trade applications", RoleFamily.SWE_PLATFORM),
+        # "strat" inside another word names nothing.
+        ("Strategy Analyst", RoleFamily.OTHER),
+        ("Administrative Assistant", RoleFamily.OTHER),
+    ],
+)
+def test_sell_side_and_french_names_for_quant_roles(
+    taxonomy: Taxonomy, title: str, expected: RoleFamily
+) -> None:
+    assert classify_role(title, "", taxonomy=taxonomy) == expected

@@ -191,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/postings/{posting_id}/triage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Triage Posting */
+        post: operations["triage_posting_postings__posting_id__triage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -257,6 +274,10 @@ export interface components {
             };
             /** Countries */
             countries: {
+                [key: string]: number;
+            };
+            /** Rejection Reasons */
+            rejection_reasons: {
                 [key: string]: number;
             };
             /** Sectors */
@@ -429,6 +450,7 @@ export interface components {
             title: string;
             /** Title Raw */
             title_raw: string;
+            triage: components["schemas"]["Triage"] | null;
             /** Url */
             url: string;
             visa_sponsorship: components["schemas"]["VisaStatus"];
@@ -463,6 +485,8 @@ export interface components {
             posted_at: string | null;
             /** Posting Id */
             posting_id: string;
+            /** Rejection Reason */
+            rejection_reason: string | null;
             role_family: components["schemas"]["RoleFamily"];
             /** Score */
             score: number;
@@ -477,6 +501,7 @@ export interface components {
             title: string;
             /** Title Raw */
             title_raw: string;
+            triage: components["schemas"]["Triage"] | null;
             /** Url */
             url: string;
             visa_sponsorship: components["schemas"]["VisaStatus"];
@@ -555,6 +580,22 @@ export interface components {
          * @enum {string}
          */
         Tier: "strong" | "possible" | "stretch" | "rejected";
+        /**
+         * Triage
+         * @description The user's verdict on a posting they do not want in the main feed any more.
+         *
+         *     Absent means "not triaged yet". Both values take the posting out of the feed and
+         *     into a list of its own, from which the verdict can be changed or cleared.
+         * @enum {string}
+         */
+        Triage: "no" | "maybe";
+        /**
+         * TriageRequest
+         * @description `triage: null` puts the posting back in the main feed.
+         */
+        TriageRequest: {
+            triage: components["schemas"]["Triage"] | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -634,10 +675,12 @@ export interface operations {
                 visa?: components["schemas"]["VisaStatus"][];
                 min_score?: number;
                 tiers?: components["schemas"]["Tier"][];
+                rejection_reasons?: string[];
                 posted_within_days?: number | null;
                 query?: string | null;
                 favorites_only?: boolean;
                 include_hidden?: boolean;
+                triage?: components["schemas"]["Triage"] | null;
             };
             header?: never;
             path?: never;
@@ -684,10 +727,12 @@ export interface operations {
                 visa?: components["schemas"]["VisaStatus"][];
                 min_score?: number;
                 tiers?: components["schemas"]["Tier"][];
+                rejection_reasons?: string[];
                 posted_within_days?: number | null;
                 query?: string | null;
                 favorites_only?: boolean;
                 include_hidden?: boolean;
+                triage?: components["schemas"]["Triage"] | null;
             };
             header?: never;
             path?: never;
@@ -754,10 +799,12 @@ export interface operations {
                 visa?: components["schemas"]["VisaStatus"][];
                 min_score?: number;
                 tiers?: components["schemas"]["Tier"][];
+                rejection_reasons?: string[];
                 posted_within_days?: number | null;
                 query?: string | null;
                 favorites_only?: boolean;
                 include_hidden?: boolean;
+                triage?: components["schemas"]["Triage"] | null;
             };
             header?: never;
             path?: never;
@@ -807,10 +854,12 @@ export interface operations {
                 visa?: components["schemas"]["VisaStatus"][];
                 min_score?: number;
                 tiers?: components["schemas"]["Tier"][];
+                rejection_reasons?: string[];
                 posted_within_days?: number | null;
                 query?: string | null;
                 favorites_only?: boolean;
                 include_hidden?: boolean;
+                triage?: components["schemas"]["Triage"] | null;
             };
             header?: never;
             path?: never;
@@ -980,6 +1029,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    triage_posting_postings__posting_id__triage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                posting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriageRequest"];
             };
         };
         responses: {

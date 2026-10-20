@@ -162,6 +162,41 @@ export function useSetHidden() {
   )
 }
 
+export type Triage = Schemas['Triage']
+
+/**
+ * "No" / "maybe" / back to the feed. Whatever the new verdict, the posting leaves the list it
+ * was read from — the feed shows what is not triaged yet, each verdict has a list of its own —
+ * so the row goes on the spot and the lists are refetched for their counts and neighbours.
+ */
+export function useSetTriage() {
+  const queryClient = useQueryClient()
+  const mutation = useFlagMutation<Triage | null>(
+    (postingId, value) => api.setTriage(postingId, value),
+    (items, postingId, value) => items.filter((item) => item.posting_id !== postingId || item.triage === value),
+  )
+  return {
+    ...mutation,
+    mutate: (
+      variables: { postingId: string; value: Triage | null },
+      options?: { onSuccess?: () => void; onError?: () => void },
+    ) => {
+      mutation.mutate(variables, {
+        onSuccess: () => {
+          const key = ['posting', variables.postingId] as const
+          const detail = queryClient.getQueryData<PostingDetailOut>(key)
+          if (detail) queryClient.setQueryData(key, { ...detail, triage: variables.value })
+          options?.onSuccess?.()
+        },
+        onError: options?.onError,
+        onSettled: () => {
+          void queryClient.invalidateQueries({ queryKey: [POSTINGS_ROOT_KEY] })
+        },
+      })
+    },
+  }
+}
+
 export type ApplicationStatus = Schemas['ApplicationStatus']
 
 /**

@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from factories_store import make_board, make_posting, make_verdict
-from jobtracker.core.enums import RemoteMode
+from jobtracker.core.enums import RemoteMode, Tier
 from jobtracker.core.models import Location
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import upsert_posting
@@ -72,3 +72,24 @@ def test_postings_and_facets_agree_under_the_same_filter(
     facets = api_client.get("/facets", params={"countries": "FR"}).json()
 
     assert len(postings["items"]) == facets["countries"]["FR"]
+
+
+def test_rejection_reasons_are_counted_without_their_own_filter(
+    api_client: TestClient, api_conn: sqlite3.Connection
+) -> None:
+    sync_companies(api_conn, [make_board()])
+    for posting_id, reason in (("p-a", "senior_only"), ("p-b", "not_quant"), ("p-c", "not_quant")):
+        posting = make_posting(
+            posting_id=posting_id, source_job_id=f"j-{posting_id}", fingerprint=f"fp-{posting_id}"
+        )
+        verdict = make_verdict(
+            posting_id=posting_id, score=0, tier=Tier.REJECTED, rejection_reason=reason
+        )
+        upsert_posting(api_conn, posting, verdict)
+    api_conn.commit()
+
+    assert api_client.get("/facets").json()["rejection_reasons"] == {}
+    resp = api_client.get(
+        "/facets", params={"tiers": "rejected", "rejection_reasons": "senior_only"}
+    )
+    assert resp.json()["rejection_reasons"] == {"senior_only": 1, "not_quant": 2}

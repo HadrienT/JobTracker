@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SortKey } from '@/api/queries'
 import { ActiveFilterPills } from '@/features/filters/active-filter-pills'
-import { isDefaultFilter } from '@/features/filters/defaults'
+import { feedViewOf, isDefaultFilter } from '@/features/filters/defaults'
 import { FiltersPanel } from '@/features/filters/filters-panel'
 import { StaleFeedBanner } from '@/features/filters/stale-feed-banner'
 import { useFeedUrlState } from '@/features/filters/use-feed-url-state'
@@ -11,6 +11,7 @@ import { usePostingRoute } from '@/features/feed/routing'
 import { SavedViews } from '@/features/filters/saved-views-menu'
 import { api } from '@/api/client'
 import { useEscapeKey } from '@/features/feed/use-keyboard-shortcuts'
+import { TriageTabs } from '@/features/feed/triage-tabs'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'score', label: 'Score' },
@@ -73,6 +74,7 @@ export function FeedScreen() {
           }}
           className="w-72 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-tier-possible"
         />
+        <TriageTabs filter={filter} onChange={setFilter} />
         <SavedViews />
         <a
           href={api.exportUrl({ ...filter, sort })}
@@ -109,7 +111,7 @@ export function FeedScreen() {
           sort={sort}
           searchInputRef={searchInputRef}
           isPanelOpen={postingId !== null}
-          hasActiveFilters={!isDefaultFilter(filter)}
+          hasActiveFilters={!isDefaultFilter(filter) || feedViewOf(filter) !== 'inbox'}
           onOpenPosting={openPosting}
         />
       </div>

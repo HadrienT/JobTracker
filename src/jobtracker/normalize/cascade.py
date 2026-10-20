@@ -31,7 +31,7 @@ from jobtracker.normalize.visa import parse_visa
 #      period-less small figures are dropped, "between X and Y"
 #   3: more cities in geo.yaml, and "Office" / "and" / "&" read in locations
 #   2: quant trading / strategist / quantitative-risk titles are no longer "other"
-NORMALIZE_VERSION = 6
+NORMALIZE_VERSION = 8
 
 _PHD_REQUIRED_RE = re.compile(
     r"\bphd\s+(?:is\s+)?required\b|\brequires?\s+a\s+phd\b|\bmust\s+have\s+a\s+phd\b",

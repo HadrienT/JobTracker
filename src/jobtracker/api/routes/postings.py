@@ -16,6 +16,7 @@ from jobtracker.api.schemas import (
     PostingOut,
     PostingsPage,
     StatusRequest,
+    TriageRequest,
 )
 from jobtracker.core.errors import StorageError
 from jobtracker.store.llm_reviews import current_corrections
@@ -30,6 +31,7 @@ from jobtracker.store.postings import (
     mark_hidden,
     set_application_status,
     set_note,
+    set_triage,
 )
 from jobtracker.store.search import get_description
 
@@ -69,7 +71,6 @@ def get_posting_detail(posting_id: str, conn: Conn) -> PostingDetailOut:
         description=get_description(conn, posting_id),
         note=row.note,
         reasons=verdict.reasons if verdict is not None else (),
-        rejection_reason=verdict.rejection_reason if verdict is not None else None,
         aliases=aliases,
         llm_corrections=tuple(
             LlmCorrectionOut(**c.model_dump()) for c in current_corrections(conn, posting_id)
@@ -91,6 +92,15 @@ def set_hidden(posting_id: str, body: FlagRequest, conn: Conn) -> Response:
     if get_posting_row(conn, posting_id) is None:
         raise HTTPException(status_code=404, detail=f"no such posting: {posting_id!r}")
     mark_hidden(conn, posting_id, body.value)
+    conn.commit()
+    return Response(status_code=204)
+
+
+@router.post("/postings/{posting_id}/triage", status_code=204)
+def triage_posting(posting_id: str, body: TriageRequest, conn: Conn) -> Response:
+    if get_posting_row(conn, posting_id) is None:
+        raise HTTPException(status_code=404, detail=f"no such posting: {posting_id!r}")
+    set_triage(conn, posting_id, body.triage)
     conn.commit()
     return Response(status_code=204)
 

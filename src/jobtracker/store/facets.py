@@ -21,6 +21,7 @@ class FacetCounts(BaseModel, frozen=True):
     sources: dict[str, int]
     seniorities: dict[str, int]
     tech: dict[str, int]
+    rejection_reasons: dict[str, int]
 
 
 def base_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
@@ -72,5 +73,12 @@ def facet_counts(conn: sqlite3.Connection, flt: PostingFilter) -> FacetCounts:
         seniorities=_count_dimension(conn, flt, exclude_field="seniorities", select="p.seniority"),
         tech=_count_dimension(
             conn, flt, exclude_field="tech_any", select="pt.tech", joins=tech_join
+        ),
+        rejection_reasons=_count_dimension(
+            conn,
+            flt,
+            exclude_field="rejection_reasons",
+            select="v.rejection_reason",
+            joins="LEFT JOIN verdicts v ON v.posting_id = p.posting_id",
         ),
     )

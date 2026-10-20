@@ -90,3 +90,25 @@ def test_a_range_of_years_asks_for_its_lower_bound(
     _, found = parse_seniority("Software Engineer", text, taxonomy=taxonomy)
 
     assert found == years
+
+
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        ("V.I.E. Cross Asset Retail Sales (m/f/d)", Seniority.GRADUATE),
+        ("VIE - Quantitative Developer - London", Seniority.GRADUATE),
+        ("Volontariat International en Entreprise - Analyste Risques", Seniority.GRADUATE),
+        ("Stage - Analyste Quantitatif H/F", Seniority.INTERN),
+        ("Stage de fin d'études : Développeur C++", Seniority.INTERN),
+        ("Quantitative Analytics Associate Off Cycle Internship Programme 2027", Seniority.INTERN),
+        ("Alternance - Data Engineer", Seniority.INTERN),
+        ("Praktikant*in im Chief Investment Office", Seniority.INTERN),
+        # "vie" the French word and "stage" the English one are neither.
+        ("Middle Officer assurance vie - H/F", Seniority.UNKNOWN),
+        ("Late Stage Investment Analyst", Seniority.UNKNOWN),
+    ],
+)
+def test_the_ways_in_for_a_graduate_as_a_bank_names_them(
+    taxonomy: Taxonomy, title: str, expected: Seniority
+) -> None:
+    assert parse_seniority(title, "", taxonomy=taxonomy)[0] == expected

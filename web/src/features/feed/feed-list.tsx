@@ -1,6 +1,14 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { type PostingsFilter, type SortKey, useSetFavorite, useSetHidden, usePostingsFeed } from '@/api/queries'
+import {
+  type PostingsFilter,
+  type SortKey,
+  useSetFavorite,
+  useSetHidden,
+  useSetTriage,
+  usePostingsFeed,
+} from '@/api/queries'
+import { TRIAGE_ACTIONS, type TriageView } from '@/features/feed/triage'
 import { PostingRow } from '@/features/feed/posting-row'
 import { useFeedKeyboardShortcuts } from '@/features/feed/use-keyboard-shortcuts'
 import { useToast } from '@/features/favorites/use-toast'
@@ -23,6 +31,8 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
   const query = usePostingsFeed(filter, sort)
   const setFavorite = useSetFavorite()
   const setHidden = useSetHidden()
+  const setTriage = useSetTriage()
+  const view: TriageView = filter.triage ?? null
   const toast = useToast()
   const parentRef = useRef<HTMLDivElement>(null)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
@@ -55,6 +65,26 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
         },
         onError: () => {
           toast.show('Could not hide this posting — try again.')
+        },
+      },
+    )
+  }
+
+  function triagePosting(postingId: string, from: TriageView, to: TriageView) {
+    if (from === to) return
+    setTriage.mutate(
+      { postingId, value: to },
+      {
+        onSuccess: () => {
+          toast.show(TRIAGE_ACTIONS.find((action) => action.value === to)?.done ?? 'Moved.', {
+            label: 'Undo',
+            onClick: () => {
+              setTriage.mutate({ postingId, value: from })
+            },
+          })
+        },
+        onError: () => {
+          toast.show('Could not move this posting — try again.')
         },
       },
     )
@@ -119,6 +149,9 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
       onHide: () => {
         if (selected) hidePosting(selected.posting_id)
       },
+      onTriage: (to) => {
+        if (selected) triagePosting(selected.posting_id, view, to)
+      },
       onFocusSearch: () => {
         searchInputRef.current?.focus()
       },
@@ -156,6 +189,7 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
   if (items.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-text-secondary" data-testid="feed-empty">
+        {view !== null && 'Nothing in this list. '}
         {hasActiveFilters ? 'No postings match this filter.' : 'No postings have been collected yet.'}
       </div>
     )
@@ -200,6 +234,9 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
                 }}
                 onToggleFavorite={() => {
                   toggleFavorite(posting.posting_id, !posting.favorited)
+                }}
+                onTriage={(to) => {
+                  triagePosting(posting.posting_id, posting.triage, to)
                 }}
               />
             )

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PostingsFilter, SortKey } from '@/api/queries'
-import { DEFAULT_FILTER } from '@/features/filters/defaults'
+import { DEFAULT_FILTER, feedViewOf, VIEW_TIERS } from '@/features/filters/defaults'
 import { decodeFeedState, encodeFeedState, type FeedUrlState } from '@/features/filters/url-codec'
 
 /**
@@ -45,7 +45,10 @@ export function useFeedUrlState(): {
       pushState({ filter: state.filter, sort })
     },
     resetFilters: () => {
-      pushState({ filter: DEFAULT_FILTER, sort: state.sort })
+      // Reset clears the filters, not the list being read: "maybe" stays "maybe", "applied" stays "applied".
+      const { triage, statuses } = state.filter
+      const tiers = VIEW_TIERS[feedViewOf(state.filter)]
+      pushState({ filter: { ...DEFAULT_FILTER, triage, statuses, tiers }, sort: state.sort })
     },
   }
 }

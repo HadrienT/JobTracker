@@ -85,7 +85,7 @@ courant** (invariant I6 de [08-TESTING.md](08-TESTING.md)).
 | Ville | recherche + cases, alimentée par les facettes |
 | Mode | onsite / hybrid / remote |
 | Société | recherche + cases |
-| Secteur | prop_trading, hedge_fund, bank, asset_manager, vendor, crypto |
+| Secteur | prop_trading, hedge_fund, bank (sell-side), bank_other (dépositaire, banque privée, conseil, commerciale), asset_manager, vendor, crypto |
 | Séniorité | intern / graduate / junior / mid / unknown |
 | Stack | cases ET/OU, avec bascule explicite « toutes » / « au moins une » |
 | **Visa** | trois cases : `sponsors`, `unknown`, `no`. **Défaut : les deux premières** |

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { usePostingDetail } from '@/api/queries'
+import { usePostingDetail, useSetTriage } from '@/api/queries'
+import { TRIAGE_VIEWS } from '@/features/feed/triage'
+import { rejectionReasonLabel } from '@/features/filters/defaults'
 import { cn } from '@/shared/lib/cn'
 import { LlmCorrections } from '@/features/feed/llm-corrections'
 import { TrackingSection } from '@/features/feed/tracking-section'
@@ -24,6 +26,7 @@ interface PostingDetailPanelProps {
  */
 export function PostingDetailPanel({ postingId, onClose }: PostingDetailPanelProps) {
   const { data: posting, isPending, isError } = usePostingDetail(postingId)
+  const setTriage = useSetTriage()
   const panelRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
 
@@ -103,6 +106,34 @@ export function PostingDetailPanel({ postingId, onClose }: PostingDetailPanelPro
             <p className="text-sm text-text-secondary">
               {posting.company_name} · {posting.sector}
             </p>
+
+            {posting.rejection_reason !== null && (
+              <p className="text-sm text-tier-rejected">
+                Filtered out by the pipeline: {rejectionReasonLabel(posting.rejection_reason)}
+              </p>
+            )}
+
+            <div role="group" aria-label="Triage" className="flex items-center gap-2 text-sm">
+              {TRIAGE_VIEWS.map((option) => {
+                const active = option.value === posting.triage
+                return (
+                  <button
+                    key={option.label}
+                    type="button"
+                    aria-pressed={active}
+                    className={cn(
+                      'rounded-md border border-border px-3 py-1',
+                      active ? 'bg-surface-elevated text-text-primary' : 'text-text-secondary hover:text-text-primary',
+                    )}
+                    onClick={() => {
+                      if (!active) setTriage.mutate({ postingId: posting.posting_id, value: option.value })
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
 
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>

@@ -24,6 +24,7 @@ from jobtracker.core.enums import (
     Seniority,
     Source,
     Tier,
+    Triage,
     VisaStatus,
 )
 from jobtracker.core.errors import StorageError
@@ -60,10 +61,15 @@ class PostingFilter(BaseModel, frozen=True):
     visa: frozenset[VisaStatus] = frozenset()
     min_score: int = 0
     tiers: frozenset[Tier] = frozenset()
+    # Why the pipeline set a posting aside — `match.rules.REJECTION_REASONS`. Narrows the
+    # rejected tier; a posting of any other tier has no reason and never matches.
+    rejection_reasons: frozenset[str] = frozenset()
     posted_within_days: int | None = None
     query: str | None = None
     favorites_only: bool = False
     include_hidden: bool = False
+    # None is the main feed: postings not triaged yet. A value is that verdict's own list.
+    triage: Triage | None = None
 
 
 class SortKey(StrEnum):
@@ -100,9 +106,11 @@ class PostingRow(BaseModel, frozen=True):
     closes_at_raw: str | None
     score: int
     tier: Tier
+    rejection_reason: str | None
     alias_count: int
     is_favorite: bool
     is_hidden: bool
+    triage: Triage | None
     application_status: ApplicationStatus | None
     note: str
 
@@ -173,8 +181,8 @@ def _order_by(sort: SortKey) -> str:
 
 
 def requires_active(flt: PostingFilter) -> bool:
-    """Closed offers are hidden from the feed — except the ones you flagged or applied to."""
-    return not flt.favorites_only and not flt.statuses
+    """Closed offers leave the feed — except the ones you flagged, triaged or applied to."""
+    return not flt.favorites_only and not flt.statuses and flt.triage is None
 
 
 def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
@@ -226,6 +234,13 @@ def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
     _in("p.seniority", frozenset(v.value for v in flt.seniorities))
     _in("p.visa_sponsorship", frozenset(v.value for v in flt.visa))
     _in("p.tier", frozenset(v.value for v in flt.tiers))
+    if flt.rejection_reasons:
+        placeholders = ",".join("?" for _ in flt.rejection_reasons)
+        clauses.append(
+            "p.posting_id IN (SELECT posting_id FROM verdicts "
+            f"WHERE rejection_reason IN ({placeholders}))"
+        )
+        params.extend(sorted(flt.rejection_reasons))
 
     if flt.tech_any:
         placeholders = ",".join("?" for _ in flt.tech_any)
@@ -265,10 +280,19 @@ def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
         placeholders = ",".join("?" for _ in flt.statuses)
         clauses.append(f"uf.application_status IN ({placeholders})")
         params.extend(sorted(status.value for status in flt.statuses))
+    elif flt.triage is None and not flt.favorites_only:
+        # The main feed is what is still to be decided on: a posting you applied to has
+        # left it, and is read back by filtering on its status.
+        clauses.append("uf.application_status IS NULL")
     if flt.favorites_only:
         clauses.append("uf.is_favorite = 1")
     if not flt.include_hidden:
         clauses.append("COALESCE(uf.is_hidden, 0) = 0")
+    if flt.triage is None:
+        clauses.append("uf.triage IS NULL")
+    else:
+        clauses.append("uf.triage = ?")
+        params.append(flt.triage.value)
 
     return clauses, params
 
@@ -297,8 +321,11 @@ def list_postings(
         SELECT p.*, c.company_name AS company_name, c.sector AS sector,
                COALESCE(uf.is_favorite, 0) AS is_favorite,
                COALESCE(uf.is_hidden, 0) AS is_hidden,
+               uf.triage AS triage,
                uf.application_status AS application_status,
-               COALESCE(uf.note, '') AS note
+               COALESCE(uf.note, '') AS note,
+               (SELECT v.rejection_reason FROM verdicts v
+                WHERE v.posting_id = p.posting_id) AS rejection_reason
         FROM postings p
         JOIN companies c ON c.company_slug = p.company_slug
         LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
@@ -373,9 +400,11 @@ def _row_to_posting_row(conn: sqlite3.Connection, row: sqlite3.Row) -> PostingRo
         closes_at_raw=row["closes_at"],
         score=row["score"],
         tier=Tier(row["tier"]),
+        rejection_reason=row["rejection_reason"],
         alias_count=alias_count,
         is_favorite=bool(row["is_favorite"]),
         is_hidden=bool(row["is_hidden"]),
+        triage=Triage(row["triage"]) if row["triage"] else None,
         application_status=(
             ApplicationStatus(row["application_status"]) if row["application_status"] else None
         ),
@@ -591,9 +620,11 @@ def upsert_posting(conn: sqlite3.Connection, posting: Posting, verdict: MatchVer
     if existing is not None:
         if existing["content_hash"] == posting.content_hash:
             # Same content already stored: touch freshness only, never rescore
-            # (blueprint/wp/WP02-store.md §4) — `scored_at` stays untouched.
+            # (blueprint/wp/WP02-store.md §4) — `scored_at` stays untouched. A posting
+            # the board lists again is open again, whatever an earlier cycle concluded
+            # from a listing it was missing from.
             conn.execute(
-                "UPDATE postings SET last_seen_at = ? WHERE posting_id = ?",
+                "UPDATE postings SET last_seen_at = ?, is_active = 1 WHERE posting_id = ?",
                 (posting.last_seen_at.isoformat(), existing["posting_id"]),
             )
             return str(existing["posting_id"])
@@ -736,6 +767,18 @@ def mark_hidden(conn: sqlite3.Connection, posting_id: str, value: bool) -> None:
     )
 
 
+def set_triage(conn: sqlite3.Connection, posting_id: str, triage: Triage | None) -> None:
+    conn.execute(
+        """
+        INSERT INTO user_flags (posting_id, is_favorite, is_hidden, updated_at, triage)
+        VALUES (?, 0, 0, ?, ?)
+        ON CONFLICT (posting_id) DO UPDATE SET triage = excluded.triage,
+            updated_at = excluded.updated_at
+        """,
+        (posting_id, utc_now().isoformat(), triage.value if triage is not None else None),
+    )
+
+
 def set_application_status(
     conn: sqlite3.Connection, posting_id: str, status: ApplicationStatus | None
 ) -> None:
@@ -771,8 +814,11 @@ def get_posting_row(conn: sqlite3.Connection, posting_id: str) -> PostingRow | N
         SELECT p.*, c.company_name AS company_name, c.sector AS sector,
                COALESCE(uf.is_favorite, 0) AS is_favorite,
                COALESCE(uf.is_hidden, 0) AS is_hidden,
+               uf.triage AS triage,
                uf.application_status AS application_status,
-               COALESCE(uf.note, '') AS note
+               COALESCE(uf.note, '') AS note,
+               (SELECT v.rejection_reason FROM verdicts v
+                WHERE v.posting_id = p.posting_id) AS rejection_reason
         FROM postings p
         JOIN companies c ON c.company_slug = p.company_slug
         LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
@@ -883,6 +929,7 @@ __all__: Sequence[str] = (
     "record_alias",
     "resolve_dedup",
     "resolve_posting_id",
+    "set_triage",
     "upsert_posting",
 )
 
@@ -980,6 +1027,34 @@ def update_resolution(conn: sqlite3.Connection, posting: Posting, verdict: Match
         "UPDATE postings SET is_active = ? WHERE posting_id = ?",
         (row["is_active"], posting.posting_id),
     )
+
+
+def known_descriptions(
+    conn: sqlite3.Connection, source: Source
+) -> list[tuple[str, str, str, str | None, str]]:
+    """`(company_slug, source_job_id, title_raw, location_raw, description)` of every active
+    posting of `source` that has a description.
+
+    For the collectors that pay one request per description (Workday, the rendered
+    listings of `custom`): the runtime hands this back to them so a posting already
+    read is not opened again.
+    """
+    rows = conn.execute(
+        "SELECT p.company_slug, p.source_job_id, p.title_raw, p.location_raw, st.description "
+        "FROM postings p JOIN posting_search_text st ON st.posting_id = p.posting_id "
+        "WHERE p.source = ? AND p.is_active = 1 AND st.description != ''",
+        (source.value,),
+    ).fetchall()
+    return [
+        (
+            str(r["company_slug"]),
+            str(r["source_job_id"]),
+            str(r["title_raw"]),
+            r["location_raw"],
+            str(r["description"]),
+        )
+        for r in rows
+    ]
 
 
 def record_raw_inputs(

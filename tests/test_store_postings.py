@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 import pytest
 
 from factories_store import make_board, make_posting, make_verdict
-from jobtracker.core.enums import RemoteMode, Source, Tier, VisaStatus
+from jobtracker.core.enums import RemoteMode, Source, Tier, Triage, VisaStatus
 from jobtracker.core.errors import StorageError
 from jobtracker.core.models import Location, RawPosting, Reason
 from jobtracker.store.companies import sync_companies
@@ -23,6 +23,7 @@ from jobtracker.store.postings import (
     record_alias,
     resolve_dedup,
     resolve_posting_id,
+    set_triage,
     upsert_posting,
 )
 
@@ -614,6 +615,23 @@ def test_deactivate_missing_turns_off_a_posting_absent_from_the_run(
     assert rows[gone] == 0
 
 
+def test_a_posting_the_board_lists_again_is_active_again(
+    store_conn: sqlite3.Connection,
+) -> None:
+    # A cycle that saw only part of a listing deactivates what it missed; the posting
+    # is unchanged when a later cycle sees it, and must not stay hidden for that.
+    posting_id = _upsert(store_conn, source_job_id="j-1", content_hash="same-hash")
+    deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-other"})
+
+    _upsert(store_conn, posting_id=posting_id, source_job_id="j-1", content_hash="same-hash")
+    store_conn.commit()
+
+    row = store_conn.execute(
+        "SELECT is_active FROM postings WHERE posting_id = ?", (posting_id,)
+    ).fetchone()
+    assert row["is_active"] == 1
+
+
 def test_deactivate_missing_with_an_empty_seen_set_changes_nothing(
     store_conn: sqlite3.Connection,
 ) -> None:
@@ -622,3 +640,25 @@ def test_deactivate_missing_with_an_empty_seen_set_changes_nothing(
     assert changed == 0
     row = store_conn.execute("SELECT is_active FROM postings").fetchone()
     assert row["is_active"] == 1
+
+
+def test_triage_keeps_the_favorite_and_the_application_status(
+    store_conn: sqlite3.Connection,
+) -> None:
+    posting_id = _upsert(store_conn)
+    mark_favorite(store_conn, posting_id, True)
+    set_triage(store_conn, posting_id, Triage.MAYBE)
+    store_conn.commit()
+
+    assert list_postings(store_conn, PostingFilter(), SortKey.SCORE, None, limit=10).items == ()
+    page = list_postings(store_conn, PostingFilter(triage=Triage.MAYBE), SortKey.SCORE, None, 10)
+    assert [(r.posting_id, r.triage, r.is_favorite) for r in page.items] == [
+        (posting_id, Triage.MAYBE, True)
+    ]
+
+    set_triage(store_conn, posting_id, None)
+    store_conn.commit()
+    back = list_postings(store_conn, PostingFilter(), SortKey.SCORE, None, limit=10)
+    assert [(r.posting_id, r.triage, r.is_favorite) for r in back.items] == [
+        (posting_id, None, True)
+    ]

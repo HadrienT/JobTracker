@@ -60,6 +60,9 @@ class HttpSession(Protocol):
     def post_json(self, url: str, *, json: Mapping[str, Any]) -> Any: ...
 
 
+_JSON = "application/json"
+
+
 class _NotModified:
     """The `get_json`/`post_json` sentinel for a `304`: nothing changed."""
 
@@ -201,7 +204,7 @@ class PolicedHttpSession:
     _etags: dict[str, str] = field(default_factory=dict, init=False, repr=False)
 
     def get_json(self, url: str, *, params: Mapping[str, str] | None = None) -> Any:
-        response = self._perform("GET", url, params=params)
+        response = self._perform("GET", url, params=params, accept=_JSON)
         if not isinstance(response, httpx.Response):
             return response
         try:
@@ -216,7 +219,7 @@ class PolicedHttpSession:
         return response.text
 
     def post_json(self, url: str, *, json: Mapping[str, Any]) -> Any:
-        response = self._perform("POST", url, json=json)
+        response = self._perform("POST", url, json=json, accept=_JSON)
         if not isinstance(response, httpx.Response):
             return response
         try:
@@ -231,6 +234,7 @@ class PolicedHttpSession:
         *,
         params: Mapping[str, str] | None = None,
         json: Mapping[str, Any] | None = None,
+        accept: str | None = None,
     ) -> httpx.Response | _NotModified | _BudgetExhausted:
         if self.requests_made >= self.config.max_requests_per_run:
             self.truncated = True
@@ -239,6 +243,10 @@ class PolicedHttpSession:
         self._enforce_jitter()
 
         headers = {"User-Agent": self.user_agent}
+        if accept is not None:
+            # What the caller expects back; a client that renders pages (collect/browser.py)
+            # reads it to tell an API call from a page to render.
+            headers["Accept"] = accept
         etag = self._etags.get(url)
         if etag is not None and method == "GET":
             headers["If-None-Match"] = etag

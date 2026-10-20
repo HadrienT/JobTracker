@@ -196,6 +196,13 @@
             "title": "Countries",
             "type": "object"
           },
+          "rejection_reasons": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Rejection Reasons",
+            "type": "object"
+          },
           "sectors": {
             "additionalProperties": {
               "type": "integer"
@@ -232,7 +239,8 @@
           "sectors",
           "sources",
           "seniorities",
-          "tech"
+          "tech",
+          "rejection_reasons"
         ],
         "title": "FacetCounts",
         "type": "object"
@@ -719,6 +727,16 @@
             "title": "Title Raw",
             "type": "string"
           },
+          "triage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Triage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "url": {
             "title": "Url",
             "type": "string"
@@ -750,14 +768,15 @@
           "closes_at",
           "score",
           "tier",
+          "rejection_reason",
           "alias_count",
           "favorited",
           "hidden",
+          "triage",
           "application_status",
           "description",
           "note",
           "reasons",
-          "rejection_reason",
           "aliases",
           "llm_corrections"
         ],
@@ -855,6 +874,17 @@
             "title": "Posting Id",
             "type": "string"
           },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason"
+          },
           "role_family": {
             "$ref": "#/components/schemas/RoleFamily"
           },
@@ -891,6 +921,16 @@
             "title": "Title Raw",
             "type": "string"
           },
+          "triage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Triage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "url": {
             "title": "Url",
             "type": "string"
@@ -922,9 +962,11 @@
           "closes_at",
           "score",
           "tier",
+          "rejection_reason",
           "alias_count",
           "favorited",
           "hidden",
+          "triage",
           "application_status"
         ],
         "title": "PostingOut",
@@ -1166,6 +1208,35 @@
         ],
         "title": "Tier",
         "type": "string"
+      },
+      "Triage": {
+        "description": "The user's verdict on a posting they do not want in the main feed any more.\n\nAbsent means \"not triaged yet\". Both values take the posting out of the feed and\ninto a list of its own, from which the verdict can be changed or cleared.",
+        "enum": [
+          "no",
+          "maybe"
+        ],
+        "title": "Triage",
+        "type": "string"
+      },
+      "TriageRequest": {
+        "description": "`triage: null` puts the posting back in the main feed.",
+        "properties": {
+          "triage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Triage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "triage"
+        ],
+        "title": "TriageRequest",
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
@@ -1528,6 +1599,19 @@
           },
           {
             "in": "query",
+            "name": "rejection_reasons",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Rejection Reasons",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
             "name": "posted_within_days",
             "required": false,
             "schema": {
@@ -1577,6 +1661,22 @@
               "default": false,
               "title": "Include Hidden",
               "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Triage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Triage"
             }
           }
         ],
@@ -1832,6 +1932,19 @@
           },
           {
             "in": "query",
+            "name": "rejection_reasons",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Rejection Reasons",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
             "name": "posted_within_days",
             "required": false,
             "schema": {
@@ -1881,6 +1994,22 @@
               "default": false,
               "title": "Include Hidden",
               "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Triage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Triage"
             }
           }
         ],
@@ -2159,6 +2288,19 @@
           },
           {
             "in": "query",
+            "name": "rejection_reasons",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Rejection Reasons",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
             "name": "posted_within_days",
             "required": false,
             "schema": {
@@ -2208,6 +2350,22 @@
               "default": false,
               "title": "Include Hidden",
               "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Triage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Triage"
             }
           }
         ],
@@ -2501,6 +2659,19 @@
           },
           {
             "in": "query",
+            "name": "rejection_reasons",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Rejection Reasons",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
             "name": "posted_within_days",
             "required": false,
             "schema": {
@@ -2550,6 +2721,22 @@
               "default": false,
               "title": "Include Hidden",
               "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Triage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Triage"
             }
           }
         ],
@@ -2798,6 +2985,51 @@
           }
         },
         "summary": "Set Status",
+        "tags": [
+          "postings"
+        ]
+      }
+    },
+    "/postings/{posting_id}/triage": {
+      "post": {
+        "operationId": "triage_posting_postings__posting_id__triage_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "posting_id",
+            "required": true,
+            "schema": {
+              "title": "Posting Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Triage Posting",
         "tags": [
           "postings"
         ]

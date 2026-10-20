@@ -201,6 +201,37 @@ def test_source_blocked_stops_remaining_boards_this_cycle(
     assert run.status == "blocked"
 
 
+def test_a_blocked_board_of_a_per_host_source_does_not_stop_the_others(
+    store_conn: sqlite3.Connection, taxonomy: Taxonomy, geo_index: GeoIndex, profile: Profile
+) -> None:
+    # Each `custom` board is another company's site: one wall says nothing of the next.
+    collector = _FakeCollector(
+        source=Source.CUSTOM,
+        postings_by_board={"beta": (_raw("beta", "1", source=Source.CUSTOM),)},
+        raise_by_board={"acme": SourceBlocked("403")},
+    )
+    ctx = CycleContext(
+        sources_config=build_sources_config(
+            {"defaults": {"jitter_s": [0, 0]}, "sources": {"custom": {"enabled": True}}}
+        ),
+        taxonomy=taxonomy,
+        geo=geo_index,
+        profile=profile,
+        user_agent="JobTracker-Test/1.0",
+        collectors={Source.CUSTOM: collector},
+    )
+    boards = [make_board(company_slug=slug, source=Source.CUSTOM) for slug in ("acme", "beta")]
+
+    run = run_source_cycle(store_conn, Source.CUSTOM, boards, ctx=ctx)
+
+    assert sorted(collector.calls) == ["acme", "beta"]
+    assert (run.status, run.new) == ("ok", 1)
+    blocked = store_conn.execute(
+        "SELECT company_slug FROM source_runs WHERE status = 'blocked'"
+    ).fetchall()
+    assert [r["company_slug"] for r in blocked] == ["acme"]
+
+
 def test_a_normalizer_crash_on_one_posting_does_not_lose_the_run(
     store_conn: sqlite3.Connection,
     taxonomy: Taxonomy,
