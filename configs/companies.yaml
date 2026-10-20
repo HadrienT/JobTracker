@@ -2013,3 +2013,119 @@
   hq_country: CH
   priority: 2
   enabled: true
+
+# --- Tech — the ch_tech track (blueprint/wp/WP20-tracks.md) ---
+# C++ / CUDA / machine-learning employers with roles in Switzerland. `sector: tech` keeps
+# them out of the quant feed (profile.yaml `scope.exclude_sectors`); the Swiss tech tab
+# scores their Swiss postings. Each board verified 2026-10-21 by tools/probe_ats.py, then
+# its postings' locations read: the count of Swiss ones is in the comment.
+
+- slug: nvidia
+  name: NVIDIA
+  source: workday  # verified 2026-10-21 — Switzerland only (Workday's own facet): 30 postings, Zurich and remote
+  token: "nvidia"
+  extra: { wd: "5", site: NVIDIAExternalCareerSite, facets: '{"locationHierarchy1": ["2fcb99c455831013ea52e9ef1a0032ba"]}' }
+  sector: tech
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: disney_research
+  name: Disney Research Studios
+  source: workday  # verified 2026-10-21 — Zurich only (Workday's own facet): 2 postings
+  token: "disney"
+  extra: { wd: "5", site: disneycareer, facets: '{"locations": ["4f84d9e8a09701011a5fda8bc93f0000"]}' }
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: cern
+  name: CERN
+  source: smartrecruiters  # verified 2026-10-21 — 34 postings, all in Geneva
+  token: "CERN"
+  sector: tech
+  hq_country: CH
+  priority: 1
+  enabled: true
+
+- slug: anthropic
+  name: Anthropic
+  source: greenhouse  # verified 2026-10-21 — worldwide board, 672 postings, 4 in Zurich
+  token: "anthropic"
+  sector: tech
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: openai
+  name: OpenAI
+  source: ashby  # verified 2026-10-21 — worldwide board, 809 postings, 2 in Zurich
+  token: "openai"
+  sector: tech
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: proton
+  name: Proton
+  source: greenhouse  # verified 2026-10-21 — 55 postings, 34 in Geneva / Zurich
+  token: "proton"
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: anybotics
+  name: ANYbotics
+  source: lever  # verified 2026-10-21 — 20 postings, 14 in Zurich
+  token: "anybotics"
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: scandit
+  name: Scandit
+  source: greenhouse  # verified 2026-10-21 — 14 postings, 2 in Zurich
+  token: "scandit"
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: latticeflow
+  name: LatticeFlow AI
+  source: workable  # verified 2026-10-21 — 4 postings, all in Zurich
+  token: "latticeflow"
+  sector: tech
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: nexthink
+  name: Nexthink
+  source: smartrecruiters  # verified 2026-10-21 — 70 postings, 4 in Lausanne
+  token: "nexthink"
+  sector: tech
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: jua
+  name: Jua
+  source: ashby  # verified 2026-10-21 — 7 postings, 6 in Zurich
+  token: "jua"
+  sector: tech
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: cradle
+  name: Cradle
+  source: ashby  # verified 2026-10-21 — 8 postings, 2 in Zurich
+  token: "cradlebio"
+  sector: tech
+  hq_country: NL
+  priority: 3
+  enabled: true
