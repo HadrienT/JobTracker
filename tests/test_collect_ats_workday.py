@@ -133,6 +133,33 @@ def test_malformed_extra_facets_is_a_config_error(facets: str) -> None:
         WorkdayCollector().fetch(board, FakeHttpSession())
 
 
+def test_a_counted_location_is_replaced_by_the_places_the_detail_names() -> None:
+    """ "3 Locations" names no place — a Zurich role would fall out of the Swiss track."""
+    job = _job("Software Engineer, JAX", "/job/1", location="3 Locations")
+    detail = {
+        "jobPostingInfo": {
+            "jobDescription": "<p>JAX</p>",
+            "location": "Switzerland, Zurich",
+            "additionalLocations": ["Germany, Munich", "UK, London"],
+        }
+    }
+    session = FakeHttpSession(responses=[_list_page([job], total=1), detail])
+
+    (posting,) = WorkdayCollector().fetch(_board(), session).postings
+
+    assert posting.location_raw == "Switzerland, Zurich; Germany, Munich; UK, London"
+
+
+def test_a_named_location_is_kept_whatever_the_detail_says() -> None:
+    job = _job("Software Engineer", "/job/1", location="New York, NY")
+    detail = {"jobPostingInfo": {"jobDescription": "x", "location": "New York, New York, USA"}}
+    session = FakeHttpSession(responses=[_list_page([job], total=1), detail])
+
+    (posting,) = WorkdayCollector().fetch(_board(), session).postings
+
+    assert posting.location_raw == "New York, NY"
+
+
 def test_pagination_survives_a_total_of_zero_on_the_later_pages() -> None:
     """The real API sends `total` with the first page and 0 with the others."""
     page1 = _list_page([_job("Branch Administrator", "/job/1")], total=3)

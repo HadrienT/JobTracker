@@ -24,6 +24,7 @@ listed for the one country a track looks at (blueprint/wp/WP20-tracks.md §4).
 from __future__ import annotations
 
 import json
+import re
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -42,6 +43,8 @@ from jobtracker.core.models import Board, CollectResult, RawPosting
 _logger = get_logger(__name__)
 
 _PAGE_SIZE = 20
+# What the list says instead of places when a posting has several: "3 Locations".
+_COUNTED_LOCATIONS = re.compile(r"^\s*\d+\s+locations?\s*$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -213,10 +216,17 @@ def _map_summary(
         )
         description_raw = ""
     else:
-        description_raw, detail_posted_at, requests_made, truncated = _fetch_detail(
-            board, session, context.detail_url_base, external_path
+        detail = _fetch_detail(board, session, context.detail_url_base, external_path)
+        description_raw, requests_made, truncated = (
+            detail.description,
+            detail.requests,
+            detail.truncated,
         )
-        posted_at_raw = detail_posted_at or posted_at_raw
+        posted_at_raw = detail.posted_at or posted_at_raw
+        # "3 Locations" names no place: the detail lists them. (Such a posting misses the
+        # description cache, whose key is the list's text — one request a cycle, for a few.)
+        if detail.locations and _COUNTED_LOCATIONS.match(str(location_raw or "")):
+            location_raw = detail.locations
 
     return (
         RawPosting(
@@ -238,9 +248,19 @@ def _map_summary(
     )
 
 
+@dataclass(frozen=True)
+class _Detail:
+    description: str
+    posted_at: str | None
+    requests: int
+    truncated: bool
+    # "; "-joined `location` + `additionalLocations`, when the posting names any
+    locations: str | None = None
+
+
 def _fetch_detail(
     board: Board, session: HttpSession, detail_url_base: str, external_path: str
-) -> tuple[str, str | None, int, bool]:
+) -> _Detail:
     url = f"{detail_url_base}{external_path}"
     try:
         data = session.get_json(url)
@@ -252,19 +272,25 @@ def _fetch_detail(
         _logger.info(
             "collect_detail_not_found", source="workday", company_slug=board.company_slug, url=url
         )
-        return "", None, 1, False
+        return _Detail("", None, 1, False)
 
     if data is BUDGET_EXHAUSTED:
-        return "", None, 0, True
+        return _Detail("", None, 0, True)
     if data is NOT_MODIFIED:
-        return "", None, 1, False
+        return _Detail("", None, 1, False)
     if not isinstance(data, dict) or not isinstance(data.get("jobPostingInfo"), dict):
         raise SourceSchemaChanged(f"workday: unexpected detail payload at {url}")
 
     info = data["jobPostingInfo"]
-    description = info.get("jobDescription") or ""
-    posted_at = info.get("startDate")
-    return description, posted_at, 1, False
+    places = [info.get("location"), *(info.get("additionalLocations") or [])]
+    named = [str(p) for p in places if isinstance(p, str) and p.strip()]
+    return _Detail(
+        description=info.get("jobDescription") or "",
+        posted_at=info.get("startDate"),
+        requests=1,
+        truncated=False,
+        locations="; ".join(named) or None,
+    )
 
 
 def _encode(summary: Mapping[str, Any]) -> bytes:

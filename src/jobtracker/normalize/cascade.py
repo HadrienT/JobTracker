@@ -25,7 +25,8 @@ from jobtracker.normalize.title import classify_role, clean_title
 from jobtracker.normalize.visa import parse_visa
 
 # Bumped whenever a parser or referential change should be replayed onto stored postings.
-#   9: pytorch / tensorflow / jax stack tags (the ch_tech track, blueprint/wp/WP20-tracks.md)
+#   9: pytorch / tensorflow / jax stack tags and Swiss cities in geo.yaml (the ch_tech track,
+#      blueprint/wp/WP20-tracks.md)
 #   6: a range of years asks for its lower bound ("3 - 8+ years" -> 3)
 #   5: perks (budget, allowance, relocation) are not pay; "€1000" read whole; "$100-200K"
 #   4: salary — company sizes ($14.6 billion) are not pay, labelled min/max, weekly and

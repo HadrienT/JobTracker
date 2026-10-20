@@ -110,6 +110,127 @@ cities:
     region: emea
     lat: 47.1724
     lon: 8.517
+  # Swiss tech and research hubs — the ch_tech track (blueprint/wp/WP20-tracks.md)
+  - city: Lausanne
+    country: CH
+    region: emea
+    lat: 46.5197
+    lon: 6.6323
+  - city: Ecublens
+    country: CH
+    region: emea
+    lat: 46.5293
+    lon: 6.5625
+  - city: Meyrin
+    country: CH
+    region: emea
+    lat: 46.2343
+    lon: 6.0806
+  - city: Basel
+    country: CH
+    region: emea
+    lat: 47.5596
+    lon: 7.5886
+    aliases: ["Bâle", "Basle"]
+  - city: Bern
+    country: CH
+    region: emea
+    lat: 46.948
+    lon: 7.4474
+    aliases: ["Berne"]
+  - city: Lugano
+    country: CH
+    region: emea
+    lat: 46.0037
+    lon: 8.9511
+  - city: Winterthur
+    country: CH
+    region: emea
+    lat: 47.4988
+    lon: 8.7237
+  - city: Schlieren
+    country: CH
+    region: emea
+    lat: 47.3967
+    lon: 8.4476
+  - city: Dübendorf
+    country: CH
+    region: emea
+    lat: 47.3972
+    lon: 8.6186
+    aliases: ["Duebendorf", "Dubendorf"]
+  - city: Rüschlikon
+    country: CH
+    region: emea
+    lat: 47.3069
+    lon: 8.5517
+    aliases: ["Rueschlikon", "Ruschlikon"]
+  - city: Thalwil
+    country: CH
+    region: emea
+    lat: 47.2953
+    lon: 8.565
+  - city: Stäfa
+    country: CH
+    region: emea
+    lat: 47.24
+    lon: 8.7236
+    aliases: ["Staefa", "Stafa"]
+  - city: Rapperswil
+    country: CH
+    region: emea
+    lat: 47.2267
+    lon: 8.8184
+    aliases: ["Rapperswil-Jona"]
+  - city: Baar
+    country: CH
+    region: emea
+    lat: 47.1963
+    lon: 8.5295
+  - city: Lucerne
+    country: CH
+    region: emea
+    lat: 47.0502
+    lon: 8.3093
+    aliases: ["Luzern"]
+  - city: Aarau
+    country: CH
+    region: emea
+    lat: 47.3925
+    lon: 8.0444
+  - city: Villigen
+    country: CH
+    region: emea
+    lat: 47.5265
+    lon: 8.2135
+  - city: Neuchâtel
+    country: CH
+    region: emea
+    lat: 46.99
+    lon: 6.9293
+    aliases: ["Neuchatel"]
+  - city: Fribourg
+    country: CH
+    region: emea
+    lat: 46.8065
+    lon: 7.162
+  - city: Biel
+    country: CH
+    region: emea
+    lat: 47.1368
+    lon: 7.2468
+    aliases: ["Bienne"]
+  - city: St. Gallen
+    country: CH
+    region: emea
+    lat: 47.4245
+    lon: 9.3767
+    aliases: ["St Gallen", "Sankt Gallen", "Saint-Gall"]
+  - city: Sion
+    country: CH
+    region: emea
+    lat: 46.2331
+    lon: 7.3606
   - city: Dublin
     country: IE
     region: emea
