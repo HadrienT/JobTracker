@@ -3,13 +3,21 @@
  * Cache keys include both the filter and the sort key (blueprint/wp/WP10-web-feed.md
  * §2-3): changing sort is a new request, never a client-side re-sort of 15 000 rows.
  */
-import { type InfiniteData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  type InfiniteData,
+  type QueryClient,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { api, type CompaniesQuery, type PostingsQuery } from '@/api/client'
 import type { components } from '@/api/schema.gen'
 
 type Schemas = components['schemas']
 export type PostingsFilter = Omit<PostingsQuery, 'sort' | 'cursor' | 'limit'>
 export type SortKey = Schemas['SortKey']
+export type Track = Schemas['Track']
 type PostingsPage = Schemas['PostingsPage']
 type PostingOut = Schemas['PostingOut']
 type PostingDetailOut = Schemas['PostingDetailOut']
@@ -87,12 +95,17 @@ export function useHealth() {
   })
 }
 
-export function usePostingDetail(postingId: string | null) {
+/**
+ * One posting, scored as `track` sees it (blueprint/wp/WP20-tracks.md) — or as the quant feed
+ * does. Keyed `['posting', id, track]`: anything that changes the posting itself updates every
+ * track's copy through the `['posting', id]` prefix.
+ */
+export function usePostingDetail(postingId: string | null, track: Track | null = null) {
   return useQuery({
-    queryKey: ['posting', postingId] as const,
+    queryKey: ['posting', postingId, track] as const,
     queryFn: () => {
       if (postingId === null) throw new Error('usePostingDetail: queryFn ran without a posting id')
-      return api.getPostingDetail(postingId)
+      return api.getPostingDetail(postingId, track)
     },
     enabled: postingId !== null,
   })
@@ -104,6 +117,13 @@ function mapCachedPages(
 ): InfiniteData<PostingsPage> | undefined {
   if (!data) return data
   return { ...data, pages: data.pages.map((page) => ({ ...page, items: transform(page.items) })) }
+}
+
+/** The posting's cached detail, under every track it was opened from. */
+function patchCachedDetails(queryClient: QueryClient, postingId: string, patch: Partial<PostingDetailOut>) {
+  queryClient.setQueriesData<PostingDetailOut>({ queryKey: ['posting', postingId] }, (detail) =>
+    detail ? { ...detail, ...patch } : detail,
+  )
 }
 
 interface FlagVariables<V> {
@@ -128,20 +148,16 @@ function useFlagMutation<V>(
       for (const [key, data] of previousPages) {
         queryClient.setQueryData(key, mapCachedPages(data, (items) => applyOptimistic(items, postingId, value)))
       }
-      const detailKey = ['posting', postingId] as const
-      const previousDetail = queryClient.getQueryData<PostingDetailOut>(detailKey)
-      if (previousDetail) {
-        queryClient.setQueryData(detailKey, applyOptimistic([previousDetail], postingId, value)[0])
+      const previousDetails = queryClient.getQueriesData<PostingDetailOut>({ queryKey: ['posting', postingId] })
+      for (const [key, detail] of previousDetails) {
+        if (detail) queryClient.setQueryData(key, applyOptimistic([detail], postingId, value)[0])
       }
-      return { previousPages, previousDetail, detailKey }
+      return { previousPages, previousDetails }
     },
     onError: (_error, _variables, context) => {
       if (!context) return
-      for (const [key, data] of context.previousPages) {
+      for (const [key, data] of [...context.previousPages, ...context.previousDetails]) {
         queryClient.setQueryData(key, data)
-      }
-      if (context.previousDetail) {
-        queryClient.setQueryData(context.detailKey, context.previousDetail)
       }
     },
   })
@@ -183,9 +199,7 @@ export function useSetTriage() {
     ) => {
       mutation.mutate(variables, {
         onSuccess: () => {
-          const key = ['posting', variables.postingId] as const
-          const detail = queryClient.getQueryData<PostingDetailOut>(key)
-          if (detail) queryClient.setQueryData(key, { ...detail, triage: variables.value })
+          patchCachedDetails(queryClient, variables.postingId, { triage: variables.value })
           options?.onSuccess?.()
         },
         onError: options?.onError,
@@ -228,9 +242,7 @@ export function useSetNote() {
   return useMutation({
     mutationFn: ({ postingId, note }: { postingId: string; note: string }) => api.setNote(postingId, note),
     onSuccess: (_data, { postingId, note }) => {
-      const key = ['posting', postingId] as const
-      const detail = queryClient.getQueryData<PostingDetailOut>(key)
-      if (detail) queryClient.setQueryData(key, { ...detail, note })
+      patchCachedDetails(queryClient, postingId, { note })
     },
   })
 }

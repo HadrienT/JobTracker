@@ -6,16 +6,13 @@ carrying the `evidence` that triggered it when a natural excerpt exists.
 read anywhere else, and none of them is ever a literal in this file.
 """
 
-import re
 from collections.abc import Iterator
 
 from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import Seniority, VisaStatus
 from jobtracker.core.models import Posting, Reason
 from jobtracker.match.profile import Profile
-from jobtracker.match.rules import reference_date
-
-_NICHE_TECH = frozenset({"kdb", "ocaml", "rust", "cuda", "fpga"})
+from jobtracker.match.rules import reference_date, title_keyword
 
 
 def contributions(posting: Posting, *, profile: Profile) -> tuple[Reason, ...]:
@@ -51,11 +48,7 @@ def _iter_contributions(posting: Posting, *, profile: Profile) -> Iterator[Reaso
 
 
 def _matches_any(title: str, keywords: tuple[str, ...]) -> str | None:
-    title_l = title.lower()
-    for keyword in keywords:
-        if re.search(rf"\b{re.escape(keyword)}\b", title_l):
-            return keyword
-    return None
+    return title_keyword(title, keywords)
 
 
 def _title(posting: Posting, *, profile: Profile) -> Reason | None:
@@ -102,7 +95,7 @@ def _tech(posting: Posting, *, profile: Profile) -> Iterator[Reason]:
         yield Reason(code="tech_cpp", delta=profile.weights["tech_cpp"], evidence="cpp")
     if "python" in posting.tech:
         yield Reason(code="tech_python", delta=profile.weights["tech_python"], evidence="python")
-    niche_hit = posting.tech & _NICHE_TECH
+    niche_hit = posting.tech & profile.niche_tech
     if niche_hit:
         yield Reason(
             code="tech_niche",

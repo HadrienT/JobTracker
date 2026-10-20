@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { usePostingDetail, useSetTriage } from '@/api/queries'
+import { type Track, usePostingDetail, useSetTriage } from '@/api/queries'
 import { TRIAGE_VIEWS } from '@/features/feed/triage'
 import { rejectionReasonLabel } from '@/features/filters/defaults'
 import { cn } from '@/shared/lib/cn'
@@ -18,14 +18,16 @@ const FOCUSABLE_SELECTOR =
 interface PostingDetailPanelProps {
   postingId: string
   onClose: () => void
+  /** The track the posting was opened from: its score and reasons are that track's. */
+  track?: Track | null
 }
 
 /**
  * `/p/{id}` rendered as a real modal on top of the feed (blueprint/wp/WP10-web-feed.md
  * §5): `aria-modal`, a focus trap, focus restitution on close, `Échap` to close.
  */
-export function PostingDetailPanel({ postingId, onClose }: PostingDetailPanelProps) {
-  const { data: posting, isPending, isError } = usePostingDetail(postingId)
+export function PostingDetailPanel({ postingId, onClose, track = null }: PostingDetailPanelProps) {
+  const { data: posting, isPending, isError } = usePostingDetail(postingId, track)
   const setTriage = useSetTriage()
   const panelRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)

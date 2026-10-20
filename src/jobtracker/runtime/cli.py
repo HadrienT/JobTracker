@@ -21,7 +21,7 @@ from jobtracker.core.enums import Source
 from jobtracker.core.geo import load_geo_index
 from jobtracker.core.logging import bound_run_id, configure_logging, get_logger
 from jobtracker.core.models import Board
-from jobtracker.match.profile import load_profile
+from jobtracker.match.profile import load_profile, load_tracks
 from jobtracker.normalize.taxonomy import load_taxonomy
 from jobtracker.runtime.aggregator_loader import load_aggregators
 from jobtracker.runtime.pipeline import ingest
@@ -42,6 +42,7 @@ from jobtracker.runtime.review import (
     review_all,
 )
 from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
+from jobtracker.runtime.tracks import TrackPass, score_tracks
 from jobtracker.runtime.watchdog import full_health_snapshot
 from jobtracker.store import llm_queue, llm_reviews
 from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_database
@@ -72,7 +73,16 @@ def _build_context(
     taxonomy = load_taxonomy(CONFIGS_DIR / "taxonomy.yaml")
     geo = load_geo_index(CONFIGS_DIR / "geo.yaml")
     company_tiers = {b.company_slug: b.priority for b in boards}
-    profile = load_profile(CONFIGS_DIR / "profile.yaml", company_tiers=company_tiers)
+    company_sectors = {b.company_slug: b.sector for b in boards}
+    profile = load_profile(
+        CONFIGS_DIR / "profile.yaml", company_tiers=company_tiers, company_sectors=company_sectors
+    )
+    tracks = load_tracks(
+        CONFIGS_DIR / "profile.yaml",
+        CONFIGS_DIR / "tracks.yaml",
+        company_tiers=company_tiers,
+        company_sectors=company_sectors,
+    )
     sources_config = load_sources_config(CONFIGS_DIR / "sources.yaml")
     ctx = CycleContext(
         sources_config=sources_config,
@@ -81,6 +91,7 @@ def _build_context(
         profile=profile,
         user_agent=settings.user_agent,
         llm=LlmClientConfig.from_settings(settings),
+        tracks=tracks,
     )
     # `source: custom` reads pages as rendered by a headless browser (collect/browser.py).
     ctx.client_factories = {Source.CUSTOM: BrowserClient}
@@ -148,6 +159,7 @@ def cmd_collect(args: argparse.Namespace) -> int:
             f"rejected={run.rejected} requests_made={run.requests_made}",
             file=sys.stderr,
         )
+    _print_tracks(score_tracks(conn, ctx.tracks))
     if ctx.llm is not None:
         with bound_run_id(str(ULID())):
             drain_queue(conn, profile=ctx.profile, cfg=ctx.llm)
@@ -163,8 +175,29 @@ def cmd_collect(args: argparse.Namespace) -> int:
             f"server_available={review.server_available}",
             file=sys.stderr,
         )
+        # A correction rescored its posting: the tracks follow.
+        _print_tracks(score_tracks(conn, ctx.tracks))
     conn.close()
     return 1 if degraded else 0
+
+
+def _print_tracks(passes: tuple[TrackPass, ...]) -> None:
+    for track in passes:
+        tiers = " ".join(f"{tier}={n}" for tier, n in sorted(track.tiers.items()))
+        print(
+            f"track={track.track.value} scored={track.scored} dropped={track.dropped} {tiers}",
+            file=sys.stderr,
+        )
+
+
+def cmd_score_tracks(_args: argparse.Namespace) -> int:
+    """Score every stored posting a track has not scored yet — the first run, or by hand."""
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    ctx, _boards = _build_context(conn, settings)
+    _print_tracks(score_tracks(conn, ctx.tracks))
+    conn.close()
+    return 0
 
 
 def cmd_loop(_args: argparse.Namespace) -> int:
@@ -190,6 +223,7 @@ def cmd_loop(_args: argparse.Namespace) -> int:
                     continue
                 with bound_run_id(str(ULID())):
                     run_source_cycle(conn, source, source_boards, ctx=ctx)
+                    score_tracks(conn, ctx.tracks)
                 interval_min = ctx.sources_config.interval_min.get(str(source), 180)
                 next_due[source] = now_monotonic + interval_min * 60
             if ctx.llm is not None and next_drain <= now_monotonic:
@@ -202,6 +236,7 @@ def cmd_loop(_args: argparse.Namespace) -> int:
                         cfg=ctx.llm,
                         limit=ctx.profile.review.max_per_collect,
                     )
+                    score_tracks(conn, ctx.tracks)
                 next_drain = time.monotonic() + DRAIN_INTERVAL_MIN * 60
             if next_retention <= now_monotonic:
                 run_retention(conn, now=utc_now())
@@ -511,6 +546,10 @@ def _build_parser() -> argparse.ArgumentParser:
     collect.set_defaults(func=cmd_collect)
 
     subparsers.add_parser("loop", help="run continuously").set_defaults(func=cmd_loop)
+
+    subparsers.add_parser(
+        "score-tracks", help="score stored postings against every track of configs/tracks.yaml"
+    ).set_defaults(func=cmd_score_tracks)
 
     subparsers.add_parser(
         "llm-enqueue", help="queue stored postings the LLM could still help with"

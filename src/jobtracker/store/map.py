@@ -12,7 +12,7 @@ import sqlite3
 from pydantic import BaseModel
 
 from jobtracker.store.facets import base_clauses
-from jobtracker.store.postings import PostingFilter
+from jobtracker.store.postings import PostingFilter, scoring_join
 
 
 class LocationCount(BaseModel, frozen=True):
@@ -29,11 +29,15 @@ class MapCounts(BaseModel, frozen=True):
     placed: int  # of those, postings that appear under at least one pin
 
 
-_FROM = """
-    FROM postings p
-    JOIN companies c ON c.company_slug = p.company_slug
-    LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
-"""
+def _from(flt: PostingFilter) -> tuple[str, list[object]]:
+    track_join, track_params = scoring_join(flt)
+    sql = f"""
+        FROM postings p
+        JOIN companies c ON c.company_slug = p.company_slug
+        {track_join}
+        LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
+    """
+    return sql, track_params
 
 
 def _location_row_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
@@ -52,17 +56,18 @@ def _location_row_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
 
 
 def location_counts(conn: sqlite3.Connection, flt: PostingFilter) -> MapCounts:
+    from_sql, from_params = _from(flt)
     base, base_params = base_clauses(flt)
     row_clauses, row_params = _location_row_clauses(flt)
     where = " AND ".join([*base, *row_clauses])
-    params = [*base_params, *row_params]
+    params = [*from_params, *base_params, *row_params]
     join = "JOIN posting_locations pl ON pl.posting_id = p.posting_id"
 
     rows = conn.execute(
         f"""
         SELECT pl.country AS country, pl.city AS city,
                COUNT(DISTINCT p.posting_id) AS n, MIN(p.posting_id) AS sample
-        {_FROM} {join}
+        {from_sql} {join}
         WHERE {where}
         GROUP BY pl.country, pl.city
         ORDER BY n DESC, pl.country, pl.city
@@ -70,10 +75,11 @@ def location_counts(conn: sqlite3.Connection, flt: PostingFilter) -> MapCounts:
         params,
     ).fetchall()
     placed = conn.execute(
-        f"SELECT COUNT(DISTINCT p.posting_id) {_FROM} {join} WHERE {where}", params
+        f"SELECT COUNT(DISTINCT p.posting_id) {from_sql} {join} WHERE {where}", params
     ).fetchone()[0]
     total = conn.execute(
-        f"SELECT COUNT(DISTINCT p.posting_id) {_FROM} WHERE {' AND '.join(base)}", base_params
+        f"SELECT COUNT(DISTINCT p.posting_id) {from_sql} WHERE {' AND '.join(base)}",
+        [*from_params, *base_params],
     ).fetchone()[0]
 
     return MapCounts(

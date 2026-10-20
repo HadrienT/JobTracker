@@ -26,7 +26,9 @@ export function App() {
             <div className="flex h-dvh flex-col bg-background text-text-primary">
               <TopNav route={route} navigate={navigate} />
               <div className="flex flex-1 overflow-hidden">
-                {route === 'feed' && <FeedScreen />}
+                {/* keyed: switching feeds is a new screen, not the same one re-filtered */}
+                {route === 'feed' && <FeedScreen key="feed" />}
+                {route === 'swiss' && <FeedScreen key="swiss" track="ch_tech" basePath="/ch" />}
                 {route === 'map' && (
                   <Suspense fallback={<p className="p-4 text-sm text-text-tertiary">Loading map…</p>}>
                     <MapScreen />

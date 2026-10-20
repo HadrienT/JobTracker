@@ -16,6 +16,9 @@ that down, in the order the WP06 blueprint prescribes:
 
 `tenant`/`wd`/`site` come from `Board.token` and `Board.extra`, filled in by
 hand through real network-tab reconnaissance (never guessed — interdit n°12).
+`extra.facets`, when present, is Workday's own list filter as JSON — e.g. a tenant's
+`locationCountry` id for Switzerland — so a multinational with thousands of roles is
+listed for the one country a track looks at (blueprint/wp/WP20-tracks.md §4).
 """
 
 from __future__ import annotations
@@ -103,15 +106,38 @@ def _workday_coordinates(board: Board) -> tuple[str, str, str]:
     return board.token, wd, site
 
 
+def _applied_facets(board: Board) -> dict[str, Any]:
+    raw = board.extra.get("facets")
+    if not raw:
+        return {}
+    try:
+        facets = json.loads(raw)
+    except ValueError as exc:
+        raise ConfigError(
+            f"workday board {board.company_slug!r}: extra.facets is not JSON"
+        ) from exc
+    if not isinstance(facets, dict) or not all(isinstance(v, list) for v in facets.values()):
+        raise ConfigError(
+            f"workday board {board.company_slug!r}: extra.facets must map a facet to a list of ids"
+        )
+    return facets
+
+
 def _paginate(board: Board, session: HttpSession, list_url: str) -> tuple[list[Any], int, bool]:
     summaries: list[Any] = []
     offset = 0
     total: int | None = None
     requests_made = 0
     truncated = False
+    applied_facets = _applied_facets(board)
 
     while True:
-        body = {"appliedFacets": {}, "limit": _PAGE_SIZE, "offset": offset, "searchText": ""}
+        body = {
+            "appliedFacets": applied_facets,
+            "limit": _PAGE_SIZE,
+            "offset": offset,
+            "searchText": "",
+        }
         data = session.post_json(list_url, json=body)
         if data is BUDGET_EXHAUSTED:
             truncated = True

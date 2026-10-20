@@ -165,6 +165,7 @@ toujours pouvoir répondre à « pourquoi cette offre est-elle à 78 ? ».
 | Motif | Condition |
 |---|---|
 | `not_quant` | `role_family = other` |
+| `off_topic` | employeur d'un secteur exclu (`scope.exclude_sectors` : `tech` pour le flux quant), ou, sur une piste, ni mot-clé du sujet dans le titre ni tag du sujet dans la stack ([wp/WP20-tracks.md](wp/WP20-tracks.md)) |
 | `senior_only` | `min_years > 4`, ou titre `senior`/`lead`/`principal`/`vp`/`head` |
 | `phd_required` | doctorat exigé et non « ou expérience équivalente » |
 | `stale` | plus vieille que `stale_after_days` |

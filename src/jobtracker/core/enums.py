@@ -107,3 +107,13 @@ class Tier(StrEnum):
     POSSIBLE = "possible"
     STRETCH = "stretch"
     REJECTED = "rejected"
+
+
+class Track(StrEnum):
+    """A search scored against its own profile, beside the quant feed — blueprint/wp/WP20-tracks.md.
+
+    The quant feed is not a track: it is the default, scored into `verdicts` and the
+    `postings` row itself. A track adds `track_verdicts` rows for the postings in its scope.
+    """
+
+    CH_TECH = "ch_tech"

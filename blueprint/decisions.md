@@ -193,3 +193,26 @@ asymétrique (un blocage d'IP touche toute la machine, pas seulement ce projet).
 spécifiées et implémentables. La décision porte sur **l'ordre et l'isolement**,
 pas sur leur exclusion : on doit pouvoir supprimer le dossier et voir la suite de
 tests rester verte.
+
+---
+
+## ADR-013 — Une seconde recherche est une piste notée, pas un second pipeline
+
+**Décision.** La recherche « C++ / CUDA / ML en Suisse » est une **piste**
+([wp/WP20-tracks.md](wp/WP20-tracks.md)) : un profil superposé au profil quant
+(`configs/tracks.yaml`), des verdicts à part (`track_verdicts`), un onglet à part. La collecte,
+la normalisation, le dédoublonnage et la relecture LLM restent uniques.
+
+**Pourquoi.** Une offre C++ zurichoise d'une banque appartient aux deux recherches : deux
+pipelines la collecteraient deux fois, la dédoublonneraient deux fois, la feraient relire deux
+fois par le LLM partagé. Le score, lui, est une fonction pure du `Posting` : en avoir deux ne coûte
+qu'une table et une passe.
+
+**Alternatives rejetées.**
+- *Un filtre enregistré sur le flux quant* (`countries=CH&tech_any=cpp`) : le score quant rejette
+  `not_quant` ou note bas un poste de robotique — l'onglet serait vide ou mal trié.
+- *Une colonne `track` sur `verdicts`* : toucher la clé primaire de `verdicts` et le couple
+  dénormalisé `postings.score/tier`, dont dépendent l'index du flux, la voie LLM, le rejeu et le
+  rapport, pour une recherche qui ne regarde qu'un pays.
+- *LinkedIn comme source de la piste* : écarté par le mainteneur, pour ne pas risquer son compte
+  personnel (et ADR-012 tient toujours).

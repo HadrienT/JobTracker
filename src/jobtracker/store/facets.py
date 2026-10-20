@@ -10,7 +10,12 @@ import sqlite3
 
 from pydantic import BaseModel
 
-from jobtracker.store.postings import PostingFilter, filter_clauses, requires_active
+from jobtracker.store.postings import (
+    PostingFilter,
+    filter_clauses,
+    requires_active,
+    scoring_join,
+)
 
 
 class FacetCounts(BaseModel, frozen=True):
@@ -45,16 +50,19 @@ def _count_dimension(
 ) -> dict[str, int]:
     amputated = flt.model_copy(update={exclude_field: frozenset()})
     clauses, params = base_clauses(amputated)
+    track_join, track_params = scoring_join(amputated)
     sql = f"""
         SELECT {select} AS value, COUNT(DISTINCT p.posting_id) AS n
         FROM postings p
         JOIN companies c ON c.company_slug = p.company_slug
+        {track_join}
         LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
         {joins}
         WHERE {" AND ".join(clauses)} AND {select} IS NOT NULL
         GROUP BY {select}
     """
-    return {row["value"]: row["n"] for row in conn.execute(sql, params).fetchall()}
+    rows = conn.execute(sql, [*track_params, *params]).fetchall()
+    return {row["value"]: row["n"] for row in rows}
 
 
 def facet_counts(conn: sqlite3.Connection, flt: PostingFilter) -> FacetCounts:
@@ -74,11 +82,17 @@ def facet_counts(conn: sqlite3.Connection, flt: PostingFilter) -> FacetCounts:
         tech=_count_dimension(
             conn, flt, exclude_field="tech_any", select="pt.tech", joins=tech_join
         ),
-        rejection_reasons=_count_dimension(
-            conn,
-            flt,
-            exclude_field="rejection_reasons",
-            select="v.rejection_reason",
-            joins="LEFT JOIN verdicts v ON v.posting_id = p.posting_id",
+        rejection_reasons=(
+            _count_dimension(
+                conn, flt, exclude_field="rejection_reasons", select="tv.rejection_reason"
+            )
+            if flt.track is not None
+            else _count_dimension(
+                conn,
+                flt,
+                exclude_field="rejection_reasons",
+                select="v.rejection_reason",
+                joins="LEFT JOIN verdicts v ON v.posting_id = p.posting_id",
+            )
         ),
     )

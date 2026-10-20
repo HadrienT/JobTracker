@@ -196,7 +196,8 @@ def test_every_source_has_a_collector_or_is_marked_unimplemented() -> None:
 # Rejection reasons are persisted, shown in the UI and aggregated in the weekly report:
 # renaming one silently splits its history. Changing this set is deliberate and visible.
 _KNOWN_REJECTION_REASONS = {
-    "excluded_title", "not_quant", "senior_only", "phd_required", "stale", "low_score",
+    "excluded_title", "not_quant", "off_topic", "senior_only", "phd_required", "stale",
+    "low_score",
 }  # fmt: skip
 
 

@@ -64,6 +64,13 @@ weights: # every point of the score comes from here, NONE hardcoded
   freshness_7d: 6
   stale_penalty: -10
 
+niche_tech: [kdb, ocaml, rust, cuda, fpga] # what `tech_niche` rewards
+
+scope: # blueprint/wp/WP20-tracks.md §2
+  # A tech employer's postings belong to the tracks (configs/tracks.yaml), not to this feed:
+  # rejected `off_topic` here, whatever their title says.
+  exclude_sectors: [tech]
+
 tiers: # palier thresholds
   strong: 70
   possible: 45

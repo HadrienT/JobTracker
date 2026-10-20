@@ -18,6 +18,7 @@ from jobtracker.core.enums import (
     Seniority,
     Source,
     Tier,
+    Track,
     Triage,
     VisaStatus,
 )
@@ -58,6 +59,7 @@ def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFi
     favorites_only: Annotated[bool, Query()] = False,
     include_hidden: Annotated[bool, Query()] = False,
     triage: Annotated[Triage | None, Query()] = None,
+    track: Annotated[Track | None, Query()] = None,
 ) -> PostingFilter:
     if (place_country is None) != (place_city is None):
         raise HTTPException(
@@ -85,4 +87,5 @@ def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFi
         favorites_only=favorites_only,
         include_hidden=include_hidden,
         triage=triage,
+        track=track,
     )

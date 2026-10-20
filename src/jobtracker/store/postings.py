@@ -24,6 +24,7 @@ from jobtracker.core.enums import (
     Seniority,
     Source,
     Tier,
+    Track,
     Triage,
     VisaStatus,
 )
@@ -70,6 +71,9 @@ class PostingFilter(BaseModel, frozen=True):
     include_hidden: bool = False
     # None is the main feed: postings not triaged yet. A value is that verdict's own list.
     triage: Triage | None = None
+    # None is the quant feed. A track (blueprint/wp/WP20-tracks.md) reads score, tier and
+    # rejection reason from `track_verdicts`, and lists only the postings that have a row there.
+    track: Track | None = None
 
 
 class SortKey(StrEnum):
@@ -170,14 +174,41 @@ def _keyset_predicate(
     return sql, [cursor_value, cursor_value, cursor_id]
 
 
-def _order_by(sort: SortKey) -> str:
+def _order_by(column: str, direction: str) -> str:
     # NULLS LAST explicitly: SQLite defaults to NULLS FIRST on ASC (would put
     # every posting with no closes_at at the head of "closing soon" — the
     # exact inverse of what was asked, blueprint/wp/WP02-store.md §2). DESC
     # already defaults to NULLS LAST; spelling it out here too documents the
     # intent instead of relying on an implementation default.
-    column, direction = _SORT_COLUMNS[sort]
     return f"{column} {direction} NULLS LAST, p.posting_id {direction}"
+
+
+def _sort_column(sort: SortKey, flt: PostingFilter) -> tuple[str, str]:
+    column, direction = _SORT_COLUMNS[sort]
+    if sort is SortKey.SCORE:
+        column = _verdict_columns(flt)[0]
+    return column, direction
+
+
+def _verdict_columns(flt: PostingFilter) -> tuple[str, str, str]:
+    """(score, tier, rejection_reason) as SQL expressions, for the feed `flt` reads."""
+    if flt.track is not None:
+        return "tv.score", "tv.tier", "tv.rejection_reason"
+    return (
+        "p.score",
+        "p.tier",
+        "(SELECT v.rejection_reason FROM verdicts v WHERE v.posting_id = p.posting_id)",
+    )
+
+
+def scoring_join(flt: PostingFilter) -> tuple[str, list[object]]:
+    """The join a track's feed needs, placed right after the `companies` join; '' otherwise."""
+    if flt.track is None:
+        return "", []
+    return (
+        "JOIN track_verdicts tv ON tv.posting_id = p.posting_id AND tv.track = ?",
+        [flt.track.value],
+    )
 
 
 def requires_active(flt: PostingFilter) -> bool:
@@ -233,13 +264,17 @@ def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
     _in("p.role_family", frozenset(v.value for v in flt.role_families))
     _in("p.seniority", frozenset(v.value for v in flt.seniorities))
     _in("p.visa_sponsorship", frozenset(v.value for v in flt.visa))
-    _in("p.tier", frozenset(v.value for v in flt.tiers))
+    score_col, tier_col, _ = _verdict_columns(flt)
+    _in(tier_col, frozenset(v.value for v in flt.tiers))
     if flt.rejection_reasons:
         placeholders = ",".join("?" for _ in flt.rejection_reasons)
-        clauses.append(
-            "p.posting_id IN (SELECT posting_id FROM verdicts "
-            f"WHERE rejection_reason IN ({placeholders}))"
-        )
+        if flt.track is not None:
+            clauses.append(f"tv.rejection_reason IN ({placeholders})")
+        else:
+            clauses.append(
+                "p.posting_id IN (SELECT posting_id FROM verdicts "
+                f"WHERE rejection_reason IN ({placeholders}))"
+            )
         params.extend(sorted(flt.rejection_reasons))
 
     if flt.tech_any:
@@ -259,7 +294,7 @@ def filter_clauses(flt: PostingFilter) -> tuple[list[str], list[object]]:
         params.append(len(flt.tech_all))
 
     if flt.min_score:
-        clauses.append("p.score >= ?")
+        clauses.append(f"{score_col} >= ?")
         params.append(flt.min_score)
 
     if flt.posted_within_days is not None:
@@ -301,8 +336,8 @@ def list_postings(
     conn: sqlite3.Connection, flt: PostingFilter, sort: SortKey, cursor: str | None, limit: int
 ) -> Page:
     """Keyset-paginated feed. Never uses OFFSET (ADR-007)."""
+    join, params = scoring_join(flt)
     clauses = ["p.is_canonical = 1"]
-    params: list[object] = []
     if requires_active(flt):
         clauses.append("p.is_active = 1")
 
@@ -310,7 +345,8 @@ def list_postings(
     clauses.extend(extra_clauses)
     params.extend(extra_params)
 
-    column, direction = _SORT_COLUMNS[sort]
+    column, direction = _sort_column(sort, flt)
+    score_col, tier_col, reason_col = _verdict_columns(flt)
     if cursor is not None:
         cursor_value, cursor_id = _decode_cursor(cursor)
         predicate, predicate_params = _keyset_predicate(column, direction, cursor_value, cursor_id)
@@ -324,13 +360,14 @@ def list_postings(
                uf.triage AS triage,
                uf.application_status AS application_status,
                COALESCE(uf.note, '') AS note,
-               (SELECT v.rejection_reason FROM verdicts v
-                WHERE v.posting_id = p.posting_id) AS rejection_reason
+               {score_col} AS eff_score, {tier_col} AS eff_tier,
+               {reason_col} AS rejection_reason
         FROM postings p
         JOIN companies c ON c.company_slug = p.company_slug
+        {join}
         LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
         WHERE {" AND ".join(clauses)}
-        ORDER BY {_order_by(sort)}
+        ORDER BY {_order_by(column, direction)}
         LIMIT ?
     """
     rows = conn.execute(sql, [*params, limit + 1]).fetchall()
@@ -339,7 +376,8 @@ def list_postings(
     next_cursor = None
     if len(rows) > limit:
         last = rows[limit - 1]
-        next_cursor = _encode_cursor(last[column.split(".")[-1]], last["posting_id"])
+        key = "eff_score" if column == score_col else column.split(".")[-1]
+        next_cursor = _encode_cursor(last[key], last["posting_id"])
     return Page(items=tuple(items), next_cursor=next_cursor)
 
 
@@ -398,8 +436,8 @@ def _row_to_posting_row(conn: sqlite3.Connection, row: sqlite3.Row) -> PostingRo
         first_seen_at_raw=row["first_seen_at"],
         last_seen_at_raw=row["last_seen_at"],
         closes_at_raw=row["closes_at"],
-        score=row["score"],
-        tier=Tier(row["tier"]),
+        score=row["eff_score"],
+        tier=Tier(row["eff_tier"]),
         rejection_reason=row["rejection_reason"],
         alias_count=alias_count,
         is_favorite=bool(row["is_favorite"]),
@@ -807,8 +845,13 @@ def set_note(conn: sqlite3.Connection, posting_id: str, note: str) -> None:
     )
 
 
-def get_posting_row(conn: sqlite3.Connection, posting_id: str) -> PostingRow | None:
-    """One posting for `GET /postings/{id}` — WP07 (blueprint/03-INTERFACES.md §3.6)."""
+def get_posting_row(
+    conn: sqlite3.Connection, posting_id: str, *, track: Track | None = None
+) -> PostingRow | None:
+    """One posting for `GET /postings/{id}` — WP07 (blueprint/03-INTERFACES.md §3.6).
+
+    With a `track`, its score and tier — or the quant ones when that track never scored it.
+    """
     row = conn.execute(
         """
         SELECT p.*, c.company_name AS company_name, c.sector AS sector,
@@ -817,14 +860,18 @@ def get_posting_row(conn: sqlite3.Connection, posting_id: str) -> PostingRow | N
                uf.triage AS triage,
                uf.application_status AS application_status,
                COALESCE(uf.note, '') AS note,
-               (SELECT v.rejection_reason FROM verdicts v
-                WHERE v.posting_id = p.posting_id) AS rejection_reason
+               COALESCE(tv.score, p.score) AS eff_score,
+               COALESCE(tv.tier, p.tier) AS eff_tier,
+               CASE WHEN tv.posting_id IS NOT NULL THEN tv.rejection_reason
+                    ELSE (SELECT v.rejection_reason FROM verdicts v
+                          WHERE v.posting_id = p.posting_id) END AS rejection_reason
         FROM postings p
         JOIN companies c ON c.company_slug = p.company_slug
+        LEFT JOIN track_verdicts tv ON tv.posting_id = p.posting_id AND tv.track = ?
         LEFT JOIN user_flags uf ON uf.posting_id = p.posting_id
         WHERE p.posting_id = ?
         """,
-        (posting_id,),
+        (track.value if track is not None else None, posting_id),
     ).fetchone()
     return _row_to_posting_row(conn, row) if row is not None else None
 
@@ -929,6 +976,7 @@ __all__: Sequence[str] = (
     "record_alias",
     "resolve_dedup",
     "resolve_posting_id",
+    "scoring_join",
     "set_triage",
     "upsert_posting",
 )

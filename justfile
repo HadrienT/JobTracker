@@ -66,6 +66,10 @@ browser-install:
 loop:
     uv run jobtracker loop
 
+# note les offres déjà stockées contre chaque piste de configs/tracks.yaml (collect et loop le font seuls)
+score-tracks:
+    uv run jobtracker score-tracks
+
 # un passage sur la file LLM différée (serveur occupé/éteint = tour sauté)
 llm-drain *args:
     uv run jobtracker llm-drain {{args}}

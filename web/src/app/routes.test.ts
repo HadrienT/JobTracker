@@ -19,6 +19,15 @@ describe('useAppRoute', () => {
     expect(renderHook(() => useAppRoute()).result.current.route).toBe('map')
   })
 
+  it('resolves /ch and its detail URLs to the Swiss tech feed — and nothing that merely starts with ch', () => {
+    window.history.pushState(null, '', '/ch')
+    expect(renderHook(() => useAppRoute()).result.current.route).toBe('swiss')
+    window.history.pushState(null, '', '/ch/p/abc')
+    expect(renderHook(() => useAppRoute()).result.current.route).toBe('swiss')
+    window.history.pushState(null, '', '/chart')
+    expect(renderHook(() => useAppRoute()).result.current.route).toBe('feed')
+  })
+
   it('resolves /companies and /health', () => {
     window.history.pushState(null, '', '/companies')
     expect(renderHook(() => useAppRoute()).result.current.route).toBe('companies')

@@ -1,7 +1,10 @@
 """Workday collector contract tests — blueprint/wp/WP06-collect-ats2.md §5."""
 
 import json
+from collections.abc import Mapping
+from json import dumps
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -86,6 +89,48 @@ def test_the_detail_url_is_the_site_plus_the_external_path_and_nothing_between()
     detail_url = session.calls[1]
     assert detail_url.endswith("/job/NY/Software-Engineer_R123")
     assert "/job/job/" not in detail_url
+
+
+class _BodyRecordingSession(FakeHttpSession):
+    bodies: list[Any]
+
+    def post_json(self, url: str, *, json: Mapping[str, Any]) -> Any:
+        self.bodies.append(dict(json))
+        return super().post_json(url, json=json)
+
+
+def test_extra_facets_filter_every_list_page() -> None:
+    """A track reads one country of a multinational: Workday's own filter, on every page."""
+    country = {"locationCountry": ["187134fccb084a0ea9b4b95f23890dbe"]}
+    session = _BodyRecordingSession(
+        responses=[
+            _list_page([_job("Teller", "/job/1")], total=2),
+            _list_page([_job("Clerk", "/job/2")], total=0),
+        ]
+    )
+    session.bodies = []
+
+    WorkdayCollector().fetch(
+        _board(extra={"wd": "5", "site": "External", "facets": dumps(country)}), session
+    )
+
+    assert [b["appliedFacets"] for b in session.bodies] == [country, country]
+
+
+def test_without_extra_facets_the_list_is_unfiltered() -> None:
+    session = _BodyRecordingSession(responses=[_list_page([], total=0)])
+    session.bodies = []
+
+    WorkdayCollector().fetch(_board(), session)
+
+    assert session.bodies[0]["appliedFacets"] == {}
+
+
+@pytest.mark.parametrize("facets", ["not json", '["a list"]', '{"locationCountry": "an-id"}'])
+def test_malformed_extra_facets_is_a_config_error(facets: str) -> None:
+    board = _board(extra={"wd": "5", "site": "External", "facets": facets})
+    with pytest.raises(ConfigError):
+        WorkdayCollector().fetch(board, FakeHttpSession())
 
 
 def test_pagination_survives_a_total_of_zero_on_the_later_pages() -> None:

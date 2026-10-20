@@ -9,12 +9,13 @@ configs/companies.yaml, but `match` never reads that file or imports
 """
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
 from jobtracker.core.config import load_yaml
+from jobtracker.core.enums import Track
 from jobtracker.core.errors import ConfigError
 
 _REQUIRED_WEIGHTS = (
@@ -90,6 +91,31 @@ class ReviewRules:
 
 
 @dataclass(frozen=True)
+class ScopeRules:
+    """Which postings a profile scores at all — blueprint/wp/WP20-tracks.md §2.
+
+    `countries` empty means everywhere (the quant feed); a track names its own. A posting
+    of an `exclude_sectors` employer is rejected as off target: the quant feed is not where
+    a robotics start-up's C++ role belongs, even when its title reads like one.
+    """
+
+    countries: frozenset[str] = frozenset()
+    exclude_sectors: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True)
+class TopicRules:
+    """What a track is about: a title keyword or a tech tag puts a posting in scope."""
+
+    titles: tuple[str, ...]
+    tech: frozenset[str]
+
+
+# The quant feed's niche tags, used when profile.yaml does not name its own.
+DEFAULT_NICHE_TECH = frozenset({"kdb", "ocaml", "rust", "cuda", "fpga"})
+
+
+@dataclass(frozen=True)
 class Profile:
     version: int
     titles: TitleRules
@@ -101,6 +127,12 @@ class Profile:
     llm: LlmRules
     review: ReviewRules
     company_tiers: Mapping[str, int]
+    niche_tech: frozenset[str] = DEFAULT_NICHE_TECH
+    scope: ScopeRules = ScopeRules()
+    # None for the quant feed, whose subject is its role families; set for a track.
+    topic: TopicRules | None = None
+    # company_slug -> registry sector, handed over like `company_tiers` (no I/O in match).
+    company_sectors: Mapping[str, str] = field(default_factory=dict)
 
 
 def _str_tuple(data: Mapping[str, Any], key: str, *, where: str) -> tuple[str, ...]:
@@ -110,10 +142,36 @@ def _str_tuple(data: Mapping[str, Any], key: str, *, where: str) -> tuple[str, .
     return tuple(str(v) for v in raw)
 
 
+def _build_scope(data: Mapping[str, Any], *, where: str) -> ScopeRules:
+    raw = data.get("scope", {})
+    if not isinstance(raw, dict):
+        raise ConfigError(f"profile{where}: 'scope' must be a mapping")
+    return ScopeRules(
+        countries=frozenset(c.upper() for c in _str_tuple(raw, "countries", where=where)),
+        exclude_sectors=frozenset(_str_tuple(raw, "exclude_sectors", where=where)),
+    )
+
+
+def _build_topic(data: Mapping[str, Any], *, where: str) -> TopicRules | None:
+    raw = data.get("topic")
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ConfigError(f"profile{where}: 'topic' must be a mapping")
+    topic = TopicRules(
+        titles=tuple(t.lower() for t in _str_tuple(raw, "titles", where=where)),
+        tech=frozenset(_str_tuple(raw, "tech", where=where)),
+    )
+    if not topic.titles and not topic.tech:
+        raise ConfigError(f"profile{where}: 'topic' names neither titles nor tech")
+    return topic
+
+
 def build_profile(
     data: Mapping[str, Any],
     *,
     company_tiers: Mapping[str, int] | None = None,
+    company_sectors: Mapping[str, str] | None = None,
     source: Path | str | None = None,
 ) -> Profile:
     """Build a `Profile` from already-loaded YAML data — pure, no I/O."""
@@ -242,9 +300,88 @@ def build_profile(
         llm=llm,
         review=review,
         company_tiers=dict(company_tiers) if company_tiers is not None else {},
+        niche_tech=(
+            frozenset(_str_tuple(data, "niche_tech", where=where))
+            if "niche_tech" in data
+            else DEFAULT_NICHE_TECH
+        ),
+        scope=_build_scope(data, where=where),
+        topic=_build_topic(data, where=where),
+        company_sectors=dict(company_sectors) if company_sectors is not None else {},
     )
 
 
-def load_profile(path: Path, *, company_tiers: Mapping[str, int] | None = None) -> Profile:
+def load_profile(
+    path: Path,
+    *,
+    company_tiers: Mapping[str, int] | None = None,
+    company_sectors: Mapping[str, str] | None = None,
+) -> Profile:
     """Load and build the `Profile` from `configs/profile.yaml` (or an equivalent)."""
-    return build_profile(load_yaml(path), company_tiers=company_tiers, source=path)
+    return build_profile(
+        load_yaml(path), company_tiers=company_tiers, company_sectors=company_sectors, source=path
+    )
+
+
+def _overlay(base: Mapping[str, Any], over: Mapping[str, Any]) -> dict[str, Any]:
+    """`over` on top of `base`: mappings merge key by key, anything else is replaced."""
+    merged = dict(base)
+    for key, value in over.items():
+        current = merged.get(key)
+        if isinstance(current, Mapping) and isinstance(value, Mapping):
+            merged[key] = _overlay(current, value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def build_tracks(
+    base: Mapping[str, Any],
+    tracks: Mapping[str, Any],
+    *,
+    company_tiers: Mapping[str, int] | None = None,
+    company_sectors: Mapping[str, str] | None = None,
+    source: Path | str | None = None,
+) -> dict[Track, Profile]:
+    """One `Profile` per track: the track's overlay on top of the quant profile's data.
+
+    A track inherits everything it does not restate — the LLM lanes, the staleness rule, the
+    seniority keywords — so what tracks.yaml shows is exactly how the track differs.
+    """
+    where = f" ({source})" if source is not None else ""
+    raw = tracks.get("tracks", {})
+    if not isinstance(raw, dict):
+        raise ConfigError(f"tracks{where}: 'tracks' must be a mapping")
+    known = {t.value for t in Track}
+    profiles: dict[Track, Profile] = {}
+    for name, over in raw.items():
+        if name not in known:
+            raise ConfigError(f"tracks{where}: unknown track {name!r} (core.enums.Track)")
+        if not isinstance(over, dict) or "version" not in over:
+            raise ConfigError(f"tracks{where}: track {name!r} needs its own 'version'")
+        profiles[Track(name)] = build_profile(
+            _overlay(base, over),
+            company_tiers=company_tiers,
+            company_sectors=company_sectors,
+            source=f"{source}:{name}" if source is not None else name,
+        )
+    return profiles
+
+
+def load_tracks(
+    profile_path: Path,
+    tracks_path: Path,
+    *,
+    company_tiers: Mapping[str, int] | None = None,
+    company_sectors: Mapping[str, str] | None = None,
+) -> dict[Track, Profile]:
+    """`configs/tracks.yaml`, each track built on `configs/profile.yaml`. No file, no track."""
+    if not tracks_path.exists():
+        return {}
+    return build_tracks(
+        load_yaml(profile_path),
+        load_yaml(tracks_path),
+        company_tiers=company_tiers,
+        company_sectors=company_sectors,
+        source=tracks_path,
+    )

@@ -23,7 +23,16 @@ SLUG_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _AGGREGATOR_SOURCES = {Source.EFC, Source.WTTJ, Source.LINKEDIN, Source.INDEED}
 VALID_SOURCES = frozenset(s.value for s in Source if s not in _AGGREGATOR_SOURCES)
 VALID_SECTORS = frozenset(
-    {"hedge_fund", "prop_trading", "bank", "bank_other", "asset_manager", "vendor", "crypto"}
+    {
+        "hedge_fund",
+        "prop_trading",
+        "bank",
+        "bank_other",
+        "asset_manager",
+        "vendor",
+        "crypto",
+        "tech",
+    }
 )
 
 

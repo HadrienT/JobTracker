@@ -113,6 +113,7 @@ export const SECTOR_OPTIONS: { value: string; label: string }[] = [
   { value: 'asset_manager', label: 'Asset manager' },
   { value: 'vendor', label: 'Vendor' },
   { value: 'crypto', label: 'Crypto' },
+  { value: 'tech', label: 'Tech' },
 ]
 
 /** `unknown` is the majority case, not missing data (P4) — it never reads as "unknown". */
@@ -132,6 +133,7 @@ export const TIER_OPTIONS: { value: Tier; label: string }[] = [
 /** Why the pipeline set a posting aside — the identifiers of `match.rules.REJECTION_REASONS`. */
 export const REJECTION_REASON_OPTIONS: { value: string; label: string }[] = [
   { value: 'not_quant', label: 'Not a quant role' },
+  { value: 'off_topic', label: 'Off topic' },
   { value: 'senior_only', label: 'Too senior' },
   { value: 'excluded_title', label: 'Excluded title' },
   { value: 'low_score', label: 'Low score' },

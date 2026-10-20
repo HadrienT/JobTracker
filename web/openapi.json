@@ -1209,6 +1209,14 @@
         "title": "Tier",
         "type": "string"
       },
+      "Track": {
+        "description": "A search scored against its own profile, beside the quant feed \u2014 blueprint/wp/WP20-tracks.md.\n\nThe quant feed is not a track: it is the default, scored into `verdicts` and the\n`postings` row itself. A track adds `track_verdicts` rows for the postings in its scope.",
+        "enum": [
+          "ch_tech"
+        ],
+        "title": "Track",
+        "type": "string"
+      },
       "Triage": {
         "description": "The user's verdict on a posting they do not want in the main feed any more.\n\nAbsent means \"not triaged yet\". Both values take the posting out of the feed and\ninto a list of its own, from which the verdict can be changed or cleared.",
         "enum": [
@@ -1678,6 +1686,22 @@
               ],
               "title": "Triage"
             }
+          },
+          {
+            "in": "query",
+            "name": "track",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Track"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Track"
+            }
           }
         ],
         "responses": {
@@ -2010,6 +2034,22 @@
                 }
               ],
               "title": "Triage"
+            }
+          },
+          {
+            "in": "query",
+            "name": "track",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Track"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Track"
             }
           }
         ],
@@ -2366,6 +2406,22 @@
                 }
               ],
               "title": "Triage"
+            }
+          },
+          {
+            "in": "query",
+            "name": "track",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Track"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Track"
             }
           }
         ],
@@ -2738,6 +2794,22 @@
               ],
               "title": "Triage"
             }
+          },
+          {
+            "in": "query",
+            "name": "track",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Track"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Track"
+            }
           }
         ],
         "responses": {
@@ -2770,6 +2842,7 @@
     },
     "/postings/{posting_id}": {
       "get": {
+        "description": "With `track`, the score, tier and reasons are that track's \u2014 when it scored the posting.",
         "operationId": "get_posting_detail_postings__posting_id__get",
         "parameters": [
           {
@@ -2779,6 +2852,22 @@
             "schema": {
               "title": "Posting Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "track",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Track"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Track"
             }
           }
         ],

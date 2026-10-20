@@ -1,7 +1,26 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { axe } from 'jest-axe'
+import { http } from 'msw'
 import { afterEach, describe, expect, it } from 'vitest'
 import { App } from '@/app/App'
+import { server } from '@/mocks/server'
+
+function navButton(name: string): HTMLElement {
+  return within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name })
+}
+
+/** Every API request the page makes, as URLs — what reached the server, not what was meant to. */
+function recordRequests(): URL[] {
+  const seen: URL[] = []
+  server.use(
+    // Returning nothing falls through to the regular mock handlers.
+    http.get('*', ({ request }) => {
+      seen.push(new URL(request.url))
+    }),
+  )
+  return seen
+}
 
 afterEach(() => {
   window.history.pushState(null, '', '/')
@@ -26,5 +45,48 @@ describe('App', () => {
     await screen.findByRole('grid', { name: 'Job postings' })
     const results = await axe(container)
     expect(results).toHaveNoViolations()
+  })
+
+  it('the Swiss tech tab is the same feed, asking for the ch_tech track', async () => {
+    const seen = recordRequests()
+    window.history.pushState(null, '', '/ch?seniorities=junior')
+    render(<App />)
+    await screen.findByRole('grid', { name: 'Job postings' })
+
+    expect(navButton('Swiss tech')).toHaveAttribute('aria-current', 'page')
+    await waitFor(() => {
+      expect(seen.some((url) => url.pathname.endsWith('/facets'))).toBe(true)
+    })
+    for (const url of seen.filter((u) => /\/(postings|facets)$/.test(u.pathname))) {
+      expect(url.searchParams.get('track')).toBe('ch_tech')
+      expect(url.searchParams.getAll('seniorities')).toEqual(['junior'])
+    }
+    // the track belongs to the screen, not to the address bar
+    expect(new URLSearchParams(window.location.search).get('track')).toBeNull()
+    const csv = new URL(screen.getByRole('link', { name: 'Export CSV' }).getAttribute('href') ?? '', 'http://x')
+    expect(csv.searchParams.get('track')).toBe('ch_tech')
+  })
+
+  it('the quant feed never sends a track', async () => {
+    const seen = recordRequests()
+    render(<App />)
+    await screen.findByRole('grid', { name: 'Job postings' })
+    await waitFor(() => {
+      expect(seen.some((url) => url.pathname.endsWith('/postings'))).toBe(true)
+    })
+    expect(seen.every((url) => !url.searchParams.has('track'))).toBe(true)
+  })
+
+  it('switching tabs moves between the feeds', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await screen.findByRole('grid', { name: 'Job postings' })
+
+    await user.click(navButton('Swiss tech'))
+    expect(window.location.pathname).toBe('/ch')
+    await screen.findByRole('grid', { name: 'Job postings' })
+
+    await user.click(navButton('Feed'))
+    expect(window.location.pathname).toBe('/')
   })
 })

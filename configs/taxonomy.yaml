@@ -292,6 +292,10 @@ tech:
     kdb: ["kdb+", "kdb", "kdb/q"]
     ocaml: ["ocaml"]
     cuda: ["cuda"]
+    # the machine-learning stack the ch_tech track looks for (configs/tracks.yaml)
+    pytorch: ["pytorch", "libtorch"]
+    tensorflow: ["tensorflow", "keras"]
+    jax: ["jax"]
     fpga: ["fpga", "verilog", "vhdl"]
     java: ["java"]
     csharp: ["c#", ".net", "dotnet"]

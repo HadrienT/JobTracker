@@ -1,0 +1,87 @@
+# Tracks — blueprint/wp/WP20-tracks.md.
+#
+# A track is a second search, shown in its own tab, scored against its own profile. Each entry
+# is an *overlay* on configs/profile.yaml: what it does not restate (the LLM lanes, the
+# staleness rule, the seniority keywords, the excluded titles) it inherits, so what is written
+# here is exactly how the track differs from the quant feed. Mappings merge key by key; a list
+# replaces the quant one whole. Bump a track's `version` on any change: it is what tells the
+# runtime to rescore that track (runtime/tracks.py).
+#
+# Names are core.enums.Track values — the API and the tab address a track by that name.
+
+tracks:
+  ch_tech:
+    # C++, CUDA and machine-learning roles located in Switzerland, at any employer — a
+    # bank's Zurich C++ team as much as a robotics start-up's. Junior, like the quant profile.
+    version: 2
+
+    scope:
+      countries: [CH] # a Swiss location among the posting's locations (remote included)
+      exclude_sectors: [] # every employer: the quant feed's exclusion of `tech` does not apply
+
+    # What the track is about: a title keyword (matched on word edges) or a stack tag found in
+    # the posting puts it in; neither one → rejected `off_topic`, never silently dropped.
+    topic:
+      titles:
+        [
+          "c++",
+          "cuda",
+          "gpu",
+          "hpc",
+          "machine learning",
+          "ml",
+          "mlops",
+          "deep learning",
+          "computer vision",
+          "ai", # "AI Software Engineer", "AI for Investment Research": the score sorts them
+          "llm",
+          "nlp",
+          "perception",
+          "robotics",
+        ]
+      tech: [cpp, cuda, pytorch, tensorflow, jax]
+
+    niche_tech: [cuda, pytorch, tensorflow, jax] # what `tech_niche` rewards on this track
+
+    titles:
+      strong:
+        [
+          "c++",
+          "cuda",
+          "gpu",
+          "machine learning engineer",
+          "ml engineer",
+          "machine learning scientist",
+          "deep learning",
+          "computer vision",
+          "ai engineer",
+          "research engineer",
+          "hpc engineer",
+          "performance engineer",
+          "perception engineer",
+        ]
+      possible:
+        [
+          "software engineer",
+          "software developer",
+          "embedded software",
+          "robotics",
+          "research scientist",
+          "applied scientist",
+          "data scientist",
+          "machine learning",
+          "algorithm",
+          "graphics",
+          "compiler",
+          "simulation",
+        ]
+
+    weights:
+      sector_tier1: 8 # a registry rank-1 employer (Nvidia, DeepMind, CERN…)
+      tech_cpp: 12
+      tech_python: 4
+      tech_niche: 10
+      # An EU national needs a Swiss permit, but it is routine under free movement
+      # (blueprint/10-PROFILE-TARGET.md §4): a "right to work" line costs little here.
+      visa_sponsors: 4
+      visa_no: -5

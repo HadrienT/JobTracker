@@ -15,6 +15,7 @@ versionné dans `migrations/NNNN_description.sql`, appliquées par
 companies ──┬─< postings ──┬─< posting_aliases
             │              ├─< posting_locations
             │              ├── verdicts          (1-1)
+            │              ├─< track_verdicts    (une par piste, WP20)
             │              ├─< posting_tech
             │              └── raw_payloads      (1-1, archive compressée)
             └─< source_runs
@@ -115,6 +116,21 @@ est une jointure, pas une regex.
 | `reasons_json` | TEXT NOT NULL | les `Reason[]` sérialisés — affichés dans le détail |
 | `profile_version` | INTEGER NOT NULL | permet de rescorer uniquement ce qui est périmé |
 | `scored_at` | TEXT NOT NULL | |
+
+### `track_verdicts`
+
+Le verdict d'une offre pour une **piste** ([wp/WP20-tracks.md](wp/WP20-tracks.md)) — une
+recherche notée contre son propre profil, à côté du flux quant. Une ligne seulement pour les
+offres **dans le périmètre** de la piste : hors périmètre n'est pas un rejet, c'est une absence.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `track` | TEXT NOT NULL | `core.enums.Track` |
+| `posting_id` | TEXT NOT NULL REFERENCES postings ON DELETE CASCADE | PK `(track, posting_id)` |
+| `score`, `tier`, `rejection_reason`, `reasons_json`, `profile_version`, `scored_at` | | comme `verdicts`, invariant I5 compris |
+
+Dérivée : recalculée par `runtime.tracks` quand elle manque, quand la piste change de version,
+ou quand `verdicts.scored_at` est plus récent (le côté quant a renoté l'offre).
 
 ### `posting_aliases`
 

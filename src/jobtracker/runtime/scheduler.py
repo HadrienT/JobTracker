@@ -30,7 +30,7 @@ from jobtracker.collect.base import Collector
 from jobtracker.collect.custom import CustomCollector, KnownCustomPosting
 from jobtracker.collect.http import HttpClient, PolicedHttpSession, SourcesConfig
 from jobtracker.core.clock import utc_now
-from jobtracker.core.enums import Source, Tier
+from jobtracker.core.enums import Source, Tier, Track
 from jobtracker.core.errors import BoardNotFound, CollectError, SourceBlocked, SourceUnavailable
 from jobtracker.core.geo import GeoIndex
 from jobtracker.core.hashing import content_hash
@@ -95,6 +95,8 @@ class CycleContext:
     client_factories: Mapping[Source, Callable[[], HttpClient]] = field(default_factory=dict)
     resolve_employer: Callable[[RawPosting], RawPosting] = lambda raw: raw
     collectors: dict[Source, Collector] = field(default_factory=lambda: dict(DEFAULT_COLLECTORS))
+    # The searches beside the quant feed (configs/tracks.yaml), scored by runtime.tracks.
+    tracks: Mapping[Track, Profile] = field(default_factory=dict)
 
 
 def _with_known_descriptions(

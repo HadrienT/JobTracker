@@ -83,8 +83,8 @@ export const api = {
   getMapPins(query: MapPinsQuery): Promise<Schemas['MapPins']> {
     return request(`/map/pins${buildSearch(query)}`)
   },
-  getPostingDetail(postingId: string): Promise<Schemas['PostingDetailOut']> {
-    return request(`/postings/${encodeURIComponent(postingId)}`)
+  getPostingDetail(postingId: string, track: Schemas['Track'] | null = null): Promise<Schemas['PostingDetailOut']> {
+    return request(`/postings/${encodeURIComponent(postingId)}${buildSearch({ track })}`)
   },
   setFavorite(postingId: string, value: boolean): Promise<void> {
     return request(`/postings/${encodeURIComponent(postingId)}/favorite`, {

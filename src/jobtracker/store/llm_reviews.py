@@ -164,7 +164,9 @@ def unreviewed_posting_ids(
     """Active canonical postings with no current review, best score first.
 
     Best first, so an interrupted run has read the postings that matter most; rejected ones come
-    last but are not skipped — a rejection is a verdict the reading may overturn.
+    last but are not skipped — a rejection is a verdict the reading may overturn. "Best" is the
+    best of the quant score and any track's (blueprint/wp/WP20-tracks.md): a strong Swiss C++
+    role is rejected by the quant feed, not unimportant.
     """
     sql = """
         SELECT p.posting_id FROM postings p
@@ -172,7 +174,11 @@ def unreviewed_posting_ids(
         WHERE p.is_active = 1 AND p.is_canonical = 1
           AND (r.posting_id IS NULL OR r.content_hash != p.content_hash
                OR r.review_version != ?)
-        ORDER BY p.score DESC, p.posting_id
+        ORDER BY MAX(
+            COALESCE(p.score, 0),
+            COALESCE((SELECT MAX(t.score) FROM track_verdicts t
+                      WHERE t.posting_id = p.posting_id), 0)
+        ) DESC, p.posting_id
     """
     params: list[Any] = [review_version]
     if limit is not None:

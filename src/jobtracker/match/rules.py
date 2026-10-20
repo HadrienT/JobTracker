@@ -21,6 +21,7 @@ from jobtracker.match.profile import Profile
 REJECTION_REASONS = (
     "excluded_title",
     "not_quant",
+    "off_topic",
     "senior_only",
     "phd_required",
     "stale",
@@ -32,7 +33,14 @@ def hard_reject(posting: Posting, *, profile: Profile) -> str | None:
     if _title_matches_any(posting.title, profile.titles.excluded):
         return "excluded_title"
     if posting.role_family == RoleFamily.OTHER:
-        return "not_quant"
+        # The quant feed's own word for it, which the LLM lane may overturn (match.prefilter);
+        # a track, which has a topic, files it with the rest of what it is not about.
+        return "not_quant" if profile.topic is None else "off_topic"
+    # Final, never sent to the LLM: an excluded employer, or a track's subject missing.
+    if profile.company_sectors.get(posting.company_slug) in profile.scope.exclude_sectors:
+        return "off_topic"
+    if not on_topic(posting, profile=profile):
+        return "off_topic"
     if _is_senior_only(posting, profile=profile):
         return "senior_only"
     if profile.hard_rejects.phd_required and posting.phd_required:
@@ -52,9 +60,41 @@ def reference_date(posting: Posting) -> datetime:
     return posting.posted_at or posting.first_seen_at
 
 
-def _title_matches_any(title: str, keywords: tuple[str, ...]) -> bool:
+def in_scope(posting: Posting, *, profile: Profile) -> bool:
+    """Whether `profile` scores this posting at all: one of its locations is in the scope.
+
+    Out of scope is not a rejection — a Paris posting is simply not part of a Swiss track,
+    the same way a Swiss one is part of the quant feed without belonging to it any more.
+    """
+    countries = profile.scope.countries
+    return not countries or any(loc.country in countries for loc in posting.locations)
+
+
+def on_topic(posting: Posting, *, profile: Profile) -> bool:
+    """A track's subject: a topic keyword in the title, or a topic tag in the stack."""
+    topic = profile.topic
+    if topic is None:
+        return True
+    if posting.tech & topic.tech:
+        return True
+    return title_keyword(posting.title, topic.titles) is not None
+
+
+def title_keyword(title: str, keywords: tuple[str, ...]) -> str | None:
+    """The first keyword found in `title` as a whole word, `None` if none is.
+
+    Word edges are "not a letter or digit", not `\b`: "c++" ends on a non-word character,
+    where `\b` never matches — the keyword would silently never apply.
+    """
     title_l = title.lower()
-    return any(re.search(rf"\b{re.escape(kw)}\b", title_l) for kw in keywords)
+    for keyword in keywords:
+        if re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", title_l):
+            return keyword
+    return None
+
+
+def _title_matches_any(title: str, keywords: tuple[str, ...]) -> bool:
+    return title_keyword(title, keywords) is not None
 
 
 def _is_senior_only(posting: Posting, *, profile: Profile) -> bool:

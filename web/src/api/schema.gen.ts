@@ -113,7 +113,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Posting Detail */
+        /**
+         * Get Posting Detail
+         * @description With `track`, the score, tier and reasons are that track's — when it scored the posting.
+         */
         get: operations["get_posting_detail_postings__posting_id__get"];
         put?: never;
         post?: never;
@@ -581,6 +584,15 @@ export interface components {
          */
         Tier: "strong" | "possible" | "stretch" | "rejected";
         /**
+         * Track
+         * @description A search scored against its own profile, beside the quant feed — blueprint/wp/WP20-tracks.md.
+         *
+         *     The quant feed is not a track: it is the default, scored into `verdicts` and the
+         *     `postings` row itself. A track adds `track_verdicts` rows for the postings in its scope.
+         * @enum {string}
+         */
+        Track: "ch_tech";
+        /**
          * Triage
          * @description The user's verdict on a posting they do not want in the main feed any more.
          *
@@ -681,6 +693,7 @@ export interface operations {
                 favorites_only?: boolean;
                 include_hidden?: boolean;
                 triage?: components["schemas"]["Triage"] | null;
+                track?: components["schemas"]["Track"] | null;
             };
             header?: never;
             path?: never;
@@ -733,6 +746,7 @@ export interface operations {
                 favorites_only?: boolean;
                 include_hidden?: boolean;
                 triage?: components["schemas"]["Triage"] | null;
+                track?: components["schemas"]["Track"] | null;
             };
             header?: never;
             path?: never;
@@ -805,6 +819,7 @@ export interface operations {
                 favorites_only?: boolean;
                 include_hidden?: boolean;
                 triage?: components["schemas"]["Triage"] | null;
+                track?: components["schemas"]["Track"] | null;
             };
             header?: never;
             path?: never;
@@ -860,6 +875,7 @@ export interface operations {
                 favorites_only?: boolean;
                 include_hidden?: boolean;
                 triage?: components["schemas"]["Triage"] | null;
+                track?: components["schemas"]["Track"] | null;
             };
             header?: never;
             path?: never;
@@ -889,7 +905,9 @@ export interface operations {
     };
     get_posting_detail_postings__posting_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                track?: components["schemas"]["Track"] | null;
+            };
             header?: never;
             path: {
                 posting_id: string;

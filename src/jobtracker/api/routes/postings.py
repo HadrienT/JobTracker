@@ -18,6 +18,7 @@ from jobtracker.api.schemas import (
     StatusRequest,
     TriageRequest,
 )
+from jobtracker.core.enums import Track
 from jobtracker.core.errors import StorageError
 from jobtracker.store.llm_reviews import current_corrections
 from jobtracker.store.postings import (
@@ -34,6 +35,7 @@ from jobtracker.store.postings import (
     set_triage,
 )
 from jobtracker.store.search import get_description
+from jobtracker.store.tracks import get_track_verdict
 
 router = APIRouter(tags=["postings"])
 
@@ -59,11 +61,14 @@ def get_postings(
 
 
 @router.get("/postings/{posting_id}")
-def get_posting_detail(posting_id: str, conn: Conn) -> PostingDetailOut:
-    row = get_posting_row(conn, posting_id)
+def get_posting_detail(posting_id: str, conn: Conn, track: Track | None = None) -> PostingDetailOut:
+    """With `track`, the score, tier and reasons are that track's — when it scored the posting."""
+    row = get_posting_row(conn, posting_id, track=track)
     if row is None:
         raise HTTPException(status_code=404, detail=f"no such posting: {posting_id!r}")
-    verdict = get_verdict(conn, posting_id)
+    verdict = (get_track_verdict(conn, track, posting_id) if track is not None else None) or (
+        get_verdict(conn, posting_id)
+    )
     aliases = tuple(AliasOut.from_row(a) for a in list_aliases(conn, posting_id))
     base = PostingOut.from_row(row)
     return PostingDetailOut(

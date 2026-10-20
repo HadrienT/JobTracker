@@ -23,10 +23,10 @@ l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 | Persistance | `src/jobtracker/store/` | dépôts par agrégat (`postings`, `companies`, `runs`), requêtes de facettes, FTS5 |
 | Collecte | `src/jobtracker/collect/` | un collecteur par **famille d'ATS** (`ats/`), un par agrégateur (`aggregators/`), politique HTTP commune ; `custom.py` + `browser.py` lisent en **page rendue** (Chromium sans tête) les portails sans API : une entrée `source: custom` du registre = l'URL de la liste (`token`) + la forme d'un lien d'offre (`extra.link`), ou l'endpoint JSON du portail lui-même (`extra.api` + les chemins des champs : Oracle HCM, Eightfold, BrassRing, portails maison), aucun code par société ; `prefilter.py` décide quels intitulés valent une requête de description |
 | Normalisation | `src/jobtracker/normalize/` | `RawPosting` → `Posting` : lieu, séniorité, stack, rémunération, visa, empreinte de dédoublonnage. **Zéro I/O**, testable hors ligne |
-| Qualification | `src/jobtracker/match/` | score déterministe contre le profil cible ; `match.llm` = préfiltre + LLM local pour le seul résidu ambigu |
+| Qualification | `src/jobtracker/match/` | score déterministe contre le profil cible ; `match.llm` = préfiltre + LLM local pour le seul résidu ambigu ; **pistes** (`configs/tracks.yaml`) : d'autres recherches notées contre leur propre profil — `ch_tech` = C++ / CUDA / ML en Suisse, `blueprint/wp/WP20-tracks.md` |
 | API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
 | Exploitation | `src/jobtracker/runtime/` | ordonnanceur, disjoncteur par source, chien de garde inversé, CLI |
-| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
+| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Swiss tech** (piste `ch_tech`, `/ch`), **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
 
 Le LLM d'inférence est **local** : `llama-server` sur `127.0.0.1:8000`, partagé
 avec OpenHands (`~/AgenticEnv`). JobTracker s'y greffe en second, jamais en
@@ -52,6 +52,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just backup` | sauvegarde à chaud de `./data/jobtracker.db` dans `./backups` |
 | `just timers-install` / `timers-remove` | collecte 3×/jour + sauvegarde quotidienne, minuteries systemd **utilisateur** (`deploy/local/`) |
 | `just loop` | ordonnanceur continu |
+| `just score-tracks` | note les offres stockées contre chaque piste de `configs/tracks.yaml` (`collect` et `loop` le font seuls) |
 | `just discover-employers` | employeurs vus chez les agrégateurs et absents de `companies.yaml` (alimente WP00) |
 | `just replay <date>` | rejeu du normaliseur sur les entrées archivées, **dry-run** : delta par étage, régression signalée |
 | `just report` | rapport hebdomadaire markdown dans `docs/reports/` |

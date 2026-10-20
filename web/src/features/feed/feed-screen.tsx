@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { SortKey } from '@/api/queries'
+import type { SortKey, Track } from '@/api/queries'
 import { ActiveFilterPills } from '@/features/filters/active-filter-pills'
 import { feedViewOf, isDefaultFilter } from '@/features/filters/defaults'
 import { FiltersPanel } from '@/features/filters/filters-panel'
@@ -23,12 +23,24 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 const SEARCH_DEBOUNCE_MS = 250
 
-export function FeedScreen() {
-  const { filter, sort, setFilter, setSort, resetFilters } = useFeedUrlState()
+interface FeedScreenProps {
+  /**
+   * A track (blueprint/wp/WP20-tracks.md): the same feed, scored against that track's own
+   * profile. It is the screen's, not the URL's — `/ch` *is* the `ch_tech` track — so it rides
+   * along every request but never into the query string, the pills or a saved view.
+   */
+  track?: Track | null
+  /** Where the screen lives: '' for the quant feed, '/ch' for the Swiss tech one. */
+  basePath?: string
+}
+
+export function FeedScreen({ track = null, basePath = '' }: FeedScreenProps) {
+  const { filter: urlFilter, sort, setFilter, setSort, resetFilters } = useFeedUrlState()
+  const filter = track === null ? urlFilter : { ...urlFilter, track }
   const [searchDraft, setSearchDraft] = useState(filter.query ?? '')
   const [syncedQuery, setSyncedQuery] = useState(filter.query ?? null)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const { postingId, openPosting, closePosting } = usePostingRoute()
+  const { postingId, openPosting, closePosting } = usePostingRoute(basePath)
 
   // The URL can change from elsewhere — a pill's ×, Reset, the Back button —
   // so the input has to fall back into line with it, not just push to it.
@@ -102,7 +114,7 @@ export function FeedScreen() {
       </header>
 
       <StaleFeedBanner />
-      <ActiveFilterPills filter={filter} onChange={setFilter} />
+      <ActiveFilterPills filter={urlFilter} onChange={setFilter} />
 
       <div className="flex flex-1 overflow-hidden">
         <FiltersPanel filter={filter} onChange={setFilter} onReset={resetFilters} />
@@ -116,7 +128,7 @@ export function FeedScreen() {
         />
       </div>
 
-      {postingId !== null && <PostingDetailPanel postingId={postingId} onClose={closePosting} />}
+      {postingId !== null && <PostingDetailPanel postingId={postingId} onClose={closePosting} track={track} />}
     </div>
   )
 }
