@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     adzuna_app_id: str | None = None
     adzuna_app_key: str | None = None
     linkedin_cookie: str | None = None
+    # The user's application files (WP21 §1); None = `career/` beside the database.
+    career_dir: Path | None = None
+
+    @property
+    def career_root(self) -> Path:
+        return self.career_dir or self.db_path.parent / "career"
 
 
 def load_settings(env_file: str | Path | None = ".env") -> Settings:

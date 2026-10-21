@@ -49,6 +49,11 @@ run-once source="greenhouse":
 collect *args:
     uv run jobtracker collect {{args}}
 
+
+# importe l'historique de candidatures (export CSV de la Sheet + dossier de captures/CV) ; dry-run sans --apply
+import-applications sheet dossier *args:
+    uv run jobtracker import-applications --sheet "{{sheet}}" --dossier "{{dossier}}" {{args}}
+
 # l'interface en local : API + front dans docker, sur http://127.0.0.1:5190 (lit ./data/jobtracker.db)
 up:
     mkdir -p data

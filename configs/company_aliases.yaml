@@ -1,0 +1,20 @@
+# Employer name variants — blueprint/wp/WP21-applications.md §3.
+#
+# The application history is written by hand: the same employer appears as "QRT", "QubeRT" and
+# "Qube Research & Technologies". Each entry maps a canonical key to the keys that mean the same
+# employer. Keys are `career.names.company_key` outputs (lowercase, no spaces, legal forms and
+# filler words such as "group" or "capital" removed) — run `jobtracker import-applications` and
+# read its report for the keys that did not meet.
+
+qrt: [qube, qubert]
+jpmorgan: [jpmc, jpmorganchase]
+bankofamerica: [bofa]
+millennium: [millenium]
+totalenergies: [totalenergie, totalenergy]
+deshaw: [shaw]
+headlands: [headlandstech]
+athl: [athltechnologie]
+experis: [experisswitzerland]
+google: [googlegemini, googleswe]
+zurichcantonalbank: [zurcherbank, zkb]
+recruter: [recruiter, source]

@@ -6,13 +6,15 @@ guessed ahead of that lot pinning their shape.
 """
 
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel, model_validator
 
 from jobtracker.core.enums import (
+    ApplicationOrigin,
+    ApplicationStatus,
     RemoteMode,
     RoleFamily,
     SalaryPeriod,
@@ -193,3 +195,31 @@ class MatchVerdict(BaseModel, frozen=True):
         if (self.tier == Tier.REJECTED) != (self.rejection_reason is not None):
             raise ValueError("rejection_reason must be set if and only if tier == REJECTED")
         return self
+
+
+class ApplicationEvent(BaseModel, frozen=True):
+    """One step of an application's history — blueprint/wp/WP21-applications.md §2."""
+
+    on_date: date | None
+    status: ApplicationStatus
+    reason: str = ""
+
+
+class Application(BaseModel, frozen=True):
+    """One application sent for one job, collected posting or not (WP21 §2)."""
+
+    application_id: str
+    company: str  # as the user wrote it
+    company_slug: str | None  # the registry entry, when the name resolves to one
+    title: str | None  # None when the record never said (2024-2025 spreadsheet rows)
+    location: str | None
+    applied_on: date | None
+    applied_on_estimated: bool  # read off the files' timestamps, not written down
+    closed_on: date | None
+    status: ApplicationStatus
+    reason: str  # the user's own words for the outcome, verbatim
+    posting_id: str | None
+    dossier: str | None  # relative to data/career/applications/
+    origin: ApplicationOrigin
+    note: str = ""
+    events: tuple[ApplicationEvent, ...] = ()
