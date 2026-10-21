@@ -57,7 +57,7 @@ describe('ApplicationsScreen', () => {
     // the four fixtures: UK, Switzerland, USA, Singapore
     expect(within(legend).getAllByRole('button')).toHaveLength(4)
     const row = screen.getByText('CH (Zurich)').closest('td')
-    expect(row?.className).toContain('bg-country-ch')
+    expect(row?.className).toContain('bg-country-ch/15')
     await user.click(within(legend).getByRole('button', { name: 'Switzerland: 1' }))
     expect(screen.getAllByTestId('application-row')).toHaveLength(1)
     expect(screen.getByText('Contoso Trading')).toBeInTheDocument()
