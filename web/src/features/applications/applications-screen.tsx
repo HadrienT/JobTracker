@@ -1,0 +1,336 @@
+import { useEffect, useMemo, useState } from 'react'
+import { type ApplicationOut, useApplications } from '@/api/queries'
+import { ApplicationDetailPanel } from '@/features/applications/application-detail-panel'
+import {
+  type ApplicationFilter,
+  type ApplicationView,
+  answerDelay,
+  applicationStats,
+  filterApplications,
+  type SortColumn,
+  sortApplications,
+  todayIso,
+  VIEWS,
+  yearsOf,
+} from '@/features/applications/model'
+import { NewApplicationDialog } from '@/features/applications/new-application-dialog'
+import { StatusBadge } from '@/features/feed/status-badge'
+import { usePostingRoute } from '@/features/feed/routing'
+import { cn } from '@/shared/lib/cn'
+
+const VIEW_VALUES = new Set<string>(VIEWS.map((view) => view.value))
+
+/** The filter rides in the query string, like the feed's: a reload or a shared link keeps it. */
+function readFilter(): ApplicationFilter {
+  const params = new URLSearchParams(window.location.search)
+  const view = params.get('view') ?? 'open'
+  const year = Number(params.get('year'))
+  return {
+    view: (VIEW_VALUES.has(view) ? view : 'open') as ApplicationView,
+    query: params.get('q') ?? '',
+    year: Number.isInteger(year) && year > 2000 ? year : null,
+  }
+}
+
+function writeFilter(filter: ApplicationFilter) {
+  const params = new URLSearchParams()
+  if (filter.view !== 'open') params.set('view', filter.view)
+  if (filter.query !== '') params.set('q', filter.query)
+  if (filter.year !== null) params.set('year', String(filter.year))
+  const search = params.toString()
+  window.history.replaceState(null, '', `${window.location.pathname}${search === '' ? '' : `?${search}`}`)
+}
+
+function percent(value: number | null): string {
+  return value === null ? '—' : `${String(Math.round(value * 100))}%`
+}
+
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="flex min-w-28 flex-col rounded-md border border-border px-3 py-2" title={hint}>
+      <span className="text-xs text-text-secondary">{label}</span>
+      <span className="font-tabular text-lg font-semibold text-text-primary">{value}</span>
+    </div>
+  )
+}
+
+const COLUMNS: { column: SortColumn | null; label: string }[] = [
+  { column: 'applied', label: 'Applied' },
+  { column: 'company', label: 'Company' },
+  { column: null, label: 'Job' },
+  { column: null, label: 'Location' },
+  { column: 'status', label: 'Status' },
+  { column: 'answer', label: 'Answer' },
+]
+
+/**
+ * Every application, collected posting or not (blueprint/wp/WP21-applications.md §6): the
+ * imported history, what the feed recorded, what was typed in by hand. `/applications/p/{id}`
+ * opens one on top, as the feed's `/p/{id}` does.
+ */
+export function ApplicationsScreen() {
+  const applications = useApplications()
+  const route = usePostingRoute('/applications')
+  const [filter, setFilter] = useState<ApplicationFilter>(readFilter)
+  const [sort, setSort] = useState<{ column: SortColumn; descending: boolean }>({
+    column: 'applied',
+    descending: true,
+  })
+  const [creating, setCreating] = useState(false)
+  const today = todayIso()
+
+  useEffect(() => {
+    writeFilter(filter)
+  }, [filter])
+
+  const all = useMemo(() => applications.data ?? [], [applications.data])
+  const stats = useMemo(() => applicationStats(all), [all])
+  const shown = useMemo(
+    () => sortApplications(filterApplications(all, filter), sort.column, sort.descending, today),
+    [all, filter, sort, today],
+  )
+  const years = useMemo(() => yearsOf(all), [all])
+
+  function sortBy(column: SortColumn) {
+    setSort((current) =>
+      current.column === column
+        ? { column, descending: !current.descending }
+        : { column, descending: column !== 'company' },
+    )
+  }
+
+  return (
+    <div className="flex flex-1 flex-col overflow-y-auto p-4">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <h1 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">Applications</h1>
+        <button
+          type="button"
+          onClick={() => {
+            setCreating(true)
+          }}
+          className="ml-auto rounded-md border border-border px-3 py-1.5 text-sm text-text-primary hover:bg-surface-elevated"
+        >
+          New application
+        </button>
+      </div>
+
+      {applications.isPending && <p className="text-sm text-text-tertiary">Loading…</p>}
+      {applications.isError && <p className="text-sm text-danger">Couldn&apos;t load the applications.</p>}
+
+      {applications.data && (
+        <>
+          <section aria-label="Summary" className="mb-4 flex flex-wrap gap-2">
+            <Stat label="Applications" value={String(stats.total)} />
+            <Stat
+              label="Open"
+              value={String(stats.open)}
+              hint="Applied or interviewing, with news in the last five months"
+            />
+            <Stat label="Interviews" value={String(stats.interviews)} />
+            <Stat label="Offers" value={String(stats.offers)} />
+            <Stat label="Rejected" value={String(stats.rejected)} />
+            <Stat
+              label="No news 5+ months"
+              value={String(stats.abandoned)}
+              hint="Still marked applied or interview, nothing heard for five months: counted as abandoned"
+            />
+            <Stat
+              label="Response rate"
+              value={percent(stats.responseRate)}
+              hint="Applications that got any answer: an interview, an offer or a rejection"
+            />
+            <Stat
+              label="Median time to a no"
+              value={stats.medianDaysToRejection === null ? '—' : `${String(Math.round(stats.medianDaysToRejection))}d`}
+            />
+          </section>
+
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <div role="group" aria-label="View" className="flex flex-wrap gap-1">
+              {VIEWS.map((view) => (
+                <button
+                  key={view.value}
+                  type="button"
+                  aria-pressed={filter.view === view.value}
+                  onClick={() => {
+                    setFilter((current) => ({ ...current, view: view.value }))
+                  }}
+                  className={cn(
+                    'rounded-md border px-2 py-1 text-sm',
+                    filter.view === view.value
+                      ? 'border-text-secondary bg-surface-elevated text-text-primary'
+                      : 'border-border text-text-secondary hover:text-text-primary',
+                  )}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+            <input
+              type="search"
+              aria-label="Search applications"
+              placeholder="Company, job, place…"
+              value={filter.query}
+              onChange={(event) => {
+                setFilter((current) => ({
+                  ...current,
+                  query: event.target.value,
+                }))
+              }}
+              className="min-w-48 flex-1 rounded-md border border-border bg-surface px-2 py-1 text-sm text-text-primary"
+            />
+            <label className="flex items-center gap-2 text-sm text-text-secondary">
+              Year
+              <select
+                value={filter.year ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setFilter((current) => ({
+                    ...current,
+                    year: value === '' ? null : Number(value),
+                  }))
+                }}
+                className="rounded-md border border-border bg-surface px-2 py-1 text-text-primary"
+              >
+                <option value="">All</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span className="text-xs text-text-tertiary" aria-live="polite">
+              {shown.length} shown
+            </span>
+          </div>
+
+          {shown.length === 0 ? (
+            <p className="text-sm text-text-tertiary">Nothing here.</p>
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-text-secondary">
+                  {COLUMNS.map(({ column, label }) => (
+                    <th
+                      key={label}
+                      className="py-2 pr-4"
+                      aria-sort={
+                        column !== null && sort.column === column
+                          ? sort.descending
+                            ? 'descending'
+                            : 'ascending'
+                          : undefined
+                      }
+                    >
+                      {column === null ? (
+                        label
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sortBy(column)
+                          }}
+                          className="uppercase hover:text-text-primary"
+                        >
+                          {label}
+                          {sort.column === column && (sort.descending ? ' ↓' : ' ↑')}
+                        </button>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((application) => (
+                  <ApplicationRow
+                    key={application.application_id}
+                    application={application}
+                    today={today}
+                    onOpen={route.openPosting}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
+      {route.postingId !== null && (
+        <ApplicationDetailPanel applicationId={route.postingId} onClose={route.closePosting} />
+      )}
+      {creating && (
+        <NewApplicationDialog
+          onClose={() => {
+            setCreating(false)
+          }}
+          onCreated={(applicationId) => {
+            setCreating(false)
+            route.openPosting(applicationId)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function ApplicationRow({
+  application,
+  today,
+  onOpen,
+}: {
+  application: ApplicationOut
+  today: string
+  onOpen: (applicationId: string) => void
+}) {
+  const delay = answerDelay(application, today)
+  return (
+    <tr
+      data-testid="application-row"
+      className={cn(
+        'cursor-pointer border-b border-border/60 hover:bg-surface-elevated',
+        application.abandoned && 'opacity-60',
+      )}
+      onClick={() => {
+        onOpen(application.application_id)
+      }}
+    >
+      <td className="whitespace-nowrap py-1.5 pr-4 font-tabular text-text-secondary">
+        {application.applied_on ?? '?'}
+        {application.applied_on_estimated && (
+          <span title="Estimated from the date of the screenshots" className="text-text-tertiary">
+            ~
+          </span>
+        )}
+      </td>
+      <td className="py-1.5 pr-4 text-text-primary">{application.company}</td>
+      <td className="py-1.5 pr-4">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpen(application.application_id)
+          }}
+          className="text-left text-text-primary hover:underline"
+        >
+          {application.title ?? <span className="text-text-tertiary">(no title)</span>}
+        </button>
+      </td>
+      <td className="py-1.5 pr-4 text-text-secondary">{application.location ?? '—'}</td>
+      <td className="py-1.5 pr-4">
+        <span className="flex flex-wrap items-center gap-1.5">
+          <StatusBadge status={application.status} />
+          {application.abandoned && <span className="text-xs text-text-tertiary">no news 5+ mo</span>}
+          {application.reached_interview && application.status === 'rejected' && (
+            <span className="text-xs text-tier-stretch" title={application.reason}>
+              after interview
+            </span>
+          )}
+        </span>
+      </td>
+      <td className="whitespace-nowrap py-1.5 pr-4 font-tabular text-text-secondary">
+        {delay === null ? '—' : delay.waiting ? `waiting ${String(delay.days)}d` : `${String(delay.days)}d`}
+      </td>
+    </tr>
+  )
+}

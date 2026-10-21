@@ -3,6 +3,7 @@ import { lazy, Suspense, useState } from 'react'
 import { useAppRoute } from '@/app/routes'
 import { ThemeProvider } from '@/app/theme-provider'
 import { TopNav } from '@/app/top-nav'
+import { ApplicationsScreen } from '@/features/applications/applications-screen'
 import { CompaniesScreen } from '@/features/filters/companies-screen'
 import { HealthScreen } from '@/features/filters/health-screen'
 import { ToastProvider } from '@/features/favorites/toast'
@@ -29,6 +30,7 @@ export function App() {
                 {/* keyed: switching feeds is a new screen, not the same one re-filtered */}
                 {route === 'feed' && <FeedScreen key="feed" />}
                 {route === 'swiss' && <FeedScreen key="swiss" track="ch_tech" basePath="/ch" />}
+                {route === 'applications' && <ApplicationsScreen />}
                 {route === 'map' && (
                   <Suspense fallback={<p className="p-4 text-sm text-text-tertiary">Loading map…</p>}>
                     <MapScreen />

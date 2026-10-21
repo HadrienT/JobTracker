@@ -1,6 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import type { CompanyOut, FacetCounts, Page, PostingOut } from './contract'
 import type { components } from '@/api/schema.gen'
+import { applicationHandlers, resetApplications } from './applications'
 import { COMPANIES_OUT, HEALTH, POSTINGS, toListItem } from './data'
 
 // Wildcard origin: the real API has no path prefix (blueprint/03-INTERFACES.md
@@ -19,6 +20,7 @@ const triaged = new Map<string, NonNullable<PostingOut['triage']>>()
 export function resetTracking(): void {
   tracking.clear()
   triaged.clear()
+  resetApplications()
 }
 
 function withTracking<T extends PostingOut>(item: T): T {
@@ -339,4 +341,6 @@ export const handlers = [
   }),
 
   http.get(`${API_BASE}/health`, () => HttpResponse.json(HEALTH)),
+
+  ...applicationHandlers,
 ]

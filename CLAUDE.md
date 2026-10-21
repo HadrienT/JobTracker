@@ -26,7 +26,7 @@ l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 | Qualification | `src/jobtracker/match/` | score déterministe contre le profil cible ; `match.llm` = préfiltre + LLM local pour le seul résidu ambigu ; **pistes** (`configs/tracks.yaml`) : d'autres recherches notées contre leur propre profil — `ch_tech` = C++ / CUDA / ML en Suisse, `blueprint/wp/WP20-tracks.md` |
 | API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
 | Exploitation | `src/jobtracker/runtime/` | ordonnanceur, disjoncteur par source, chien de garde inversé, CLI |
-| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Swiss tech** (piste `ch_tech`, `/ch`), **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
+| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Swiss tech** (piste `ch_tech`, `/ch`), **Applications** (`/applications` : toutes les candidatures, historique, pièces, saisie à la main — `blueprint/wp/WP21-applications.md` §6), **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
 | Candidatures | `src/jobtracker/career/` | l'historique tenu à la main (Sheet + dossier de captures) rapproché en `Application` ; n'importe que `core` (D11). **Données personnelles sous `data/career/`, jamais dans le dépôt (public)** — `blueprint/wp/WP21-applications.md` |
 
 Le LLM d'inférence est **local** : `llama-server` sur `127.0.0.1:8000`, partagé

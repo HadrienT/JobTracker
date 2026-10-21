@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 
-export type RouteName = 'feed' | 'swiss' | 'map' | 'companies' | 'health'
+export type RouteName = 'feed' | 'swiss' | 'applications' | 'map' | 'companies' | 'health'
 
 function routeFor(pathname: string): RouteName {
   if (pathname === '/ch' || pathname.startsWith('/ch/')) return 'swiss'
+  if (pathname.startsWith('/applications')) return 'applications'
   if (pathname.startsWith('/map')) return 'map'
   if (pathname.startsWith('/companies')) return 'companies'
   if (pathname.startsWith('/health')) return 'health'
@@ -11,9 +12,9 @@ function routeFor(pathname: string): RouteName {
 }
 
 /**
- * Top-level screen routing (`/`, `/ch`, `/map`, `/companies`, `/health`). `/p/{id}`,
- * `/ch/p/{id}` and `/map/p/{id}` are not screens — they are the detail overlay the feed / the
- * Swiss tech feed / the map manage themselves on top of their own screen (see
+ * Top-level screen routing (`/`, `/ch`, `/applications`, `/map`, `/companies`, `/health`).
+ * `/p/{id}`, `/ch/p/{id}`, `/map/p/{id}` and `/applications/p/{id}` are not screens — they are
+ * the detail overlay each screen manages itself on top of its own list (see
  * `features/feed/routing.ts`). `/ch` is the `ch_tech` track (blueprint/wp/WP20-tracks.md): the
  * same feed, scored against its own profile.
  */
