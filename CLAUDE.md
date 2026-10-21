@@ -27,6 +27,7 @@ l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 | API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
 | Exploitation | `src/jobtracker/runtime/` | ordonnanceur, disjoncteur par source, chien de garde inversé, CLI |
 | Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Swiss tech** (piste `ch_tech`, `/ch`), **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
+| Candidatures | `src/jobtracker/career/` | l'historique tenu à la main (Sheet + dossier de captures) rapproché en `Application` ; n'importe que `core` (D11). **Données personnelles sous `data/career/`, jamais dans le dépôt (public)** — `blueprint/wp/WP21-applications.md` |
 
 Le LLM d'inférence est **local** : `llama-server` sur `127.0.0.1:8000`, partagé
 avec OpenHands (`~/AgenticEnv`). JobTracker s'y greffe en second, jamais en
@@ -49,6 +50,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just llm-enqueue` | met en file les offres **déjà stockées** que le LLM peut encore aider (à faire une fois, serveur allumé) ; puis `just llm-drain --all` les traite jusqu'au bout |
 | `just llm-review` | le LLM **relit toutes les offres** et corrige salaire, lieux, séniorité, visa, doctorat, date limite — chaque correction exige une citation retrouvée dans le texte ; `--dry-run` n'écrit rien, `--limit N`, `--report f.jsonl` (`blueprint/wp/WP19-llm-review.md`) |
 | `just llm-revert --field F` | annule les corrections du LLM sur un champ : valeur d'avant restaurée, score recalculé, offre relue |
+| `just import-applications <csv> <dossier>` | historique de candidatures : export CSV de la Sheet + dossier `Société/Poste/` (captures, CV envoyé) → table `applications`, pièces copiées sous `data/career/` ; dry-run par défaut, `--apply`, `--report f.jsonl` (`blueprint/wp/WP21-applications.md`) |
 | `just backup` | sauvegarde à chaud de `./data/jobtracker.db` dans `./backups` |
 | `just timers-install` / `timers-remove` | collecte 3×/jour + sauvegarde quotidienne, minuteries systemd **utilisateur** (`deploy/local/`) |
 | `just loop` | ordonnanceur continu |

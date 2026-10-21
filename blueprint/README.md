@@ -78,6 +78,7 @@ commande.
 | [WP17](wp/WP17-map.md) | Onglet Carte — pins par ville, liste par pin, mêmes filtres que le feed | WP07, WP10, WP11 | — |
 | [WP19](wp/WP19-llm-review.md) | Relecture complète par le LLM local — corrections sous citation vérifiée | WP12 | — |
 | [WP18](wp/WP18-tracking.md) | Suivi de candidature — statut, note, pastille « nouveau » | WP07, WP10, WP11 | — |
+| [WP21](wp/WP21-applications.md) | Dossier de candidature — historique (Sheet + captures), pièces, CV ciblé rédigé dans Claude Code | WP02, WP07, WP18 | — |
 | [WP20](wp/WP20-tracks.md) | Pistes — seconde recherche (C++ / CUDA / ML en Suisse) notée contre son propre profil, onglet « Swiss tech » | WP02, WP05, WP07, WP10 | — |
 | [WP14](wp/WP14-quality.md) | Qualité & tests — corpus doré, invariants, CI, e2e Playwright | WP01 (amorce) | **tout** |
 | [WP15](wp/WP15-deploy.md) | Déploiement auto-hébergé — compose, tunnel Cloudflare, sauvegardes | WP08 · WP11 | WP16 |

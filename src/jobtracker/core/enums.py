@@ -69,6 +69,14 @@ class ApplicationStatus(StrEnum):
     WITHDRAWN = "withdrawn"
 
 
+class ApplicationOrigin(StrEnum):
+    """How an application reached the table (blueprint/wp/WP21-applications.md §2)."""
+
+    IMPORT = "import"  # the history: the user's spreadsheet and folder of screenshots
+    FEED = "feed"  # a status set on a collected posting
+    CLI = "cli"  # `jobtracker apply`, after a tailored CV
+
+
 class Triage(StrEnum):
     """The user's verdict on a posting they do not want in the main feed any more.
 

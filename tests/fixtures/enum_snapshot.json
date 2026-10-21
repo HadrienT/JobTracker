@@ -1,4 +1,9 @@
 {
+  "ApplicationOrigin": [
+    "cli",
+    "feed",
+    "import"
+  ],
   "ApplicationStatus": [
     "applied",
     "interview",

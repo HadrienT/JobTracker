@@ -98,7 +98,7 @@ type = "forbidden"
 source_modules = ["jobtracker.core"]
 forbidden_modules = [
     "jobtracker.store", "jobtracker.collect", "jobtracker.normalize",
-    "jobtracker.match", "jobtracker.api", "jobtracker.runtime",
+    "jobtracker.match", "jobtracker.api", "jobtracker.runtime", "jobtracker.career",
 ]
 
 [[tool.importlinter.contracts]]
@@ -107,7 +107,7 @@ type = "forbidden"
 source_modules = ["jobtracker.store"]
 forbidden_modules = [
     "jobtracker.collect", "jobtracker.normalize", "jobtracker.match",
-    "jobtracker.api", "jobtracker.runtime",
+    "jobtracker.api", "jobtracker.runtime", "jobtracker.career",
 ]
 
 [[tool.importlinter.contracts]]
@@ -116,7 +116,7 @@ type = "forbidden"
 source_modules = ["jobtracker.normalize"]
 forbidden_modules = [
     "jobtracker.store", "jobtracker.collect", "jobtracker.match",
-    "jobtracker.api", "jobtracker.runtime",
+    "jobtracker.api", "jobtracker.runtime", "jobtracker.career",
 ]
 
 [[tool.importlinter.contracts]]
@@ -125,6 +125,7 @@ type = "forbidden"
 source_modules = ["jobtracker.match"]
 forbidden_modules = [
     "jobtracker.store", "jobtracker.collect", "jobtracker.api", "jobtracker.runtime",
+    "jobtracker.career",
 ]
 
 [[tool.importlinter.contracts]]
@@ -133,7 +134,7 @@ type = "forbidden"
 source_modules = ["jobtracker.collect"]
 forbidden_modules = [
     "jobtracker.store", "jobtracker.normalize", "jobtracker.match",
-    "jobtracker.api", "jobtracker.runtime",
+    "jobtracker.api", "jobtracker.runtime", "jobtracker.career",
 ]
 
 [[tool.importlinter.contracts]]
@@ -142,6 +143,7 @@ type = "forbidden"
 source_modules = ["jobtracker.api"]
 forbidden_modules = [
     "jobtracker.collect", "jobtracker.normalize", "jobtracker.match", "jobtracker.runtime",
+    "jobtracker.career",
 ]
 
 [[tool.importlinter.contracts]]
@@ -149,7 +151,7 @@ name = "D7 — personne n'importe runtime"
 type = "forbidden"
 source_modules = [
     "jobtracker.core", "jobtracker.store", "jobtracker.collect",
-    "jobtracker.normalize", "jobtracker.match", "jobtracker.api",
+    "jobtracker.normalize", "jobtracker.match", "jobtracker.api", "jobtracker.career",
 ]
 forbidden_modules = ["jobtracker.runtime"]
 
@@ -168,7 +170,7 @@ source_modules = [
     "jobtracker.core", "jobtracker.store", "jobtracker.normalize",
     "jobtracker.match.profile", "jobtracker.match.rules",
     "jobtracker.match.score", "jobtracker.match.reasons",
-    "jobtracker.match.prefilter",
+    "jobtracker.match.prefilter", "jobtracker.career",
 ]
 # `urllib.request` et `http.client` ne sont pas listables ici (import-linter
 # refuse les sous-paquets externes) : ils sont couverts par un test de
@@ -183,7 +185,7 @@ name = "D10 — collect.aggregators n'est importé par personne d'autre"
 type = "forbidden"
 source_modules = [
     "jobtracker.core", "jobtracker.store", "jobtracker.normalize", "jobtracker.match",
-    "jobtracker.api", "jobtracker.runtime",
+    "jobtracker.api", "jobtracker.runtime", "jobtracker.career",
     "jobtracker.collect.base", "jobtracker.collect.http", "jobtracker.collect.registry",
     "jobtracker.collect.custom", "jobtracker.collect.ats",
 ]
@@ -195,6 +197,15 @@ type = "layers"
 layers = [
     "jobtracker.runtime",
     "jobtracker.api",
-    "jobtracker.match | jobtracker.normalize | jobtracker.collect | jobtracker.store",
+    "jobtracker.match | jobtracker.normalize | jobtracker.collect | jobtracker.store | jobtracker.career",
     "jobtracker.core",
+]
+
+[[tool.importlinter.contracts]]
+name = "D11 — career n'importe que core (WP21)"
+type = "forbidden"
+source_modules = ["jobtracker.career"]
+forbidden_modules = [
+    "jobtracker.store", "jobtracker.collect", "jobtracker.normalize",
+    "jobtracker.match", "jobtracker.api", "jobtracker.runtime",
 ]

@@ -22,6 +22,7 @@ argument.
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `JT_DB_PATH` | `./jobtracker.db` | Fichier SQLite. **Jamais sur un montage réseau** |
+| `JT_CAREER_DIR` | `career/` à côté de la base | Pièces des candidatures (WP21) : captures, CV envoyés, CV maître. **Données personnelles** |
 | `JT_LOG_LEVEL` | `INFO` | |
 | `JT_LOG_FORMAT` | `json` | `console` en développement |
 | `JT_API_HOST` / `JT_API_PORT` | `127.0.0.1` / `8100` | Port hôte paramétrable : plusieurs projets sur la même machine |

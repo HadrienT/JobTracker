@@ -11,11 +11,13 @@ from pathlib import Path
 import httpx
 from ulid import ULID
 
+from jobtracker.career.dossier import scan_dossier
+from jobtracker.career.sheet import parse_sheet
 from jobtracker.collect.browser import BrowserClient
 from jobtracker.collect.http import PolicedHttpSession, load_sources_config
 from jobtracker.collect.registry import boards_for_source, load_registry
 from jobtracker.core.clock import utc_now
-from jobtracker.core.config import Settings, load_settings
+from jobtracker.core.config import Settings, load_settings, load_yaml
 from jobtracker.core.db import apply_migrations, connect
 from jobtracker.core.enums import Source
 from jobtracker.core.geo import load_geo_index
@@ -24,6 +26,7 @@ from jobtracker.core.models import Board
 from jobtracker.match.profile import load_profile, load_tracks
 from jobtracker.normalize.taxonomy import load_taxonomy
 from jobtracker.runtime.aggregator_loader import load_aggregators
+from jobtracker.runtime.applications import import_history, report_lines
 from jobtracker.runtime.pipeline import ingest
 from jobtracker.runtime.replay import UnknownStage, format_report, run_replay
 from jobtracker.runtime.report import build_weekly_report
@@ -486,6 +489,50 @@ def cmd_status(_args: argparse.Namespace) -> int:
     return 1 if degraded else 0
 
 
+def cmd_import_applications(args: argparse.Namespace) -> int:
+    """Read the spreadsheet export and the folder of past applications, reconcile them, and
+    (with --apply) copy the files under the career directory and write `applications`."""
+    settings = load_settings()
+    sheet = parse_sheet(Path(args.sheet).read_text(encoding="utf-8"))
+    dossier_root = Path(args.dossier)
+    dossier = scan_dossier(dossier_root)
+    conn = _connect_and_migrate(settings)
+    outcome = import_history(
+        conn,
+        sheet=sheet,
+        dossier=dossier,
+        dossier_root=dossier_root,
+        aliases_config=load_yaml(CONFIGS_DIR / "company_aliases.yaml"),
+        boards=load_registry(CONFIGS_DIR / "companies.yaml"),
+        career_root=settings.career_root,
+        apply=args.apply,
+    )
+    conn.close()
+    lines = report_lines(sheet, dossier, outcome)
+    if args.report:
+        Path(args.report).write_text("".join(f"{line}\n" for line in lines), encoding="utf-8")
+    result = outcome.reconciliation
+    print(
+        f"sheet: {len(sheet.rows)} rows, {len(sheet.issues)} unreadable · "
+        f"folders: {len(dossier.entries)}, {len(dossier.skipped)} skipped\n"
+        f"applications: {len(result.applications)} — paired {result.paired}, "
+        f"sharing a folder {result.shared}, sheet only {result.sheet_only}, "
+        f"folder only {result.folder_only}, ambiguous {len(result.ambiguities)}\n"
+        f"companies outside the registry: {len(result.unresolved_companies)}",
+        file=sys.stderr,
+    )
+    if args.apply:
+        print(
+            f"written {outcome.written}, purged {outcome.purged} stale "
+            f"({outcome.kept_stale} kept: they carry a note), copied {outcome.files_copied} "
+            f"files under {settings.career_root / 'applications'}",
+            file=sys.stderr,
+        )
+    else:
+        print("dry run — nothing written; --apply to import", file=sys.stderr)
+    return 0
+
+
 def cmd_probe(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
@@ -607,6 +654,16 @@ def _build_parser() -> argparse.ArgumentParser:
 
     status = subparsers.add_parser("status", help="health snapshot; exit 1 if degraded")
     status.set_defaults(func=cmd_status)
+
+    imp = subparsers.add_parser(
+        "import-applications",
+        help="import the application history: spreadsheet CSV + folder of screenshots/CVs",
+    )
+    imp.add_argument("--sheet", required=True, help="the spreadsheet, exported as CSV")
+    imp.add_argument("--dossier", required=True, help="the folder: <company>/<job>/files")
+    imp.add_argument("--apply", action="store_true", help="write; the default is a dry run")
+    imp.add_argument("--report", help="write the review report (JSONL) to this file")
+    imp.set_defaults(func=cmd_import_applications)
 
     probe = subparsers.add_parser("probe", help="fetch one company, verbosely, for debugging")
     probe.add_argument("--company", required=True)

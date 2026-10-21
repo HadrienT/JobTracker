@@ -36,3 +36,10 @@ e2e/demo.db
 test-results/
 playwright-report/
 data/
+
+# Données personnelles (WP21) — le dépôt est public : CV, historique de candidatures,
+# archives de captures. Leur place est data/career/ (déjà ignoré ci-dessus).
+/CV/
+/*.rar
+/*.zip
+/Jobs applications*.csv
