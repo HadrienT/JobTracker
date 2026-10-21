@@ -447,6 +447,8 @@ export interface components {
             company: string;
             /** Company Slug */
             company_slug: string | null;
+            /** Countries */
+            countries: string[];
             /** Dossier */
             dossier: string | null;
             /** Events */
@@ -533,6 +535,8 @@ export interface components {
             company: string;
             /** Company Slug */
             company_slug: string | null;
+            /** Countries */
+            countries: string[];
             /** Last News On */
             last_news_on: string | null;
             /** Location */

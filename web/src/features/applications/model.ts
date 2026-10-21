@@ -23,6 +23,8 @@ export interface ApplicationFilter {
   view: ApplicationView
   query: string
   year: number | null
+  /** ISO code; an application in several countries matches each of them. */
+  country: string | null
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -76,6 +78,7 @@ export function filterApplications(applications: ApplicationOut[], filter: Appli
   return applications.filter((application) => {
     if (!inView(application, filter.view)) return false
     if (filter.year !== null && application.applied_on?.slice(0, 4) !== String(filter.year)) return false
+    if (filter.country !== null && !application.countries.includes(filter.country)) return false
     if (needle === '') return true
     const haystack = fold([application.company, application.title ?? '', application.location ?? ''].join(' '))
     return haystack.includes(needle)
@@ -116,6 +119,17 @@ export function sortApplications(
     return left.application_id < right.application_id ? -1 : 1
   })
   return descending ? sorted.reverse() : sorted
+}
+
+/** How many applications name each country — most first: the legend, which doubles as a filter. */
+export function countryCounts(applications: ApplicationOut[]): { code: string; count: number }[] {
+  const counts = new Map<string, number>()
+  for (const application of applications) {
+    for (const code of application.countries) counts.set(code, (counts.get(code) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code))
 }
 
 export function yearsOf(applications: ApplicationOut[]): number[] {

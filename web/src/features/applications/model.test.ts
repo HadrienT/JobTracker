@@ -3,6 +3,7 @@ import type { ApplicationOut } from '@/api/queries'
 import {
   answerDelay,
   applicationStats,
+  countryCounts,
   filterApplications,
   sortApplications,
   todayIso,
@@ -27,14 +28,12 @@ function application(overrides: Partial<ApplicationOut> & Pick<ApplicationOut, '
     abandoned: false,
     last_news_on: '2026-10-01',
     reached_interview: false,
+    countries: ['GB'],
     ...overrides,
   }
 }
 
-const OPEN = application({
-  application_id: 'open',
-  company: 'Société Générale',
-})
+const OPEN = application({ application_id: 'open', company: 'Société Générale', countries: ['CH'] })
 const OLD = application({
   application_id: 'old',
   applied_on: '2024-11-15',
@@ -62,7 +61,7 @@ const ALL = [OPEN, OLD, REJECTED, QUICK_NO]
 describe('applications model', () => {
   it('views follow what the API derived — open excludes the abandoned', () => {
     const ids = (view: Parameters<typeof filterApplications>[1]['view']) =>
-      filterApplications(ALL, { view, query: '', year: null }).map((a) => a.application_id)
+      filterApplications(ALL, { view, query: '', year: null, country: null }).map((a) => a.application_id)
     expect(ids('open')).toEqual(['open'])
     expect(ids('abandoned')).toEqual(['old'])
     expect(ids('interviews')).toEqual(['rejected'])
@@ -71,8 +70,8 @@ describe('applications model', () => {
   })
 
   it('search ignores case and accents; year narrows on the application date', () => {
-    expect(filterApplications(ALL, { view: 'all', query: 'societe', year: null })).toEqual([OPEN])
-    expect(filterApplications(ALL, { view: 'all', query: '', year: 2024 })).toEqual([OLD])
+    expect(filterApplications(ALL, { view: 'all', query: 'societe', year: null, country: null })).toEqual([OPEN])
+    expect(filterApplications(ALL, { view: 'all', query: '', year: 2024, country: null })).toEqual([OLD])
   })
 
   it('answer delay: days to the answer, or days spent waiting', () => {
@@ -105,6 +104,14 @@ describe('applications model', () => {
     expect(stats.responseRate).toBe(0.5)
     expect(stats.medianDaysToRejection).toBe(11)
     expect(applicationStats([]).responseRate).toBeNull()
+  })
+
+  it('countries: counted most first, and filtered on', () => {
+    expect(countryCounts(ALL)).toEqual([
+      { code: 'GB', count: 3 },
+      { code: 'CH', count: 1 },
+    ])
+    expect(filterApplications(ALL, { view: 'all', query: '', year: null, country: 'CH' })).toEqual([OPEN])
   })
 
   it('years, newest first; today in the local calendar', () => {

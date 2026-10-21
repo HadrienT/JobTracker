@@ -30,6 +30,7 @@ function application(overrides: Partial<Detail> & Pick<Detail, 'application_id' 
     abandoned: false,
     last_news_on: '2026-10-07',
     reached_interview: false,
+    countries: ['GB'],
     events: [{ on_date: '2026-10-07', status: 'applied', reason: '' }],
     files: [],
     dossier: null,
@@ -65,6 +66,7 @@ function fixtures(): Detail[] {
       company: 'Contoso Trading',
       title: null,
       location: 'CH (Zurich)',
+      countries: ['CH'],
       applied_on: '2024-11-15',
       last_news_on: '2024-11-15',
       reason: 'Waiting for answer',
@@ -77,6 +79,7 @@ function fixtures(): Detail[] {
       company: 'Fabrikam Securities',
       title: 'C++ Developer',
       location: 'USA (Chicago) IL',
+      countries: ['US'],
       applied_on: '2026-09-01',
       closed_on: '2026-09-21',
       status: 'rejected',
@@ -99,6 +102,7 @@ function fixtures(): Detail[] {
       company: 'Tailspin Research',
       title: 'Junior Quant Researcher',
       location: 'Singapore',
+      countries: ['SG'],
       applied_on: '2026-10-18',
       origin: 'cli',
       note: 'referral',
@@ -133,6 +137,7 @@ const SUMMARY_FIELDS = [
   'abandoned',
   'last_news_on',
   'reached_interview',
+  'countries',
 ] as const
 
 function summary(detail: Detail): Schemas['ApplicationOut'] {
@@ -174,6 +179,7 @@ export const applicationHandlers = [
       company: body.company,
       title: body.title,
       location: body.location ?? null,
+      countries: [],
       applied_on: appliedOn,
       status: body.status,
       note: body.note,

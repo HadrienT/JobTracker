@@ -6,6 +6,7 @@ import {
   type ApplicationView,
   answerDelay,
   applicationStats,
+  countryCounts,
   filterApplications,
   type SortColumn,
   sortApplications,
@@ -17,6 +18,8 @@ import { NewApplicationDialog } from '@/features/applications/new-application-di
 import { StatusBadge } from '@/features/feed/status-badge'
 import { usePostingRoute } from '@/features/feed/routing'
 import { cn } from '@/shared/lib/cn'
+import { countryName, countryTint } from '@/shared/lib/countries'
+import { CountryChip } from '@/shared/ui/country-chip'
 
 const VIEW_VALUES = new Set<string>(VIEWS.map((view) => view.value))
 
@@ -29,6 +32,7 @@ function readFilter(): ApplicationFilter {
     view: (VIEW_VALUES.has(view) ? view : 'open') as ApplicationView,
     query: params.get('q') ?? '',
     year: Number.isInteger(year) && year > 2000 ? year : null,
+    country: /^[A-Z]{2}$/.test(params.get('country') ?? '') ? params.get('country') : null,
   }
 }
 
@@ -37,6 +41,7 @@ function writeFilter(filter: ApplicationFilter) {
   if (filter.view !== 'open') params.set('view', filter.view)
   if (filter.query !== '') params.set('q', filter.query)
   if (filter.year !== null) params.set('year', String(filter.year))
+  if (filter.country !== null) params.set('country', filter.country)
   const search = params.toString()
   window.history.replaceState(null, '', `${window.location.pathname}${search === '' ? '' : `?${search}`}`)
 }
@@ -90,6 +95,8 @@ export function ApplicationsScreen() {
     [all, filter, sort, today],
   )
   const years = useMemo(() => yearsOf(all), [all])
+  // The legend counts what the other filters leave, so a click never lands on an empty list.
+  const countries = useMemo(() => countryCounts(filterApplications(all, { ...filter, country: null })), [all, filter])
 
   function sortBy(column: SortColumn) {
     setSort((current) =>
@@ -205,6 +212,42 @@ export function ApplicationsScreen() {
             </span>
           </div>
 
+          {countries.length > 0 && (
+            <div role="group" aria-label="Countries" className="mb-3 flex flex-wrap items-center gap-1.5">
+              {countries.map(({ code, count }) => (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={filter.country === code}
+                  aria-label={`${countryName(code)}: ${String(count)}`}
+                  onClick={() => {
+                    setFilter((current) => ({ ...current, country: current.country === code ? null : code }))
+                  }}
+                  className={cn(
+                    'flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs',
+                    filter.country === code
+                      ? 'border-text-secondary bg-surface-elevated text-text-primary'
+                      : 'border-transparent text-text-secondary hover:border-border',
+                  )}
+                >
+                  <CountryChip code={code} />
+                  <span className="font-tabular">{count}</span>
+                </button>
+              ))}
+              {filter.country !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilter((current) => ({ ...current, country: null }))
+                  }}
+                  className="text-xs text-text-tertiary hover:text-text-primary"
+                >
+                  All countries
+                </button>
+              )}
+            </div>
+          )}
+
           {shown.length === 0 ? (
             <p className="text-sm text-text-tertiary">Nothing here.</p>
           ) : (
@@ -316,7 +359,14 @@ function ApplicationRow({
           {application.title ?? <span className="text-text-tertiary">(no title)</span>}
         </button>
       </td>
-      <td className="py-1.5 pr-4 text-text-secondary">{application.location ?? '—'}</td>
+      <td className={cn('py-1.5 pr-4 text-text-secondary', countryTint(application.countries[0]))}>
+        <span className="flex flex-wrap items-center gap-1.5">
+          {application.countries.map((code) => (
+            <CountryChip key={code} code={code} />
+          ))}
+          {application.location ?? (application.countries.length === 0 ? '—' : '')}
+        </span>
+      </td>
       <td className="py-1.5 pr-4">
         <span className="flex flex-wrap items-center gap-1.5">
           <StatusBadge status={application.status} />

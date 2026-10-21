@@ -67,7 +67,9 @@ def _detail(conn: Conn, request: Request, application: Application) -> Applicati
     row = get_posting_row(conn, application.posting_id) if application.posting_id else None
     files = application_files(request.app.state.career_root, application)
     return ApplicationDetailOut(
-        **ApplicationOut.from_application(application, today=today).model_dump(),
+        **ApplicationOut.from_application(
+            application, today=today, geo=request.app.state.geo
+        ).model_dump(),
         events=tuple(
             ApplicationEventOut(on_date=e.on_date, status=e.status, reason=e.reason)
             for e in application.events
@@ -92,10 +94,12 @@ def _company_slug(conn: Conn, request: Request, name: str) -> str | None:
 
 
 @router.get("/applications")
-def get_applications(conn: Conn) -> list[ApplicationOut]:
+def get_applications(conn: Conn, request: Request) -> list[ApplicationOut]:
     """Every application, newest first — a few hundred rows: the tab filters them itself."""
-    today = utc_now().date()
-    return [ApplicationOut.from_application(a, today=today) for a in list_applications(conn)]
+    today, geo = utc_now().date(), request.app.state.geo
+    return [
+        ApplicationOut.from_application(a, today=today, geo=geo) for a in list_applications(conn)
+    ]
 
 
 @router.get("/applications/{application_id}")

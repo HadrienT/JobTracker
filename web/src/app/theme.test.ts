@@ -57,4 +57,23 @@ describe('theme tokens', () => {
     expect(contrastRatio(darkTertiary, darkBg)).toBeGreaterThanOrEqual(3)
     expect(contrastRatio(lightTertiary, lightBg)).toBeGreaterThanOrEqual(3)
   })
+
+  const COUNTRY_TOKENS = Object.keys(dark).filter((name) => name.startsWith('country-'))
+
+  it('has the country colours of the spreadsheet', () => {
+    expect(COUNTRY_TOKENS).toEqual(
+      expect.arrayContaining(['country-ch', 'country-gb', 'country-us', 'country-asia', 'country-nl']),
+    )
+  })
+
+  it.each(COUNTRY_TOKENS)('%s is readable as text on the surfaces of both themes (>= 4.5:1)', (token) => {
+    for (const theme of [dark, light]) {
+      for (const surface of ['surface', 'surface-elevated']) {
+        const text = theme[token]
+        const ground = theme[surface]
+        if (!text || !ground) throw new Error('missing token')
+        expect(contrastRatio(text, ground)).toBeGreaterThanOrEqual(4.5)
+      }
+    }
+  })
 })
