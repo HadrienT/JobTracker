@@ -21,7 +21,7 @@ Le dépôt est **public**. CV, téléphone, captures, historique : tout vit sous
 data/career/
   master/cv.tex            CV maître : le point de départ de chaque CV ciblé
   master/facts.md          tout ce qui est vrai et chiffré, plus long qu'un CV (la réserve du LLM)
-  applications/<dossier>/  une candidature : offer/*.png|pdf, offer.txt, cv.tex, cv.pdf
+  applications/<dossier>/  une candidature : captures (historique) ou offer.pdf, cv.tex, cv.pdf
   inbox/                   l'archive d'origine, telle quelle (jamais modifiée)
 ```
 
@@ -81,11 +81,15 @@ seulement, aucun réseau.
    illisibles) s'écrit en JSONL. `--apply` copie les pièces sous `data/career/applications/` et
    écrit la base. Idempotent.
 
-## 4. Texte des offres — OCR
+## 4. Le PDF de l'offre, au moment de postuler
 
-Les captures sont des pages d'offre propres : `tesseract` (conteneur, pas de dépendance hôte)
-produit `offer.txt` par dossier. Il sert au rapprochement avec le feed, à la recherche, et au
-CV ciblé quand l'offre n'est pas dans la base.
+L'historique garde ses captures telles quelles : **pas d'OCR**. Pour une offre collectée, la
+capture d'écran est remplacée par un **PDF propre** produit par JobTracker au moment où l'on
+passe l'offre en `applied` : intitulé, société, lieu(x), rémunération, visa, lien d'origine, date
+de collecte et date de candidature en tête, puis la description complète. Gabarit HTML maison,
+rendu par le Chromium déjà présent dans l'image (`page.pdf()`), rangé en `offer.pdf` dans le
+dossier de la candidature — l'offre reste lisible le jour où elle disparaît du site. Le même PDF
+est téléchargeable depuis le panneau de détail.
 
 ## 5. CV ciblé — rédigé dans Claude Code
 
@@ -113,7 +117,7 @@ réponse, délai médian, taux d'entretien par type de poste et par variante de 
 | # | Livrable |
 |---|---|
 | 1 | Migration `0011`, `store.applications`, `career.sheet` + `career.dossier` + `career.reconcile`, CLI `import-applications` |
-| 2 | OCR des captures → `offer.txt`, lien vers le feed |
+| 2 | PDF de l'offre à la candidature (§4) |
 | 3 | Unification avec WP18 (statut du feed = candidature liée) |
 | 4 | `cv context`, `cv build`, `apply`, skill `tailor-cv` |
 | 5 | API `/applications` + onglet Applications |
