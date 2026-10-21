@@ -15,12 +15,12 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ulid import ULID
-
 from jobtracker.api.tracking import (
     OFFER_PDF,
-    PendingPdf,
-    offer_sheet,
+    ensure_folder,
+    manual_application,
+    manual_sheet,
+    offer_pdf_for,
     render_pending,
     track_posting,
 )
@@ -34,12 +34,11 @@ from jobtracker.core.config import Settings, load_settings, load_yaml
 from jobtracker.core.db import apply_migrations, connect
 from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus
 from jobtracker.core.errors import CollectError, RenderError
-from jobtracker.core.models import Application, ApplicationEvent
+from jobtracker.core.models import Application
 from jobtracker.runtime.applications import adopt_feed_statuses, registry_keys
 from jobtracker.store.applications import (
     create_application,
     delete_application,
-    dossier_name,
     get_application,
     link_posting,
     list_applications,
@@ -47,7 +46,7 @@ from jobtracker.store.applications import (
     record_status,
     update_application,
 )
-from jobtracker.store.postings import PostingRow, get_posting_row
+from jobtracker.store.postings import PostingRow, get_posting_row, posting_id_by_url
 from jobtracker.store.schema import MIGRATIONS_DIR
 
 CONFIGS_DIR = Path(__file__).resolve().parents[3] / "configs"
@@ -94,12 +93,8 @@ def _status(text: str) -> ApplicationStatus:
 
 
 def _posting_by_url(conn: sqlite3.Connection, url: str) -> PostingRow | None:
-    row = conn.execute(
-        "SELECT posting_id FROM postings WHERE url = ? UNION "
-        "SELECT canonical_id FROM posting_aliases WHERE url = ? LIMIT 1",
-        (url, url),
-    ).fetchone()
-    return get_posting_row(conn, row[0]) if row is not None else None
+    posting_id = posting_id_by_url(conn, url)
+    return get_posting_row(conn, posting_id) if posting_id is not None else None
 
 
 def _aliases() -> dict[str, str]:
@@ -242,25 +237,15 @@ def cmd_add(args: argparse.Namespace) -> int:
     else:
         if not (args.company and args.title):
             raise _Fail("give --posting, a collected --url, or --company and --title")
-        events = [ApplicationEvent(on_date=day, status=ApplicationStatus.APPLIED)]
-        if status is not ApplicationStatus.APPLIED:
-            events.append(ApplicationEvent(on_date=day, status=status))
-        application = Application(
-            application_id=str(ULID()),
+        application = manual_application(
             company=args.company,
-            company_slug=_company_slug(args.company),
             title=args.title,
             location=args.location,
             applied_on=day,
-            applied_on_estimated=False,
-            closed_on=None,
             status=status,
-            reason="",
-            posting_id=None,
-            dossier=dossier_name(day, args.company, args.title),
-            origin=ApplicationOrigin.CLI,
             note=args.note or "",
-            events=tuple(events),
+            company_slug=_company_slug(args.company),
+            origin=ApplicationOrigin.CLI,
         )
         create_application(conn, application)
         conn.commit()
@@ -268,15 +253,7 @@ def cmd_add(args: argparse.Namespace) -> int:
         assert folder is not None
         sheet = None
         if args.text is not None:
-            text = sys.stdin.read() if args.text == "-" else Path(args.text).read_text("utf-8")
-            sheet = OfferSheet(
-                title=args.title,
-                company=args.company,
-                description=text,
-                locations=(args.location,) if args.location else (),
-                url=args.url,
-                applied_on=day,
-            )
+            sheet = manual_sheet(application, _read_text(args.text), args.url)
         message = _archive_offer(
             folder / OFFER_PDF, sheet=sheet, url=args.url, today=utc_now().date()
         )
@@ -345,14 +322,7 @@ def cmd_link(args: argparse.Namespace) -> int:
 def cmd_attach(args: argparse.Namespace) -> int:
     settings, conn = _open()
     application = _resolve(conn, args.id)
-    folder = _folder(settings, application)
-    if folder is None:
-        name = dossier_name(
-            application.applied_on or utc_now().date(), application.company, application.title
-        )
-        update_application(conn, application.application_id, dossier=name)
-        conn.commit()
-        folder = settings.career_root / "applications" / name
+    folder = ensure_folder(conn, settings.career_root, application)
     for path in _copy_in(folder, args.files):
         print(f"attached → {path}")
     return 0
@@ -361,33 +331,23 @@ def cmd_attach(args: argparse.Namespace) -> int:
 def cmd_pdf(args: argparse.Namespace) -> int:
     settings, conn = _open()
     application = _resolve(conn, args.id)
-    folder = _folder(settings, application)
-    if folder is None:
-        raise _Fail("this application has no folder — `jobtracker app attach` creates one")
-    target = folder / OFFER_PDF
     today = utc_now().date()
-    row = get_posting_row(conn, application.posting_id) if application.posting_id else None
-    if args.text is None and args.url is None and row is not None:
-        pending = PendingPdf(
-            application.application_id, offer_sheet(conn, row, application.applied_on), target
-        )
-        ok = render_pending(pending, today=today)
-        print(f"offer archived → {target}" if ok else "offer NOT archived (see the log)")
-        return 0 if ok else 1
-    sheet = None
-    if args.text is not None:
-        text = sys.stdin.read() if args.text == "-" else Path(args.text).read_text("utf-8")
-        sheet = OfferSheet(
-            title=application.title or "(no title)",
-            company=application.company,
-            description=text,
-            locations=(application.location,) if application.location else (),
-            url=args.url,
-            applied_on=application.applied_on,
-        )
-    message = _archive_offer(target, sheet=sheet, url=args.url, today=today)
-    print(message)
-    return 0 if "NOT" not in message and "no offer" not in message else 1
+    text = _read_text(args.text) if args.text is not None else None
+    if text is None and args.url is not None:
+        folder = ensure_folder(conn, settings.career_root, application)
+        message = _archive_offer(folder / OFFER_PDF, sheet=None, url=args.url, today=today)
+        print(message)
+        return 0 if message.startswith("offer archived") else 1
+    pending = offer_pdf_for(conn, settings.career_root, application, text=text, url=args.url)
+    if pending is None:
+        raise _Fail("nothing to archive from: give --text or --url, or link a posting")
+    ok = render_pending(pending, today=today)
+    print(f"offer archived → {pending.target}" if ok else "offer NOT archived (see the log)")
+    return 0 if ok else 1
+
+
+def _read_text(source: str) -> str:
+    return sys.stdin.read() if source == "-" else Path(source).read_text("utf-8")
 
 
 def cmd_rm(args: argparse.Namespace) -> int:

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { api } from '@/api/client'
 import { type Track, usePostingDetail, useSetTriage } from '@/api/queries'
 import { TRIAGE_VIEWS } from '@/features/feed/triage'
 import { rejectionReasonLabel } from '@/features/filters/defaults'
 import { cn } from '@/shared/lib/cn'
+import { useModal } from '@/shared/lib/use-modal'
 import { LlmCorrections } from '@/features/feed/llm-corrections'
 import { TrackingSection } from '@/features/feed/tracking-section'
 import { Age } from '@/shared/ui/age'
@@ -12,9 +13,6 @@ import { LocationCell } from '@/shared/ui/location-cell'
 import { Money } from '@/shared/ui/money'
 import { Score } from '@/shared/ui/score'
 import { VisaBadge } from '@/shared/ui/visa-badge'
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 interface PostingDetailPanelProps {
   postingId: string
@@ -31,42 +29,7 @@ export function PostingDetailPanel({ postingId, onClose, track = null }: Posting
   const { data: posting, isPending, isError } = usePostingDetail(postingId, track)
   const setTriage = useSetTriage()
   const panelRef = useRef<HTMLDivElement>(null)
-  const previouslyFocused = useRef<Element | null>(null)
-
-  useEffect(() => {
-    previouslyFocused.current = document.activeElement
-    panelRef.current?.focus()
-    return () => {
-      if (previouslyFocused.current instanceof HTMLElement) previouslyFocused.current.focus()
-    }
-  }, [])
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Tab') return
-      const panel = panelRef.current
-      if (!panel) return
-      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-      if (focusable.length === 0) {
-        event.preventDefault()
-        return
-      }
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-      if (!first || !last) return
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [])
+  useModal(panelRef)
 
   const visaReason = posting?.reasons.find((reason) => reason.code.toLowerCase().includes('sponsor'))
 

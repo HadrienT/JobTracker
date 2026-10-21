@@ -24,6 +24,7 @@ type PostingDetailOut = Schemas['PostingDetailOut']
 
 const PAGE_SIZE = 50
 const POSTINGS_ROOT_KEY = 'postings' as const
+const APPLICATIONS_ROOT_KEY = 'applications' as const
 
 export function postingsQueryKey(filter: PostingsFilter, sort: SortKey) {
   return [POSTINGS_ROOT_KEY, filter, sort] as const
@@ -230,6 +231,8 @@ export function useSetApplicationStatus() {
       mutation.mutate(variables, {
         onSettled: () => {
           void queryClient.invalidateQueries({ queryKey: [POSTINGS_ROOT_KEY] })
+          // the status *is* an application now (WP21): the Applications tab follows
+          void queryClient.invalidateQueries({ queryKey: [APPLICATIONS_ROOT_KEY] })
         },
       })
     },
@@ -243,6 +246,94 @@ export function useSetNote() {
     mutationFn: ({ postingId, note }: { postingId: string; note: string }) => api.setNote(postingId, note),
     onSuccess: (_data, { postingId, note }) => {
       patchCachedDetails(queryClient, postingId, { note })
+    },
+  })
+}
+
+// --- applications (blueprint/wp/WP21-applications.md §6) ------------------------------------
+
+export type ApplicationOut = Schemas['ApplicationOut']
+export type ApplicationDetailOut = Schemas['ApplicationDetailOut']
+export type ApplicationCreate = Schemas['ApplicationCreate']
+/** Every application — a few hundred rows, filtered and sorted in the tab itself. */
+export function useApplications() {
+  return useQuery({
+    queryKey: [APPLICATIONS_ROOT_KEY],
+    queryFn: () => api.listApplications(),
+  })
+}
+
+export function useApplicationDetail(applicationId: string | null) {
+  return useQuery({
+    queryKey: [APPLICATIONS_ROOT_KEY, 'detail', applicationId],
+    queryFn: () => {
+      if (applicationId === null) throw new Error('useApplicationDetail: queryFn ran without an id')
+      return api.getApplication(applicationId)
+    },
+    enabled: applicationId !== null,
+  })
+}
+
+/**
+ * Every application write answers with the fresh detail: it goes straight into the cache, then
+ * the list is refetched — and the feed too, whose status badge mirrors a linked application.
+ */
+function useApplicationWrite<TVariables>(write: (variables: TVariables) => Promise<ApplicationDetailOut>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: write,
+    onSuccess: (detail) => {
+      queryClient.setQueryData([APPLICATIONS_ROOT_KEY, 'detail', detail.application_id], detail)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: [APPLICATIONS_ROOT_KEY] })
+      void queryClient.invalidateQueries({ queryKey: [POSTINGS_ROOT_KEY] })
+    },
+  })
+}
+
+export function useCreateApplication() {
+  return useApplicationWrite((body: ApplicationCreate) => api.createApplication(body))
+}
+
+export function useRecordApplicationStatus() {
+  return useApplicationWrite(
+    ({ applicationId, body }: { applicationId: string; body: Schemas['ApplicationStatusRequest'] }) =>
+      api.recordApplicationStatus(applicationId, body),
+  )
+}
+
+export function useEditApplication() {
+  return useApplicationWrite(
+    ({ applicationId, body }: { applicationId: string; body: Schemas['ApplicationEditRequest'] }) =>
+      api.editApplication(applicationId, body),
+  )
+}
+
+export function useArchiveOffer() {
+  return useApplicationWrite(({ applicationId, body }: { applicationId: string; body: Schemas['OfferTextRequest'] }) =>
+    api.archiveOffer(applicationId, body),
+  )
+}
+
+export function useUploadApplicationFile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ applicationId, file }: { applicationId: string; file: File }) =>
+      api.uploadApplicationFile(applicationId, file),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: [APPLICATIONS_ROOT_KEY] })
+    },
+  })
+}
+
+export function useDeleteApplication() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (applicationId: string) => api.deleteApplication(applicationId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: [APPLICATIONS_ROOT_KEY] })
+      void queryClient.invalidateQueries({ queryKey: [POSTINGS_ROOT_KEY] })
     },
   })
 }

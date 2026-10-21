@@ -1117,3 +1117,13 @@ def record_raw_inputs(
         "UPDATE postings SET location_raw = ?, posted_at_raw = ? WHERE posting_id = ?",
         (location_raw, posted_at_raw, posting_id),
     )
+
+
+def posting_id_by_url(conn: sqlite3.Connection, url: str) -> str | None:
+    """The collected posting behind an offer's URL — its own, or a republication's."""
+    row = conn.execute(
+        "SELECT posting_id FROM postings WHERE url = ? UNION ALL "
+        "SELECT canonical_id FROM posting_aliases WHERE url = ? LIMIT 1",
+        (url, url),
+    ).fetchone()
+    return str(row[0]) if row is not None else None

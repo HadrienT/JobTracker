@@ -129,6 +129,60 @@ export const api = {
   getHealth(): Promise<Schemas['HealthSnapshot']> {
     return request('/health')
   },
+
+  // --- applications (blueprint/wp/WP21-applications.md §6) ---
+  listApplications(): Promise<Schemas['ApplicationOut'][]> {
+    return request('/applications')
+  },
+  getApplication(applicationId: string): Promise<Schemas['ApplicationDetailOut']> {
+    return request(`/applications/${encodeURIComponent(applicationId)}`)
+  },
+  createApplication(body: Schemas['ApplicationCreate']): Promise<Schemas['ApplicationDetailOut']> {
+    return request('/applications', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  recordApplicationStatus(
+    applicationId: string,
+    body: Schemas['ApplicationStatusRequest'],
+  ): Promise<Schemas['ApplicationDetailOut']> {
+    return request(`/applications/${encodeURIComponent(applicationId)}/status`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  editApplication(
+    applicationId: string,
+    body: Schemas['ApplicationEditRequest'],
+  ): Promise<Schemas['ApplicationDetailOut']> {
+    return request(`/applications/${encodeURIComponent(applicationId)}/edit`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  deleteApplication(applicationId: string): Promise<void> {
+    return request(`/applications/${encodeURIComponent(applicationId)}/delete`, { method: 'POST' })
+  },
+  archiveOffer(applicationId: string, body: Schemas['OfferTextRequest']): Promise<Schemas['ApplicationDetailOut']> {
+    return request(`/applications/${encodeURIComponent(applicationId)}/offer`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  /** The raw file as the body, its name in the query string — no multipart needed. */
+  uploadApplicationFile(applicationId: string, file: File): Promise<Schemas['ApplicationFileOut']> {
+    return request(`/applications/${encodeURIComponent(applicationId)}/files${buildSearch({ name: file.name })}`, {
+      method: 'POST',
+      body: file,
+      headers: { 'content-type': 'application/octet-stream' },
+    })
+  },
+  /** A plain link to one of the application's files (PDF, screenshot), opened by the browser. */
+  applicationFileUrl(applicationId: string, path: string): string {
+    const segments = path.split('/').map(encodeURIComponent).join('/')
+    return `${apiBase()}/applications/${encodeURIComponent(applicationId)}/files/${segments}`
+  },
 }
 
 export type { PostingsQuery, FacetsQuery, CompaniesQuery, MapPinsQuery }

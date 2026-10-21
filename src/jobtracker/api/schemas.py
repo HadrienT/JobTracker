@@ -3,12 +3,15 @@
 change what the front already depends on.
 """
 
+from datetime import date
 from decimal import Decimal
 from typing import Annotated, Any
 
 from pydantic import BaseModel, StringConstraints
 
+from jobtracker.career.lifecycle import is_abandoned, is_open, last_news
 from jobtracker.core.enums import (
+    ApplicationOrigin,
     ApplicationStatus,
     RemoteMode,
     RoleFamily,
@@ -19,7 +22,7 @@ from jobtracker.core.enums import (
     Triage,
     VisaStatus,
 )
-from jobtracker.core.models import Reason
+from jobtracker.core.models import Application, Reason
 from jobtracker.store.postings import PostingAliasRow, PostingRow
 
 # A note is a reminder, not a document: bounded so one request cannot fill the database.
@@ -191,3 +194,116 @@ class CompanyOut(BaseModel):
 
 class FlagRequest(BaseModel):
     value: bool
+
+
+# --- applications — blueprint/wp/WP21-applications.md -----------------------------------------
+
+_Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+_Short = Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)]
+# A pasted offer: long postings run to ~15 000 characters; bounded all the same.
+OFFER_TEXT_MAX_LENGTH = 60_000
+
+
+class ApplicationEventOut(BaseModel):
+    on_date: date | None
+    status: ApplicationStatus
+    reason: str
+
+
+class ApplicationFileOut(BaseModel):
+    name: str
+    path: str  # pass back to GET /applications/{id}/files/{path}
+    kind: str  # offer | cv | letter | other
+    size: int
+
+
+class ApplicationOut(BaseModel):
+    application_id: str
+    company: str
+    company_slug: str | None
+    title: str | None
+    location: str | None
+    applied_on: date | None
+    applied_on_estimated: bool
+    closed_on: date | None
+    status: ApplicationStatus
+    reason: str
+    posting_id: str | None
+    origin: ApplicationOrigin
+    note: str
+    # Derived on every read, never stored (WP21 §2.3): still waiting, and for how long.
+    open: bool
+    abandoned: bool  # applied/interview with no news for five months
+    last_news_on: date | None
+    reached_interview: bool
+
+    @classmethod
+    def from_application(cls, application: Application, *, today: date) -> "ApplicationOut":
+        return cls(
+            application_id=application.application_id,
+            company=application.company,
+            company_slug=application.company_slug,
+            title=application.title,
+            location=application.location,
+            applied_on=application.applied_on,
+            applied_on_estimated=application.applied_on_estimated,
+            closed_on=application.closed_on,
+            status=application.status,
+            reason=application.reason,
+            posting_id=application.posting_id,
+            origin=application.origin,
+            note=application.note,
+            open=is_open(application, today),
+            abandoned=is_abandoned(application, today),
+            last_news_on=last_news(application),
+            reached_interview=any(
+                e.status in {ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER}
+                for e in application.events
+            )
+            or application.status in {ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER},
+        )
+
+
+class ApplicationDetailOut(ApplicationOut):
+    events: tuple[ApplicationEventOut, ...]
+    files: tuple[ApplicationFileOut, ...]
+    dossier: str | None
+    posting_title: str | None
+    posting_url: str | None
+
+
+class ApplicationCreate(BaseModel):
+    """An application typed in. `url` of a collected posting links it; `offer_text` (the offer
+    pasted) is typeset into the archived offer.pdf."""
+
+    company: _Name
+    title: _Name
+    location: _Short | None = None
+    url: Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)] | None = None
+    applied_on: date | None = None  # default today
+    status: ApplicationStatus = ApplicationStatus.APPLIED
+    note: Annotated[str, StringConstraints(max_length=NOTE_MAX_LENGTH)] = ""
+    offer_text: Annotated[str, StringConstraints(max_length=OFFER_TEXT_MAX_LENGTH)] | None = None
+
+
+class ApplicationStatusRequest(BaseModel):
+    status: ApplicationStatus
+    on_date: date | None = None  # default today
+    reason: _Short | None = None
+
+
+class ApplicationEditRequest(BaseModel):
+    """Only the fields given change."""
+
+    company: _Name | None = None
+    title: _Name | None = None
+    location: _Short | None = None
+    applied_on: date | None = None
+    note: Annotated[str, StringConstraints(max_length=NOTE_MAX_LENGTH)] | None = None
+
+
+class OfferTextRequest(BaseModel):
+    """Re-archive the offer: from this text, else from the linked posting."""
+
+    text: Annotated[str, StringConstraints(max_length=OFFER_TEXT_MAX_LENGTH)] | None = None
+    url: Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)] | None = None

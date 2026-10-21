@@ -4,6 +4,162 @@
  */
 
 export interface paths {
+    "/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Applications
+         * @description Every application, newest first — a few hundred rows: the tab filters them itself.
+         */
+        get: operations["get_applications_applications_get"];
+        put?: never;
+        /**
+         * Post Application
+         * @description An application typed in. A URL the collector knows links its posting; pasted offer text
+         *     (else that posting) is archived as offer.pdf once the response is sent.
+         */
+        post: operations["post_application_applications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{application_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Application Detail */
+        get: operations["get_application_detail_applications__application_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{application_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Application Delete
+         * @description The row goes; its folder stays on disk.
+         */
+        post: operations["post_application_delete_applications__application_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{application_id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Application Edit */
+        post: operations["post_application_edit_applications__application_id__edit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{application_id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Application File
+         * @description Attach a file (the CV sent, a letter, a screenshot): the raw body, named by `name`.
+         */
+        post: operations["post_application_file_applications__application_id__files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{application_id}/files/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Application File
+         * @description One of the application's files, shown inline (PDF, image) — only a listed one.
+         */
+        get: operations["get_application_file_applications__application_id__files__path__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{application_id}/offer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Application Offer
+         * @description (Re)archive offer.pdf now — from the text given, else from the linked posting.
+         */
+        post: operations["post_application_offer_applications__application_id__offer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{application_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Application Status */
+        post: operations["post_application_status_applications__application_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/companies": {
         parameters: {
             query?: never;
@@ -250,11 +406,166 @@ export interface components {
             url: string;
         };
         /**
+         * ApplicationCreate
+         * @description An application typed in. `url` of a collected posting links it; `offer_text` (the offer
+         *     pasted) is typeset into the archived offer.pdf.
+         */
+        ApplicationCreate: {
+            /** Applied On */
+            applied_on?: string | null;
+            /** Company */
+            company: string;
+            /** Location */
+            location?: string | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Offer Text */
+            offer_text?: string | null;
+            /** @default applied */
+            status: components["schemas"]["ApplicationStatus"];
+            /** Title */
+            title: string;
+            /** Url */
+            url?: string | null;
+        };
+        /** ApplicationDetailOut */
+        ApplicationDetailOut: {
+            /** Abandoned */
+            abandoned: boolean;
+            /** Application Id */
+            application_id: string;
+            /** Applied On */
+            applied_on: string | null;
+            /** Applied On Estimated */
+            applied_on_estimated: boolean;
+            /** Closed On */
+            closed_on: string | null;
+            /** Company */
+            company: string;
+            /** Company Slug */
+            company_slug: string | null;
+            /** Dossier */
+            dossier: string | null;
+            /** Events */
+            events: components["schemas"]["ApplicationEventOut"][];
+            /** Files */
+            files: components["schemas"]["ApplicationFileOut"][];
+            /** Last News On */
+            last_news_on: string | null;
+            /** Location */
+            location: string | null;
+            /** Note */
+            note: string;
+            /** Open */
+            open: boolean;
+            origin: components["schemas"]["ApplicationOrigin"];
+            /** Posting Id */
+            posting_id: string | null;
+            /** Posting Title */
+            posting_title: string | null;
+            /** Posting Url */
+            posting_url: string | null;
+            /** Reached Interview */
+            reached_interview: boolean;
+            /** Reason */
+            reason: string;
+            status: components["schemas"]["ApplicationStatus"];
+            /** Title */
+            title: string | null;
+        };
+        /**
+         * ApplicationEditRequest
+         * @description Only the fields given change.
+         */
+        ApplicationEditRequest: {
+            /** Applied On */
+            applied_on?: string | null;
+            /** Company */
+            company?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** ApplicationEventOut */
+        ApplicationEventOut: {
+            /** On Date */
+            on_date: string | null;
+            /** Reason */
+            reason: string;
+            status: components["schemas"]["ApplicationStatus"];
+        };
+        /** ApplicationFileOut */
+        ApplicationFileOut: {
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+        };
+        /**
+         * ApplicationOrigin
+         * @description How an application reached the table (blueprint/wp/WP21-applications.md §2).
+         * @enum {string}
+         */
+        ApplicationOrigin: "import" | "feed" | "cli";
+        /** ApplicationOut */
+        ApplicationOut: {
+            /** Abandoned */
+            abandoned: boolean;
+            /** Application Id */
+            application_id: string;
+            /** Applied On */
+            applied_on: string | null;
+            /** Applied On Estimated */
+            applied_on_estimated: boolean;
+            /** Closed On */
+            closed_on: string | null;
+            /** Company */
+            company: string;
+            /** Company Slug */
+            company_slug: string | null;
+            /** Last News On */
+            last_news_on: string | null;
+            /** Location */
+            location: string | null;
+            /** Note */
+            note: string;
+            /** Open */
+            open: boolean;
+            origin: components["schemas"]["ApplicationOrigin"];
+            /** Posting Id */
+            posting_id: string | null;
+            /** Reached Interview */
+            reached_interview: boolean;
+            /** Reason */
+            reason: string;
+            status: components["schemas"]["ApplicationStatus"];
+            /** Title */
+            title: string | null;
+        };
+        /**
          * ApplicationStatus
          * @description Where an application stands — the user's, set by hand. Absent means "not tracked".
          * @enum {string}
          */
         ApplicationStatus: "applied" | "interview" | "offer" | "rejected" | "withdrawn";
+        /** ApplicationStatusRequest */
+        ApplicationStatusRequest: {
+            /** On Date */
+            on_date?: string | null;
+            /** Reason */
+            reason?: string | null;
+            status: components["schemas"]["ApplicationStatus"];
+        };
         /** CompanyOut */
         CompanyOut: {
             /** Company Name */
@@ -420,6 +731,16 @@ export interface components {
         NoteRequest: {
             /** Note */
             note: string;
+        };
+        /**
+         * OfferTextRequest
+         * @description Re-archive the offer: from this text, else from the linked posting.
+         */
+        OfferTextRequest: {
+            /** Text */
+            text?: string | null;
+            /** Url */
+            url?: string | null;
         };
         /** PostingDetailOut */
         PostingDetailOut: {
@@ -659,6 +980,289 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_applications_applications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationOut"][];
+                };
+            };
+        };
+    };
+    post_application_applications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_application_detail_applications__application_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_application_delete_applications__application_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_application_edit_applications__application_id__edit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_application_file_applications__application_id__files_post: {
+        parameters: {
+            query: {
+                name: string;
+            };
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationFileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_application_file_applications__application_id__files__path__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_application_offer_applications__application_id__offer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfferTextRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_application_status_applications__application_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_companies_companies_get: {
         parameters: {
             query?: {

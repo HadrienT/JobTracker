@@ -152,11 +152,25 @@ Le LLM du CV, c'est la session Claude Code ; JobTracker fournit le contexte et l
   `facts.md` ne l'est pas. Le skill liste chaque affirmation nouvelle pour la relecture.
 - Compilation : `tectonic` (binaire unique, paquets à la demande), lancé dans un conteneur.
 
-## 6. Front — onglet Applications (étape 5)
+## 6. Front — onglet Applications (`/applications`)
 
-Table dense (société, intitulé, lieu, candidature, réponse, délai, statut), filtres statut /
-année / pays, panneau de détail avec captures, CV envoyé et historique ; statistiques : taux de
-réponse, délai médian, taux d'entretien par type de poste et par variante de CV.
+- **API** (`api/routes/applications.py`) : `GET /applications` (toutes, quelques centaines :
+  l'onglet filtre lui-même), `GET /applications/{id}` (historique, pièces, offre liée),
+  `POST /applications` (saisie à la main ; une URL collectée lie l'offre ; le texte collé devient
+  `offer.pdf`), `POST …/status`, `…/edit`, `…/delete`, `…/offer`, `…/files?name=` (le fichier en
+  corps brut — pas de dépendance multipart), `GET …/files/{chemin}` (seulement un fichier
+  *listé* du dossier : aucune sortie possible). Tout passe par `api.tracking`, comme la CLI.
+- `open`, `abandoned`, `last_news_on`, `reached_interview` sont **calculés à chaque lecture**
+  (`career.lifecycle`, §2.3) — jamais stockés, jamais recalculés par le front.
+- **Écran** : bandeau de chiffres (total, ouvertes, entretiens, offres, refus, sans nouvelles
+  depuis 5 mois, taux de réponse, délai médian d'un refus) ; vues *Open* (défaut) / *All* /
+  *Interviews* / *Offers* / *Rejected* / *No news 5+ months*, recherche sans accents, année,
+  tri par colonne — l'état vit dans l'URL ; table dense, ligne grisée si abandonnée.
+- **Panneau** `/applications/p/{id}` : statut + historique daté, nouvelle étape (statut choisi
+  explicitement, date, motif), note (sauvée en quittant le champ), pièces (captures en vignettes,
+  PDF/CV en liens, envoi d'un fichier), PDF de l'offre (depuis l'offre liée ou un texte collé),
+  correction des champs, suppression confirmée (les fichiers restent sur le disque).
+- **New application** : formulaire de saisie à la main, texte de l'offre collé → `offer.pdf`.
 
 ## 7. Étapes
 
@@ -166,4 +180,4 @@ réponse, délai médian, taux d'entretien par type de poste et par variante de 
 | 2 | PDF de l'offre à la candidature (§4) — fait |
 | 3 | Unification avec WP18 (§2.2), ad hoc `jobtracker app` (§2bis) — fait |
 | 4 | *(mis de côté, #6)* `cv context`, `cv build`, `apply`, skill `tailor-cv` |
-| 5 | *(mis de côté, #7)* API `/applications` + onglet Applications |
+| 5 | API `/applications` + onglet Applications (§6) — fait |
