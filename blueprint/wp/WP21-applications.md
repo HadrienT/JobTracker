@@ -54,11 +54,54 @@ de WP18 (§5).
 | « Not interested », « Job filled », « Too many CVs », date de refus seule | `rejected` |
 | « Failed N(th) interview » | `rejected`, et un évènement `interview` antérieur |
 
-### 2.2 Unification avec WP18 (étape 3)
+### 2.2 Unification avec WP18 — une seule vérité
 
-Le statut posé sur une offre du feed **devient** une candidature liée (`source = feed`) ; la
-colonne `user_flags.application_status` est migrée puis lue depuis `applications`. Une seule
-vérité : la pastille du feed et l'onglet Applications ne peuvent pas diverger.
+- `applications` est la source. `user_flags.application_status` reste, comme **miroir** : toutes
+  les requêtes du feed (filtres, export, rétention) filtrent dessus sans changer. Seul
+  `store.applications` l'écrit (`_mirror`), après chaque changement d'une candidature liée.
+- Le select de statut du panneau (`POST /postings/{id}/status`) passe par `api.tracking.track_posting`,
+  **le même code** que `jobtracker app add --posting` :
+  1. l'offre a déjà une candidature → un pas d'historique (`record_status`) ;
+  2. sinon, une candidature **saisie à la main ou importée** chez le même employeur, à ±4 jours,
+     même intitulé/lieu, est rattachée (`career.feedlink`) — postuler hors pipeline puis voir
+     l'offre collectée ne fait pas de doublon ;
+  3. sinon, elle est créée (`origin = feed`) avec son dossier, et `offer.pdf` est rendu **après**
+     la réponse (tâche de fond) : un échec de rendu est journalisé, jamais bloquant.
+- `null` (« Not tracking ») : une candidature créée par le feed est supprimée (ses fichiers
+  restent sur le disque) ; une autre est seulement détachée de l'offre.
+- Reprise des statuts d'avant (`jobtracker app adopt-feed`) : un statut qui correspond à une
+  candidature de l'historique y est rattaché (l'historique en sait plus : le refus apparaît dans
+  le feed) ; les `applied` restants deviennent des candidatures ; les `withdrawn` sans candidature
+  étaient le « pas pour moi » d'avant le triage → `triage = no`. Les `applied` réclament leur
+  candidature avant les `withdrawn` (deux offres jumelles, l'une postulée, l'autre écartée).
+
+### 2.3 Abandon : cinq mois sans nouvelles
+
+Une candidature `applied` ou `interview` sans aucun pas daté depuis **5 mois** compte comme
+abandonnée (`career.lifecycle`) : elle sort de `app list --open`. **Rien n'est stocké** — ni
+statut, ni drapeau : le jour où une nouvelle arrive, le statut enregistré suffit.
+
+### 2.4 Retouches à la main et ré-import
+
+Une ligne importée que personne n'a touchée a `updated_at = created_at`. Un ré-import ne
+rafraîchit — et ne purge — que celles-là : un statut, une note, un lien posés à la main survivent.
+L'identifiant d'une ligne importée dérive du nom **tel qu'écrit** (pas de la clé de
+rapprochement) : ajouter un alias ne change l'identité de personne.
+
+## 2bis. Le ad hoc d'abord — `jobtracker app` (`just app …`)
+
+Rien n'exige le collecteur. Une offre vue sur LinkedIn, un mail de recruteur, une cooptation :
+
+| | |
+|---|---|
+| `app add --company C --title T [--location L] [--url U] [--text F\|-] [--attach cv.pdf …] [--date D] [--note N]` | `--text` : le texte collé, mis en page en PDF ; `--url` seul : la page imprimée en PDF par Chromium ; une URL déjà collectée bascule sur l'offre |
+| `app add --posting <id>` | depuis une offre collectée : même chemin que le feed |
+| `app status <id> interview\|offer\|rejected\|withdrawn [--date] [--reason]` | un pas d'historique |
+| `app list [--open] [--status S] [--company X]` · `app show <id>` | `--open` applique la règle des 5 mois |
+| `app edit` · `app link <id> <posting\|none>` · `app attach <id> fichiers…` · `app pdf <id> [--url\|--text]` · `app rm <id> --yes` | |
+| `app adopt-feed [--apply] [--no-pdf]` | reprise des statuts posés dans le feed avant WP21 |
+
+Les identifiants se donnent par préfixe unique, comme un sha git.
 
 ## 3. Import de l'historique — `jobtracker import-applications`
 
@@ -87,9 +130,12 @@ L'historique garde ses captures telles quelles : **pas d'OCR**. Pour une offre c
 capture d'écran est remplacée par un **PDF propre** produit par JobTracker au moment où l'on
 passe l'offre en `applied` : intitulé, société, lieu(x), rémunération, visa, lien d'origine, date
 de collecte et date de candidature en tête, puis la description complète. Gabarit HTML maison,
-rendu par le Chromium déjà présent dans l'image (`page.pdf()`), rangé en `offer.pdf` dans le
-dossier de la candidature — l'offre reste lisible le jour où elle disparaît du site. Le même PDF
-est téléchargeable depuis le panneau de détail.
+rendu par le Chromium déjà présent dans l'image (`page.pdf()`), hors ligne (toute requête de la
+page est coupée), rangé en `offer.pdf` dans le dossier de la candidature — l'offre reste lisible
+le jour où elle disparaît du site. Bouton **Offer PDF** du panneau de détail :
+`GET /postings/{id}/offer.pdf` sert la copie archivée, sinon la rend à la volée (503 sans
+navigateur). Hors pipeline : `app add --text` (mise en page du texte collé) ou `--url` (la page
+elle-même imprimée, `collect.browser.BrowserClient.print_pdf`).
 
 ## 5. CV ciblé — rédigé dans Claude Code
 
@@ -116,8 +162,8 @@ réponse, délai médian, taux d'entretien par type de poste et par variante de 
 
 | # | Livrable |
 |---|---|
-| 1 | Migration `0011`, `store.applications`, `career.sheet` + `career.dossier` + `career.reconcile`, CLI `import-applications` |
-| 2 | PDF de l'offre à la candidature (§4) |
-| 3 | Unification avec WP18 (statut du feed = candidature liée) |
-| 4 | `cv context`, `cv build`, `apply`, skill `tailor-cv` |
-| 5 | API `/applications` + onglet Applications |
+| 1 | *(fait)* Migration `0011`, `store.applications`, `career.sheet` + `career.dossier` + `career.reconcile`, CLI `import-applications` |
+| 2 | PDF de l'offre à la candidature (§4) — fait |
+| 3 | Unification avec WP18 (§2.2), ad hoc `jobtracker app` (§2bis) — fait |
+| 4 | *(mis de côté, #6)* `cv context`, `cv build`, `apply`, skill `tailor-cv` |
+| 5 | *(mis de côté, #7)* API `/applications` + onglet Applications |

@@ -18,7 +18,7 @@ jobs:
       - run: uv run ruff format --check src tests tools
       - run: uv run mypy
       - run: uv run lint-imports
-      - run: uv run pytest -m "not live"
+      - run: uv run pytest -m "not live and not browser"
 
   frontend:
     runs-on: ubuntu-latest

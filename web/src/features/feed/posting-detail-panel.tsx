@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { api } from '@/api/client'
 import { type Track, usePostingDetail, useSetTriage } from '@/api/queries'
 import { TRIAGE_VIEWS } from '@/features/feed/triage'
 import { rejectionReasonLabel } from '@/features/filters/defaults'
@@ -217,14 +218,24 @@ export function PostingDetailPanel({ postingId, onClose, track = null }: Posting
               </p>
             </section>
 
-            <a
-              href={posting.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-auto self-start rounded-md border border-border px-3 py-1.5 text-sm text-text-primary hover:bg-surface-elevated"
-            >
-              Open original posting ↗
-            </a>
+            <div className="mt-auto flex flex-wrap gap-2">
+              <a
+                href={posting.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-text-primary hover:bg-surface-elevated"
+              >
+                Open original posting ↗
+              </a>
+              <a
+                href={api.offerPdfUrl(posting.posting_id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-text-primary hover:bg-surface-elevated"
+              >
+                Offer PDF
+              </a>
+            </div>
           </>
         )}
       </div>

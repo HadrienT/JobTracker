@@ -28,6 +28,8 @@ from typing import Any, Self
 
 import httpx
 
+from jobtracker.core.errors import CollectError
+
 _NAVIGATION_TIMEOUT_MS = 45_000
 _SETTLE_TIMEOUT_MS = 5_000
 _RESETTLE_TIMEOUT_MS = 1_500
@@ -106,6 +108,28 @@ class BrowserClient:
         finally:
             context.close()
         return httpx.Response(status, text="\n".join(parts), request=request)
+
+    def print_pdf(self, url: str) -> bytes:
+        """The page at `url`, rendered and printed to A4 as the browser's print view would —
+        for an offer JobTracker never collected (WP21 §4). Raises `CollectError`."""
+        try:
+            from playwright.sync_api import Error as PlaywrightError
+        except ImportError as exc:
+            raise CollectError(_UNAVAILABLE) from exc
+        try:
+            context = self._launched().new_context(user_agent=self._user_agent, locale="en-US")
+        except PlaywrightError as exc:
+            raise CollectError(f"{_UNAVAILABLE} ({exc})") from exc
+        try:
+            page = context.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=_NAVIGATION_TIMEOUT_MS)
+            _settle(page)
+            page.emulate_media(media="print")
+            return bytes(page.pdf(format="A4", print_background=True))
+        except PlaywrightError as exc:
+            raise CollectError(f"browser failed printing {url}: {exc}") from exc
+        finally:
+            context.close()
 
     def _call_api(
         self,

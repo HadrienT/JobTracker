@@ -54,6 +54,10 @@ collect *args:
 import-applications sheet dossier *args:
     uv run jobtracker import-applications --sheet "{{sheet}}" --dossier "{{dossier}}" {{args}}
 
+# candidatures à la main : `just app list --open`, `just app add --company X --title Y --url U`, `just app status <id> interview`…
+app *args:
+    uv run jobtracker app {{args}}
+
 # l'interface en local : API + front dans docker, sur http://127.0.0.1:5190 (lit ./data/jobtracker.db)
 up:
     mkdir -p data

@@ -26,6 +26,7 @@ from jobtracker.core.models import Board
 from jobtracker.match.profile import load_profile, load_tracks
 from jobtracker.normalize.taxonomy import load_taxonomy
 from jobtracker.runtime.aggregator_loader import load_aggregators
+from jobtracker.runtime.app_cli import add_app_parser
 from jobtracker.runtime.applications import import_history, report_lines
 from jobtracker.runtime.pipeline import ingest
 from jobtracker.runtime.replay import UnknownStage, format_report, run_replay
@@ -523,8 +524,9 @@ def cmd_import_applications(args: argparse.Namespace) -> int:
     )
     if args.apply:
         print(
-            f"written {outcome.written}, purged {outcome.purged} stale "
-            f"({outcome.kept_stale} kept: they carry a note), copied {outcome.files_copied} "
+            f"written {outcome.written}, {outcome.kept_edited} left alone (edited by hand), "
+            f"purged {outcome.purged} stale ({outcome.kept_stale} kept: edited by hand), "
+            f"copied {outcome.files_copied} "
             f"files under {settings.career_root / 'applications'}",
             file=sys.stderr,
         )
@@ -664,6 +666,8 @@ def _build_parser() -> argparse.ArgumentParser:
     imp.add_argument("--apply", action="store_true", help="write; the default is a dry run")
     imp.add_argument("--report", help="write the review report (JSONL) to this file")
     imp.set_defaults(func=cmd_import_applications)
+
+    add_app_parser(subparsers)
 
     probe = subparsers.add_parser("probe", help="fetch one company, verbosely, for debugging")
     probe.add_argument("--company", required=True)

@@ -3034,8 +3034,48 @@
         ]
       }
     },
+    "/postings/{posting_id}/offer.pdf": {
+      "get": {
+        "description": "The offer as a clean PDF: the copy archived when you applied, else rendered now.",
+        "operationId": "get_offer_pdf_postings__posting_id__offer_pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "posting_id",
+            "required": true,
+            "schema": {
+              "title": "Posting Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Offer Pdf",
+        "tags": [
+          "postings"
+        ]
+      }
+    },
     "/postings/{posting_id}/status": {
       "post": {
+        "description": "The posting's application (WP21 \u00a72.2): created on the first status, with the offer\narchived as a PDF once the response is sent; `null` stops tracking.",
         "operationId": "set_status_postings__posting_id__status_post",
         "parameters": [
           {

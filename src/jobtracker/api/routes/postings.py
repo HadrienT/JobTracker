@@ -1,10 +1,12 @@
-"""`GET /postings`, `GET /postings/{id}`, and the two favorite/hide writes —
-blueprint/03-INTERFACES.md §3.6.
+"""`GET /postings`, `GET /postings/{id}`, the user's writes on a posting (favorite, hide,
+triage, application status, note) — blueprint/03-INTERFACES.md §3.6 — and the offer as a PDF
+(blueprint/wp/WP21-applications.md §4).
 """
 
 from typing import Annotated
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response
 
 from jobtracker.api.deps import Conn, get_posting_filter
 from jobtracker.api.schemas import (
@@ -18,8 +20,12 @@ from jobtracker.api.schemas import (
     StatusRequest,
     TriageRequest,
 )
+from jobtracker.api.tracking import OFFER_PDF, offer_sheet, render_pending, track_posting
+from jobtracker.career import offer
+from jobtracker.core.clock import utc_now
 from jobtracker.core.enums import Track
-from jobtracker.core.errors import StorageError
+from jobtracker.core.errors import RenderError, StorageError
+from jobtracker.store.applications import application_for_posting
 from jobtracker.store.llm_reviews import current_corrections
 from jobtracker.store.postings import (
     PostingFilter,
@@ -30,7 +36,6 @@ from jobtracker.store.postings import (
     list_postings,
     mark_favorite,
     mark_hidden,
-    set_application_status,
     set_note,
     set_triage,
 )
@@ -111,12 +116,63 @@ def triage_posting(posting_id: str, body: TriageRequest, conn: Conn) -> Response
 
 
 @router.post("/postings/{posting_id}/status", status_code=204)
-def set_status(posting_id: str, body: StatusRequest, conn: Conn) -> Response:
-    if get_posting_row(conn, posting_id) is None:
+def set_status(
+    posting_id: str,
+    body: StatusRequest,
+    conn: Conn,
+    request: Request,
+    background: BackgroundTasks,
+) -> Response:
+    """The posting's application (WP21 §2.2): created on the first status, with the offer
+    archived as a PDF once the response is sent; `null` stops tracking."""
+    row = get_posting_row(conn, posting_id)
+    if row is None:
         raise HTTPException(status_code=404, detail=f"no such posting: {posting_id!r}")
-    set_application_status(conn, posting_id, body.status)
-    conn.commit()
+    today = utc_now().date()
+    tracked = track_posting(
+        conn,
+        row,
+        body.status,
+        today=today,
+        career_root=request.app.state.career_root,
+        aliases=request.app.state.company_aliases,
+    )
+    if tracked.pdf is not None:
+        background.add_task(render_pending, tracked.pdf, today=today)
     return Response(status_code=204)
+
+
+@router.get(
+    "/postings/{posting_id}/offer.pdf",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+def get_offer_pdf(posting_id: str, conn: Conn, request: Request) -> Response:
+    """The offer as a clean PDF: the copy archived when you applied, else rendered now."""
+    row = get_posting_row(conn, posting_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"no such posting: {posting_id!r}")
+    application = application_for_posting(conn, posting_id)
+    archived = (
+        request.app.state.career_root / "applications" / application.dossier / OFFER_PDF
+        if application is not None and application.dossier
+        else None
+    )
+    if archived is not None and archived.is_file():
+        pdf = archived.read_bytes()
+    else:
+        applied_on = application.applied_on if application is not None else None
+        sheet = offer_sheet(conn, row, applied_on)
+        try:
+            pdf = offer.html_to_pdf(offer.offer_html(sheet, archived_on=utc_now().date()))
+        except RenderError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+    filename = f"{row.company_name} - {row.title_raw}.pdf".replace('"', "'")
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename*=UTF-8''{quote(filename)}"},
+    )
 
 
 @router.post("/postings/{posting_id}/note", status_code=204)

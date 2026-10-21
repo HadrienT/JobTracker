@@ -39,6 +39,7 @@ _API_TEST_ENV = {
 
 
 FROZEN_INSTANT = datetime(2026, 1, 1, tzinfo=UTC)
+STUB_PDF = b"%PDF-1.4 stub"
 
 
 @pytest.fixture
@@ -111,6 +112,9 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Test
     for key, value in _API_TEST_ENV.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setenv("JT_DB_PATH", str(tmp_path / "jobtracker.db"))
+    # No headless browser in API tests: the offer PDF is a stub (the real render is
+    # tests/test_career_offer.py, marked `browser`).
+    monkeypatch.setattr("jobtracker.career.offer.html_to_pdf", lambda _html: STUB_PDF)
 
     with TestClient(app) as client:
         yield client

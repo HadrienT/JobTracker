@@ -51,6 +51,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just llm-review` | le LLM **relit toutes les offres** et corrige salaire, lieux, séniorité, visa, doctorat, date limite — chaque correction exige une citation retrouvée dans le texte ; `--dry-run` n'écrit rien, `--limit N`, `--report f.jsonl` (`blueprint/wp/WP19-llm-review.md`) |
 | `just llm-revert --field F` | annule les corrections du LLM sur un champ : valeur d'avant restaurée, score recalculé, offre relue |
 | `just import-applications <csv> <dossier>` | historique de candidatures : export CSV de la Sheet + dossier `Société/Poste/` (captures, CV envoyé) → table `applications`, pièces copiées sous `data/career/` ; dry-run par défaut, `--apply`, `--report f.jsonl` (`blueprint/wp/WP21-applications.md`) |
+| `just app …` | candidatures **à la main**, sans le pipeline : `app add --company X --title Y --url U` (ou `--text offre.txt`, `--posting <id>`, `--attach cv.pdf`), `app status <id> interview`, `app list --open` (5 mois sans nouvelles = abandonnée, rien n'est stocké), `app show/edit/link/attach/pdf/rm` ; `app adopt-feed --apply` reprend les statuts posés dans le feed avant WP21 |
 | `just backup` | sauvegarde à chaud de `./data/jobtracker.db` dans `./backups` |
 | `just timers-install` / `timers-remove` | collecte 3×/jour + sauvegarde quotidienne, minuteries systemd **utilisateur** (`deploy/local/`) |
 | `just loop` | ordonnanceur continu |
