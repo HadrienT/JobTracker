@@ -15,12 +15,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from jobtracker.api.routes import companies, export, facets, health, postings
 from jobtracker.api.routes import map as map_routes
-from jobtracker.core.config import load_settings
+from jobtracker.career.names import alias_map
+from jobtracker.core.config import load_settings, load_yaml
 from jobtracker.core.db import apply_migrations, connect
 from jobtracker.core.geo import load_geo_index
 from jobtracker.store.schema import MIGRATIONS_DIR
 
 GEO_CONFIG = Path(__file__).resolve().parents[3] / "configs" / "geo.yaml"
+COMPANY_ALIASES = GEO_CONFIG.with_name("company_aliases.yaml")
 
 
 @asynccontextmanager
@@ -29,6 +31,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     conn: sqlite3.Connection = connect(settings.db_path)
     apply_migrations(conn, MIGRATIONS_DIR)
     app.state.conn = conn
+    app.state.career_root = settings.career_root
+    app.state.company_aliases = alias_map(load_yaml(COMPANY_ALIASES))
     app.state.geo = load_geo_index(GEO_CONFIG)
     try:
         yield

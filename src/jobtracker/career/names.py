@@ -17,7 +17,7 @@ _COMPANY_NOISE = frozenset(
     {
         "ag", "sa", "llc", "lp", "ltd", "inc", "plc", "co", "and", "the",
         "group", "management", "capital", "technologies", "technology", "technologie", "tech",
-        "research", "securities", "partners", "asset",
+        "research", "partners", "asset", "trading", "fund",
     }
 )  # fmt: skip
 # The same words glued to the name ("ManGroup", "HeadlandsTech"), longest first.

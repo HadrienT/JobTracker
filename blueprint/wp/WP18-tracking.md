@@ -58,3 +58,7 @@ pastille, jamais d'erreur.
 - Pas d'historique des changements de statut (seule la date du dernier est gardée).
 - Pas de rappel ni de date de relance.
 - Le statut est global (un seul utilisateur, ADR-011).
+
+> **Depuis WP21** : le statut est porté par une candidature (`applications`), avec son historique
+> daté et ses pièces ; `user_flags.application_status` n'en est plus que le miroir. Voir
+> [WP21](WP21-applications.md) §2.2.

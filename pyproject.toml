@@ -79,8 +79,9 @@ markers = [
     "property: tests hypothesis sur les invariants I1→I3 (aucun réseau)",
     "db: nécessite une base SQLite temporaire",
     "live: appels réels aux sources externes — exclu de la CI",
+    "browser: lance un vrai Chromium headless (rendu PDF, WP21) — exclu par défaut",
 ]
-addopts = "-m 'not live' --strict-markers"
+addopts = "-m 'not live and not browser' --strict-markers"
 
 [tool.coverage.run]
 source = ["jobtracker"]
@@ -138,12 +139,12 @@ forbidden_modules = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "D6 — api n'importe que core et store"
+name = "D6 — api n'importe que core, store et career"
 type = "forbidden"
 source_modules = ["jobtracker.api"]
+# `career` (WP21) : l'API crée la candidature et archive le PDF de l'offre — local, sans réseau.
 forbidden_modules = [
     "jobtracker.collect", "jobtracker.normalize", "jobtracker.match", "jobtracker.runtime",
-    "jobtracker.career",
 ]
 
 [[tool.importlinter.contracts]]

@@ -96,10 +96,11 @@ describe('PostingDetailPanel', () => {
     await screen.findByText(target.title)
 
     const closeButton = screen.getByRole('button', { name: 'Close' })
-    const applyLink = await screen.findByRole('link', { name: /Open original posting/ })
+    // The offer PDF link is the panel's last focusable element.
+    const lastLink = await screen.findByRole('link', { name: 'Offer PDF' })
 
-    applyLink.focus()
-    expect(document.activeElement).toBe(applyLink)
+    lastLink.focus()
+    expect(document.activeElement).toBe(lastLink)
     await user.tab()
     expect(document.activeElement).toBe(closeButton)
   })

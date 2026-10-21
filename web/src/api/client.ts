@@ -80,6 +80,10 @@ export const api = {
   exportUrl(query: PostingsQuery): string {
     return `${apiBase()}/export/postings.csv${buildSearch(query)}`
   },
+  /** The offer as a clean PDF — the copy archived when you applied, else typeset on the spot. */
+  offerPdfUrl(postingId: string): string {
+    return `${apiBase()}/postings/${encodeURIComponent(postingId)}/offer.pdf`
+  },
   getMapPins(query: MapPinsQuery): Promise<Schemas['MapPins']> {
     return request(`/map/pins${buildSearch(query)}`)
   },

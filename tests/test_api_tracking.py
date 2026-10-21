@@ -1,11 +1,18 @@
-"""Application tracking over the API — blueprint/wp/WP18-tracking.md."""
+"""Application tracking over the API — blueprint/wp/WP18-tracking.md, WP21 §2.2 and §4."""
 
 import sqlite3
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from conftest import STUB_PDF
 from factories_store import make_board, make_posting, make_verdict
+from jobtracker.core.clock import utc_now
+from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus
+from jobtracker.core.errors import RenderError
+from jobtracker.core.models import Application
+from jobtracker.store.applications import create_application
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import upsert_posting
 
@@ -124,3 +131,102 @@ def test_status_note_and_favorite_do_not_overwrite_each_other(
         "applied",
         "keep me",
     )
+
+
+# --- WP21: the status is an application, and the offer is archived as a PDF ------------------
+
+
+def _applications(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM applications ORDER BY application_id").fetchall()
+
+
+def test_applying_records_an_application_and_archives_the_offer(
+    api_client: TestClient, api_conn: sqlite3.Connection, seeded: None, tmp_path: Path
+) -> None:
+    assert _status(api_client, "p-a", "applied").status_code == 204
+    (application,) = _applications(api_conn)
+    assert (application["posting_id"], application["origin"]) == ("p-a", "feed")
+    assert application["title"] == "Quant Developer (H/F)"  # the title as published
+    archived = tmp_path / "career" / "applications" / application["dossier"] / "offer.pdf"
+    assert archived.read_bytes() == STUB_PDF
+
+    _status(api_client, "p-a", "interview")
+    (application,) = _applications(api_conn)
+    assert application["status"] == "interview"
+    steps = api_conn.execute(
+        "SELECT status FROM application_events WHERE application_id = ? ORDER BY seq",
+        (application["application_id"],),
+    ).fetchall()
+    assert [s["status"] for s in steps] == ["applied", "interview"]
+
+
+def test_untracking_deletes_the_feed_application_but_not_its_files(
+    api_client: TestClient, api_conn: sqlite3.Connection, seeded: None, tmp_path: Path
+) -> None:
+    _status(api_client, "p-a", "applied")
+    (application,) = _applications(api_conn)
+    _status(api_client, "p-a", None)
+    assert _applications(api_conn) == []
+    assert (tmp_path / "career" / "applications" / application["dossier"]).is_dir()
+    assert api_client.get("/postings/p-a").json()["application_status"] is None
+
+
+def test_a_posting_joins_the_application_recorded_by_hand(
+    api_client: TestClient, api_conn: sqlite3.Connection, seeded: None
+) -> None:
+    today = utc_now().date()
+    create_application(
+        api_conn,
+        Application(
+            application_id="by-hand",
+            company="Acme",
+            company_slug="acme",
+            title="Quant p-a",
+            location=None,
+            applied_on=today,
+            applied_on_estimated=False,
+            closed_on=None,
+            status=ApplicationStatus.APPLIED,
+            reason="",
+            posting_id=None,
+            dossier=None,
+            origin=ApplicationOrigin.CLI,
+            note="sent by email",
+        ),
+    )
+    api_conn.commit()
+    _status(api_client, "p-a", "interview")
+    (application,) = _applications(api_conn)
+    assert (application["application_id"], application["posting_id"]) == ("by-hand", "p-a")
+    assert application["status"] == "interview"
+    assert application["note"] == "sent by email"
+
+
+def test_the_offer_pdf_is_served_archived_or_rendered(
+    api_client: TestClient, seeded: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    response = api_client.get("/postings/p-b/offer.pdf")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.content == STUB_PDF
+
+    def no_browser(_html: str) -> bytes:
+        raise RenderError("no headless browser")
+
+    monkeypatch.setattr("jobtracker.career.offer.html_to_pdf", no_browser)
+    assert api_client.get("/postings/p-b/offer.pdf").status_code == 503
+    assert api_client.get("/postings/nope/offer.pdf").status_code == 404
+
+
+def test_a_failed_render_never_loses_the_application(
+    api_client: TestClient,
+    api_conn: sqlite3.Connection,
+    seeded: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def no_browser(_html: str) -> bytes:
+        raise RenderError("no headless browser")
+
+    monkeypatch.setattr("jobtracker.career.offer.html_to_pdf", no_browser)
+    assert _status(api_client, "p-a", "applied").status_code == 204
+    assert len(_applications(api_conn)) == 1

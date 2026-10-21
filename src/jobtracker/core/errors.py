@@ -43,3 +43,8 @@ class NormalizeError(JobTrackerError):
 
 class LlmUnavailable(JobTrackerError):
     """The local LLM server is busy or down — a skipped turn, not a failure."""
+
+
+class RenderError(JobTrackerError):
+    """A PDF could not be produced (no headless browser, or it failed) — the application it
+    belongs to is still recorded; the PDF can be rendered again by hand."""

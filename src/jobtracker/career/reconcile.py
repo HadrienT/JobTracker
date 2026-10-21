@@ -21,6 +21,7 @@ from datetime import date
 from jobtracker.career.dossier import DossierEntry
 from jobtracker.career.names import (
     company_key,
+    fold,
     name_leftover,
     place_agreement,
     places,
@@ -130,8 +131,17 @@ def _status(row: SheetRow) -> tuple[ApplicationStatus, tuple[ApplicationEvent, .
     return ApplicationStatus.REJECTED, (applied, rejected)
 
 
-def _application_id(key: str, title: str | None, day: date | None, occurrence: int) -> str:
-    payload = "\x1f".join(("import", key, (title or "").lower(), str(day or ""), str(occurrence)))
+def _application_id(company: str, title: str | None, day: date | None, occurrence: int) -> str:
+    # The name as written, not its matching key: a new alias must not change who is who.
+    payload = "\x1f".join(
+        (
+            "import",
+            fold(company).strip(),
+            fold(title or "").strip(),
+            str(day or ""),
+            str(occurrence),
+        )
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:26]
 
 
@@ -212,7 +222,7 @@ def _build(
         status = ApplicationStatus.APPLIED
         events = (ApplicationEvent(on_date=applied_on, status=status),)
     return Application(
-        application_id=_application_id(key, title, applied_on, occurrence),
+        application_id=_application_id(company, title, applied_on, occurrence),
         company=company,
         company_slug=slug,
         title=title,
@@ -250,7 +260,11 @@ def reconcile(
         slug = registry.get(key)
         for pair in _pair_group(rows_by_key[key], entries_by_key[key], result):
             draft = _build(key, slug, *pair, occurrence=0)
-            identity = (key, draft.title.lower() if draft.title else None, draft.applied_on)
+            identity = (
+                fold(draft.company),
+                fold(draft.title) if draft.title else None,
+                draft.applied_on,
+            )
             occurrence = occurrences[identity]
             occurrences[identity] += 1
             application = _build(key, slug, *pair, occurrence=occurrence) if occurrence else draft

@@ -177,6 +177,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/postings/{posting_id}/offer.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Offer Pdf
+         * @description The offer as a clean PDF: the copy archived when you applied, else rendered now.
+         */
+        get: operations["get_offer_pdf_postings__posting_id__offer_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/postings/{posting_id}/status": {
         parameters: {
             query?: never;
@@ -186,7 +206,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Set Status */
+        /**
+         * Set Status
+         * @description The posting's application (WP21 §2.2): created on the first status, with the offer
+         *     archived as a PDF once the response is sent; `null` stops tracking.
+         */
         post: operations["set_status_postings__posting_id__status_post"];
         delete?: never;
         options?: never;
@@ -1023,6 +1047,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_offer_pdf_postings__posting_id__offer_pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                posting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
             };
             /** @description Validation Error */
             422: {
