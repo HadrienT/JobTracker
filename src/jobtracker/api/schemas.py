@@ -9,6 +9,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, StringConstraints
 
+from jobtracker.career.countries import application_countries
 from jobtracker.career.lifecycle import is_abandoned, is_open, last_news
 from jobtracker.core.enums import (
     ApplicationOrigin,
@@ -22,6 +23,7 @@ from jobtracker.core.enums import (
     Triage,
     VisaStatus,
 )
+from jobtracker.core.geo import GeoIndex
 from jobtracker.core.models import Application, Reason
 from jobtracker.store.postings import PostingAliasRow, PostingRow
 
@@ -236,9 +238,13 @@ class ApplicationOut(BaseModel):
     abandoned: bool  # applied/interview with no news for five months
     last_news_on: date | None
     reached_interview: bool
+    # ISO 3166-1 alpha-2, read off the location (else the title) — the sheet's colour code.
+    countries: tuple[str, ...]
 
     @classmethod
-    def from_application(cls, application: Application, *, today: date) -> "ApplicationOut":
+    def from_application(
+        cls, application: Application, *, today: date, geo: GeoIndex | None = None
+    ) -> "ApplicationOut":
         return cls(
             application_id=application.application_id,
             company=application.company,
@@ -261,6 +267,7 @@ class ApplicationOut(BaseModel):
                 for e in application.events
             )
             or application.status in {ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER},
+            countries=application_countries(application.location, application.title, geo=geo),
         )
 
 

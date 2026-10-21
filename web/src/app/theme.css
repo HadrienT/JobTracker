@@ -24,6 +24,19 @@
   --visa-unknown: #9ca3af;
   --visa-no: #ef4444;
 
+  /* Countries of an application (WP21 §6) — the colours of the user's own spreadsheet:
+     Switzerland red, UK blue, USA orange, Singapore & Hong Kong pink, Netherlands green. */
+  --country-ch: #f87171;
+  --country-gb: #60a5fa;
+  --country-us: #fb923c;
+  --country-asia: #f472b6;
+  --country-nl: #4ade80;
+  --country-de: #facc15;
+  --country-fr: #a78bfa;
+  --country-ca: #2dd4bf;
+  --country-cn: #d6a26b;
+  --country-other: #9ca3af;
+
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-tabular:
@@ -50,6 +63,17 @@
   --visa-sponsors: #0a6b3a;
   --visa-unknown: #5a6270;
   --visa-no: #dc2626;
+
+  --country-ch: #b91c1c;
+  --country-gb: #1d4ed8;
+  --country-us: #c2410c;
+  --country-asia: #be185d;
+  --country-nl: #166534;
+  --country-de: #854d0e;
+  --country-fr: #6d28d9;
+  --country-ca: #0f766e;
+  --country-cn: #92400e;
+  --country-other: #4b5563;
 }
 
 @theme inline {
@@ -72,6 +96,17 @@
   --color-visa-sponsors: var(--visa-sponsors);
   --color-visa-unknown: var(--visa-unknown);
   --color-visa-no: var(--visa-no);
+
+  --color-country-ch: var(--country-ch);
+  --color-country-gb: var(--country-gb);
+  --color-country-us: var(--country-us);
+  --color-country-asia: var(--country-asia);
+  --color-country-nl: var(--country-nl);
+  --color-country-de: var(--country-de);
+  --color-country-fr: var(--country-fr);
+  --color-country-ca: var(--country-ca);
+  --color-country-cn: var(--country-cn);
+  --color-country-other: var(--country-other);
 
   --font-sans: var(--font-sans);
   --font-tabular: var(--font-tabular);

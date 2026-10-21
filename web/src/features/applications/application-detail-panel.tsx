@@ -14,6 +14,7 @@ import { todayIso } from '@/features/applications/model'
 import { StatusBadge } from '@/features/feed/status-badge'
 import { STATUS_OPTIONS } from '@/features/filters/defaults'
 import { useModal } from '@/shared/lib/use-modal'
+import { CountryChip } from '@/shared/ui/country-chip'
 
 const ORIGIN_LABEL: Record<ApplicationDetailOut['origin'], string> = {
   import: 'Imported from the history',
@@ -89,6 +90,9 @@ function ApplicationBody({ application, onDeleted }: { application: ApplicationD
         <p>
           <span className="text-text-primary">{application.company}</span>
           {application.location && ` · ${application.location}`}
+          {application.countries.map((code) => (
+            <CountryChip key={code} code={code} className="ml-1.5 align-middle" />
+          ))}
         </p>
         <p>
           Applied {application.applied_on ?? 'on an unknown date'}

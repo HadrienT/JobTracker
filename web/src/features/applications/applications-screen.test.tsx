@@ -49,6 +49,25 @@ describe('ApplicationsScreen', () => {
     })
   })
 
+  it('colours each location by country, and the legend filters on it', async () => {
+    const user = userEvent.setup()
+    renderScreen('/applications?view=all')
+    await screen.findByText('Northwind Capital')
+    const legend = screen.getByRole('group', { name: 'Countries' })
+    // the four fixtures: UK, Switzerland, USA, Singapore
+    expect(within(legend).getAllByRole('button')).toHaveLength(4)
+    const row = screen.getByText('CH (Zurich)').closest('td')
+    expect(row?.className).toContain('bg-country-ch')
+    await user.click(within(legend).getByRole('button', { name: 'Switzerland: 1' }))
+    expect(screen.getAllByTestId('application-row')).toHaveLength(1)
+    expect(screen.getByText('Contoso Trading')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(window.location.search).toBe('?view=all&country=CH')
+    })
+    await user.click(screen.getByRole('button', { name: 'All countries' }))
+    expect(screen.getAllByTestId('application-row')).toHaveLength(4)
+  })
+
   it('records a step from the detail panel, which lands in the history', async () => {
     const user = userEvent.setup()
     renderScreen()

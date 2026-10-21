@@ -162,6 +162,13 @@
             ],
             "title": "Company Slug"
           },
+          "countries": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Countries",
+            "type": "array"
+          },
           "dossier": {
             "anyOf": [
               {
@@ -295,6 +302,7 @@
           "abandoned",
           "last_news_on",
           "reached_interview",
+          "countries",
           "events",
           "files",
           "dossier",
@@ -494,6 +502,13 @@
             ],
             "title": "Company Slug"
           },
+          "countries": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Countries",
+            "type": "array"
+          },
           "last_news_on": {
             "anyOf": [
               {
@@ -579,7 +594,8 @@
           "open",
           "abandoned",
           "last_news_on",
-          "reached_interview"
+          "reached_interview",
+          "countries"
         ],
         "title": "ApplicationOut",
         "type": "object"
