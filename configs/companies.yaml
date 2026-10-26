@@ -700,9 +700,16 @@
 
 - slug: systematica
   name: Systematica Investments
-  source: custom  # verified 2026-10-08 — rendered listing (Pinpoint)
+  source: custom  # verified 2026-10-26 — Pinpoint endpoint (postings.json): 5 postings, one call, descriptions included
   token: "https://systematica.pinpointhq.com/"
-  extra: { link: "systematica\\.pinpointhq\\.com/en/postings/([0-9a-f-]+)" }
+  extra:
+    api: "https://systematica.pinpointhq.com/postings.json"
+    items: data
+    id: id
+    title: title
+    location: location.name
+    url: "{url}"
+    description: "description,key_responsibilities,skills_knowledge_expertise,benefits"
   sector: hedge_fund
   hq_country: GB
   priority: 1
@@ -1746,9 +1753,16 @@
 
 - slug: confluence_technologies
   name: Confluence Technologies
-  source: custom  # verified 2026-10-08 — rendered listing (Pinpoint)
+  source: custom  # verified 2026-10-26 — Pinpoint endpoint (postings.json): 18 postings, one call, descriptions included
   token: "https://confluence.pinpointhq.com/"
-  extra: { link: "confluence\\.pinpointhq\\.com/en/postings/([0-9a-f-]+)" }
+  extra:
+    api: "https://confluence.pinpointhq.com/postings.json"
+    items: data
+    id: id
+    title: title
+    location: location.name
+    url: "{url}"
+    description: "description,key_responsibilities,skills_knowledge_expertise,benefits"
   sector: vendor
   hq_country: US
   priority: 2
