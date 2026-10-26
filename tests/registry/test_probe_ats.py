@@ -9,8 +9,10 @@ from tools.probe_ats import (
     Verdict,
     _job_count,
     endpoint,
+    find_portals,
     format_yaml_entry,
     generate_candidates,
+    read_names,
     slugify,
 )
 
@@ -113,3 +115,78 @@ def test_format_yaml_entry_empty_board_is_disabled_and_flagged() -> None:
     assert "enabled: false" in text
     assert "[À CONFIRMER]" in text
     assert "board vide" in text
+
+
+def test_job_count_pinpoint() -> None:
+    assert _job_count(Family.PINPOINT, b'{"data": [{"id": "1"}, {"id": "2"}]}') == 2
+
+
+def test_format_yaml_entry_pinpoint_is_a_custom_entry_reading_the_json_feed() -> None:
+    result = ProbeResult(
+        Family.PINPOINT,
+        "systematica",
+        Verdict.FOUND,
+        5,
+        200,
+        "https://x",
+        None,
+        datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    text = format_yaml_entry(
+        slug="systematica",
+        name="Systematica",
+        sector="hedge_fund",
+        country="GB",
+        priority=1,
+        result=result,
+    )
+    assert "source: custom" in text
+    assert 'api: "https://systematica.pinpointhq.com/postings.json"' in text
+    assert "items: data" in text
+    assert "enabled: true" in text
+
+
+def test_find_portals_reads_an_oracle_hcm_host_and_site() -> None:
+    html = (
+        '<a href="https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/'
+        'requisitions">Jobs</a>'
+    )
+    assert find_portals(html) == {"oracle_hcm": {"jpmc.fa.oraclecloud.com/cx_1001"}}
+
+
+def test_find_portals_reads_a_numbered_oracle_apex() -> None:
+    html = "https://acme.fa.ocs.oraclecloud26.com/hcmUI/CandidateExperience/en/sites/CX_1/jobs"
+    assert find_portals(html) == {"oracle_hcm": {"acme.fa.ocs.oraclecloud26.com/cx_1"}}
+
+
+@pytest.mark.parametrize(
+    ("html", "portal", "match"),
+    [
+        ("https://mlp.eightfold.ai/careers", "eightfold", "mlp"),
+        ("https://systematica.pinpointhq.com/", "pinpoint", "systematica"),
+        ("https://careers-gtsx.icims.com/jobs/search", "icims", "careers-gtsx"),
+        ("https://bloomberg.avature.net/careers", "avature", "bloomberg"),
+        ("https://socgen.taleo.net/careersection/", "taleo", "socgen"),
+        ("https://keplercheuvreux.teamtailor.com/jobs", "teamtailor", "keplercheuvreux"),
+        (
+            "https://career5.successfactors.eu/career?company=x",
+            "successfactors",
+            "career5.successfactors.eu",
+        ),
+    ],
+)
+def test_find_portals_recognises_each_custom_family(html: str, portal: str, match: str) -> None:
+    assert find_portals(html) == {portal: {match}}
+
+
+def test_find_portals_on_a_page_with_no_portal_is_empty() -> None:
+    assert find_portals("<html><a href='/careers'>Careers</a></html>") == {}
+
+
+def test_read_names_skips_blanks_and_comments() -> None:
+    assert read_names("Optiver\n\n# prop shops\nIMC  # Amsterdam\n") == ["Optiver", "IMC"]
+
+
+def test_find_portals_ignores_eightfolds_asset_host() -> None:
+    html = '<script src="https://app.eightfold.ai/widget.js"></script> https://mlp.eightfold.ai/careers'
+    assert find_portals(html) == {"eightfold": {"mlp"}}

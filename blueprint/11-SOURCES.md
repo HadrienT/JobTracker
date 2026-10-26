@@ -138,7 +138,15 @@ Cumberland · Galaxy Digital
 3. Pour les pages qui ne montrent rien, ouvrir l'onglet réseau : l'ATS est
    presque toujours appelé en XHR.
 4. `tools/probe_ats.py <slug>` confirme le jeton et capture une charge utile de
-   référence pour les tests de contrat.
+   référence pour les tests de contrat. `--url <page carrière>` lit aussi dans la
+   page les portails sans collecteur propre (Oracle HCM, Eightfold, Pinpoint,
+   iCIMS, Avature, SuccessFactors, Taleo, Teamtailor) : l'entrée `source: custom`
+   à copier se déduit de la famille (Oracle HCM → `jpmorgan`, Eightfold →
+   `millennium`, Pinpoint → `systematica`). `--in <fichier>` sonde une liste de
+   noms (un par ligne), en sautant ceux déjà au registre. Pinpoint est sondé par
+   nom comme les familles JSON ; un tenant de démo, qui répond 200 avec des
+   offres factices, est écarté. Motifs repris des providers de
+   [career-ops](https://github.com/career-ops-hq/career-ops) (MIT).
 5. Une société dont la source reste introuvable entre avec `enabled: false` et un
    commentaire. **On ne la supprime pas** : sinon on la re-sonde tous les six
    mois sans le savoir.
