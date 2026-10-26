@@ -9,6 +9,7 @@ recorded as a success, and every host is hit sequentially with jitter.
 Usage:
     uv run python tools/probe_ats.py --name "Optiver" --guess optiver
     uv run python tools/probe_ats.py --url https://www.optiver.com/working-at-optiver/career-opportunities/
+    uv run python tools/probe_ats.py --in names.txt   # one company name per line
     uv run python tools/probe_ats.py --all --save
 """
 
@@ -57,6 +58,9 @@ class Family(StrEnum):
     WORKABLE = "workable"
     RECRUITEE = "recruitee"
     PERSONIO = "personio"
+    # No collector of its own: a Pinpoint board is a `source: custom` entry reading
+    # the tenant's postings.json through `extra.api` (format_yaml_entry writes it).
+    PINPOINT = "pinpoint"
 
 
 JSON_FAMILIES: tuple[Family, ...] = (
@@ -67,7 +71,14 @@ JSON_FAMILIES: tuple[Family, ...] = (
     Family.WORKABLE,
     Family.RECRUITEE,
     Family.PERSONIO,
+    Family.PINPOINT,
 )
+
+# Some Pinpoint tenants that are not a real board (abandoned trials) answer 200 with
+# seeded filler postings. Every one of them embeds Pinpoint's onboarding video under
+# this doubled URL — a marker no real job description reproduces. Documented by
+# career-ops' Pinpoint provider (issue #4190 there), MIT.
+_PINPOINT_DEMO_MARKER = b"youtube.com/embed/https://www.youtube.com/embed/pFxm6fszrpw"
 
 
 class Verdict(StrEnum):
@@ -109,6 +120,8 @@ def endpoint(family: Family, candidate: str) -> str:
         return f"https://{candidate}.recruitee.com/api/offers/"
     if family is Family.PERSONIO:
         return f"https://{candidate}.jobs.personio.de/xml"
+    if family is Family.PINPOINT:
+        return f"https://{candidate}.pinpointhq.com/postings.json"
     raise ValueError(f"unknown family: {family}")  # pragma: no cover — exhaustive above
 
 
@@ -134,6 +147,8 @@ def _job_count(family: Family, body: bytes) -> int | None:
         jobs = data.get("jobs") if isinstance(data, dict) else None
     elif family is Family.RECRUITEE:
         jobs = data.get("offers") if isinstance(data, dict) else None
+    elif family is Family.PINPOINT:
+        jobs = data.get("data") if isinstance(data, dict) else None
     else:  # pragma: no cover — exhaustive above
         jobs = None
     return len(jobs) if isinstance(jobs, list) else None
@@ -206,6 +221,18 @@ def probe_one(client: httpx.Client, family: Family, candidate: str) -> ProbeResu
             now,
             note="200 but payload does not match the known schema for this family",
         )
+    if family is Family.PINPOINT and _PINPOINT_DEMO_MARKER in response.content:
+        return ProbeResult(
+            family,
+            candidate,
+            Verdict.ERROR,
+            None,
+            200,
+            url,
+            None,
+            now,
+            note="Pinpoint demo tenant: seeded filler postings, not a real board",
+        )
     verdict = Verdict.FOUND if count > 0 else Verdict.EMPTY
     return ProbeResult(family, candidate, verdict, count, 200, url, response.content, now)
 
@@ -255,6 +282,40 @@ WORKDAY_PATTERN = re.compile(
 )
 
 
+# Portal families read through `source: custom` (blueprint/11-SOURCES.md §3): no
+# collector of their own, but recognising one tells which `extra.api` recipe of the
+# registry to copy (Oracle HCM: jpmorgan; Eightfold: millennium; Pinpoint:
+# systematica) or that the board is a rendered listing. Host shapes follow the
+# detect() rules of career-ops' providers (MIT).
+_PORTAL_PATTERNS: dict[str, re.Pattern[str]] = {
+    "oracle_hcm": re.compile(
+        r"([a-z0-9-]+\.fa\.(?:[a-z0-9-]+\.)?(?:ocs\.)?oraclecloud(?:[1-9][0-9]?)?\.com)"
+        r"/hcmUI/CandidateExperience/[a-z_-]+/sites/([a-z0-9_]+)",
+        re.I,
+    ),
+    # app.eightfold.ai serves the widget's assets, on every tenant's page.
+    "eightfold": re.compile(r"(?<![a-z0-9-])(?!app\.)([a-z0-9-]+)\.eightfold\.ai", re.I),
+    "pinpoint": re.compile(r"([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.pinpointhq\.com", re.I),
+    "icims": re.compile(r"([a-z0-9-]+)\.icims\.com", re.I),
+    "avature": re.compile(r"([a-z0-9-]+)\.avature\.net", re.I),
+    "successfactors": re.compile(
+        r"((?:[a-z0-9-]+\.)*(?:successfactors\.(?:eu|com)|jobs2web\.com))", re.I
+    ),
+    "taleo": re.compile(r"([a-z0-9-]+)\.taleo\.net", re.I),
+    "teamtailor": re.compile(r"([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.teamtailor\.com", re.I),
+}
+
+
+def find_portals(text: str) -> dict[str, set[str]]:
+    """Portal families read through `source: custom` that a page's HTML points at."""
+    hits: dict[str, set[str]] = {}
+    for portal, pattern in _PORTAL_PATTERNS.items():
+        found = {"/".join(g.lower() for g in m.groups()) for m in pattern.finditer(text)}
+        if found:
+            hits[portal] = found
+    return hits
+
+
 @dataclass(frozen=True)
 class WorkdayHit:
     tenant: str
@@ -264,11 +325,13 @@ class WorkdayHit:
 
 def scan_career_page(
     client: httpx.Client, url: str
-) -> tuple[dict[Family, set[str]], set[WorkdayHit]]:
+) -> tuple[dict[Family, set[str]], set[WorkdayHit], dict[str, set[str]]]:
     """Fetch a career page and search its HTML/inline scripts for ATS URL fingerprints."""
     response = client.get(url)
     response.raise_for_status()
-    text = response.text
+    # The address itself, once redirects are followed, is a fingerprint too: a portal's
+    # own page rarely spells out its absolute URL.
+    text = f"{url}\n{response.url}\n{response.text}"
     hits: dict[Family, set[str]] = {}
     for family, pattern in _URL_PATTERNS.items():
         found = {m.group(1).lower() for m in pattern.finditer(text)}
@@ -277,7 +340,7 @@ def scan_career_page(
     workday = {
         WorkdayHit(m.group(1), m.group(2), m.group(3)) for m in WORKDAY_PATTERN.finditer(text)
     }
-    return hits, workday
+    return hits, workday, find_portals(text)
 
 
 # --- registry I/O ---------------------------------------------------------
@@ -318,15 +381,30 @@ def format_yaml_entry(
 ) -> str:
     """Render a companies.yaml entry ready to paste, per blueprint/06-CONFIG.md §2."""
     today = datetime.now(UTC).date().isoformat()
+    extra_lines: list[str] = []
+    if result is not None and result.family is Family.PINPOINT:
+        source = "custom"
+        token = f"https://{result.candidate}.pinpointhq.com/"
+        extra_lines = [
+            "  extra:",
+            f'    api: "{endpoint(Family.PINPOINT, result.candidate)}"',
+            "    items: data",
+            "    id: id",
+            "    title: title",
+            "    location: location.name",
+            '    url: "{url}"',
+            '    description: "description,key_responsibilities,'
+            'skills_knowledge_expertise,benefits"',
+        ]
+    elif result is not None:
+        source, token = result.family.value, result.candidate
     if result is not None and result.verdict is Verdict.FOUND:
-        source_line = f"  source: {result.family.value}  # verified {today}"
-        token_line = f'  token: "{result.candidate}"'
+        source_line = f"  source: {source}  # verified {today}"
+        token_line = f'  token: "{token}"'
         enabled = "true"
     elif result is not None and result.verdict is Verdict.EMPTY:
-        source_line = (
-            f"  source: {result.family.value}  # [À CONFIRMER] board vide au sondage du {today}"
-        )
-        token_line = f'  token: "{result.candidate}"'
+        source_line = f"  source: {source}  # [À CONFIRMER] board vide au sondage du {today}"
+        token_line = f'  token: "{token}"'
         enabled = "false"
     else:
         source_line = (
@@ -340,6 +418,7 @@ def format_yaml_entry(
             f"  name: {name}",
             source_line,
             token_line,
+            *extra_lines,
             f"  sector: {sector}",
             f"  hq_country: {country}",
             f"  priority: {priority}",
@@ -372,8 +451,19 @@ def _print_results(results: Sequence[ProbeResult]) -> None:
 
 
 def _run_name_mode(args: argparse.Namespace, client: httpx.Client) -> int:
+    return _probe_and_print(args, client, args.name, guess=args.guess, slug=args.slug)
+
+
+def _probe_and_print(
+    args: argparse.Namespace,
+    client: httpx.Client,
+    name: str,
+    *,
+    guess: str | None,
+    slug: str | None,
+) -> int:
     results = probe_company(
-        client, args.name, guess=args.guess, jitter_s=(args.jitter_min_s, args.jitter_max_s)
+        client, name, guess=guess, jitter_s=(args.jitter_min_s, args.jitter_max_s)
     )
     _print_results(results)
     found = next((r for r in results if r.verdict is Verdict.FOUND), None)
@@ -382,11 +472,10 @@ def _run_name_mode(args: argparse.Namespace, client: httpx.Client) -> int:
     if found is not None and args.save and found.payload is not None:
         dest = save_fixture(found.family, found.candidate, found.payload)
         print(f"# saved fixture: {dest.relative_to(REPO_ROOT)}", file=sys.stderr)
-    slug = args.slug or slugify(args.name).replace("-", "_")
     print(
         format_yaml_entry(
-            slug=slug,
-            name=args.name,
+            slug=slug or slugify(name).replace("-", "_"),
+            name=name,
             sector=args.sector,
             country=args.country,
             priority=args.priority,
@@ -396,9 +485,27 @@ def _run_name_mode(args: argparse.Namespace, client: httpx.Client) -> int:
     return 0
 
 
+def read_names(text: str) -> list[str]:
+    """Company names of an `--in` file: one per line, blank lines and `#` comments skipped."""
+    names = (line.split("#", 1)[0].strip() for line in text.splitlines())
+    return [name for name in names if name]
+
+
+def _run_batch_mode(args: argparse.Namespace, client: httpx.Client) -> int:
+    known = {str(entry.get("name", "")).casefold() for entry in load_registry()}
+    for name in read_names(Path(args.input).read_text(encoding="utf-8")):
+        if name.casefold() in known:
+            print(f"# {name}: already in companies.yaml, skipped", file=sys.stderr)
+            continue
+        print(f"# {name}", file=sys.stderr)
+        _probe_and_print(args, client, name, guess=None, slug=None)
+        print()
+    return 0
+
+
 def _run_url_mode(args: argparse.Namespace, client: httpx.Client) -> int:
-    hits, workday_hits = scan_career_page(client, args.url)
-    if not hits and not workday_hits:
+    hits, workday_hits, portals = scan_career_page(client, args.url)
+    if not hits and not workday_hits and not portals:
         print(
             "# no known ATS fingerprint found in this page — inspect the network tab by hand",
             file=sys.stderr,
@@ -409,6 +516,9 @@ def _run_url_mode(args: argparse.Namespace, client: httpx.Client) -> int:
             print(f"  {family.value:<16} candidate={candidate}", file=sys.stderr)
     for wd in sorted(workday_hits, key=lambda w: (w.tenant, w.site)):
         print(f"  {'workday':<16} tenant={wd.tenant} wd={wd.wd} site={wd.site}", file=sys.stderr)
+    for portal, matches in portals.items():
+        for match in sorted(matches):
+            print(f"  {portal:<16} custom portal={match}", file=sys.stderr)
     return 0
 
 
@@ -449,6 +559,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     mode.add_argument("--name", help="company name to probe (generates slug candidates)")
     mode.add_argument("--url", help="career page URL to scan for an embedded ATS fingerprint")
     mode.add_argument(
+        "--in",
+        dest="input",
+        help="file of company names, one per line: probe each one absent from the registry",
+    )
+    mode.add_argument(
         "--all", action="store_true", help="re-probe every enabled entry in configs/companies.yaml"
     )
     parser.add_argument("--guess", help="a specific board slug/token to try first, with --name")
@@ -474,6 +589,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_name_mode(args, client)
         if args.url:
             return _run_url_mode(args, client)
+        if args.input:
+            return _run_batch_mode(args, client)
         return _run_all_mode(args, client)
 
 

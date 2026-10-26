@@ -85,6 +85,7 @@ croisée, et elles se testent une par une.
 | Empreinte inconnue | Nouvelle offre canonique |
 | Empreinte connue, existant = ATS, nouveau = agrégateur | `record_alias`, **aucune offre créée** |
 | Empreinte connue, existant = agrégateur, nouveau = ATS | **Bascule** : l'ATS devient canonique, l'ancien devient alias, et **`user_flags` suit l'identifiant canonique** |
+| Empreinte connue, existant **fermé** (`is_active = 0`), nouveau = ATS | **Bascule** aussi : un poste republié sous une nouvelle réquisition ne doit pas rester alias d'une offre close ([03-INTERFACES.md](../03-INTERFACES.md) §3.4, règle 4) |
 
 La bascule est le cas délicat : un favori posé sur la version LinkedIn d'une
 offre doit se retrouver sur la version Greenhouse quand elle arrive. Sinon

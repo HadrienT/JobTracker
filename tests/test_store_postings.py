@@ -222,6 +222,78 @@ def test_ats_arriving_after_an_aggregator_takes_over_as_canonical(
     assert new_flag["is_favorite"] == 1
 
 
+def test_a_reposted_role_takes_over_from_its_closed_listing(
+    store_conn: sqlite3.Connection,
+) -> None:
+    # The board closed requisition j-1 and reopened the same role as j-2: aliasing j-2 to
+    # the closed j-1 would keep a live posting out of the feed.
+    old_id = _upsert(store_conn, posting_id="p-old", source_job_id="j-1", fingerprint="fp-r")
+    set_triage(store_conn, old_id, Triage.NO)
+    deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-other"})
+    store_conn.commit()
+
+    repost = make_posting(posting_id="p-new", source_job_id="j-2", fingerprint="fp-r")
+    assert resolve_dedup(store_conn, repost) is None
+    new_id = _upsert(store_conn, posting_id="p-new", source_job_id="j-2", fingerprint="fp-r")
+
+    assert new_id == "p-new"
+    rows = {
+        r["posting_id"]: (r["is_canonical"], r["is_active"])
+        for r in store_conn.execute("SELECT posting_id, is_canonical, is_active FROM postings")
+    }
+    assert rows == {"p-old": (0, 0), "p-new": (1, 1)}
+    alias = store_conn.execute(
+        "SELECT canonical_id FROM posting_aliases WHERE source_job_id = 'j-1'"
+    ).fetchone()
+    assert alias["canonical_id"] == "p-new"
+    flag = store_conn.execute("SELECT triage FROM user_flags WHERE posting_id = 'p-new'").fetchone()
+    assert flag["triage"] == Triage.NO.value
+
+
+def test_a_sibling_aliased_while_the_canonical_was_listed_takes_over_once_it_closes(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn, posting_id="p-a", source_job_id="j-a", fingerprint="fp-s")
+    assert _upsert(store_conn, posting_id="p-b", source_job_id="j-b", fingerprint="fp-s") == "p-a"
+    deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-b"})
+
+    assert _upsert(store_conn, posting_id="p-b", source_job_id="j-b", fingerprint="fp-s") == "p-b"
+
+    aliases = {
+        r["source_job_id"]: r["canonical_id"]
+        for r in store_conn.execute("SELECT source_job_id, canonical_id FROM posting_aliases")
+    }
+    assert aliases == {"j-a": "p-b"}
+
+
+def test_a_demoted_posting_listed_again_reclaims_a_closed_canonical(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn, posting_id="p-old", source_job_id="j-1", fingerprint="fp-r")
+    deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-other"})
+    _upsert(store_conn, posting_id="p-new", source_job_id="j-2", fingerprint="fp-r")
+    deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-1"})
+
+    _upsert(store_conn, posting_id="p-old", source_job_id="j-1", fingerprint="fp-r")
+
+    canonical = store_conn.execute(
+        "SELECT posting_id, is_active FROM postings WHERE is_canonical = 1"
+    ).fetchall()
+    assert [(r["posting_id"], r["is_active"]) for r in canonical] == [("p-old", 1)]
+
+
+def test_an_aggregator_never_takes_over_a_closed_ats_posting(
+    store_conn: sqlite3.Connection,
+) -> None:
+    ats_id = _upsert(store_conn, posting_id="p-ats", source_job_id="ats-1", fingerprint="fp-c")
+    deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-other"})
+
+    aggregator = make_posting(
+        posting_id="p-agg", source=Source.LINKEDIN, source_job_id="agg-1", fingerprint="fp-c"
+    )
+    assert resolve_dedup(store_conn, aggregator) == ats_id
+
+
 def test_i4_one_canonical_row_per_fingerprint(store_conn: sqlite3.Connection) -> None:
     _upsert(store_conn, posting_id="p1", source_job_id="j1", fingerprint="fp-x")
     _upsert(

@@ -277,6 +277,15 @@ L'empreinte est calculée sur :
 3. Deux ATS différents avec la même empreinte : la plus ancienne reste
    canonique, un avertissement est journalisé (cas réel : une société qui migre
    d'ATS).
+4. **Une offre canonique fermée ne retient aucun alias ATS.** Si l'offre
+   canonique n'est plus listée (`is_active = 0`) et que la nouvelle vient d'un
+   ATS, la nouvelle prend la place canonique comme en 2. C'est le cas du poste
+   republié sous une nouvelle réquisition, ou d'une réquisition sœur qui survit
+   à celle qui était canonique : rattachée en alias à une offre fermée, elle
+   disparaîtrait du flux en silence (1 079 offres vivantes masquées ainsi au
+   2026-10-26). Une offre rétrogradée que son board relistera reprend sa place
+   de la même façon. Un agrégateur ne prend jamais la place d'une offre fermée :
+   il republie des postes clos pendant des semaines.
 
 Le compartiment de date à 14 jours est délibérément large : un agrégateur
 republie souvent avec sa propre date d'indexation, décalée de plusieurs jours de

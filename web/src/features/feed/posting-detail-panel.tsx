@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { api } from '@/api/client'
+import type { components } from '@/api/schema.gen'
 import { type Track, usePostingDetail, useSetTriage } from '@/api/queries'
 import { TRIAGE_VIEWS } from '@/features/feed/triage'
 import { rejectionReasonLabel } from '@/features/filters/defaults'
@@ -168,11 +169,7 @@ export function PostingDetailPanel({ postingId, onClose, track = null }: Posting
               </section>
             )}
 
-            {posting.aliases.length > 0 && (
-              <p className="text-xs text-text-tertiary">
-                Also on: {posting.aliases.map((alias) => alias.source).join(', ')}
-              </p>
-            )}
+            <AliasesNote posting={posting} />
 
             <section className="flex flex-col gap-2">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Description</h3>
@@ -202,6 +199,33 @@ export function PostingDetailPanel({ postingId, onClose, track = null }: Posting
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+type PostingDetail = components['schemas']['PostingDetailOut']
+
+// An alias from the posting's own board is an earlier requisition of the same role:
+// the posting is a repost of it (blueprint/03-INTERFACES.md §3.4, rule 4).
+function AliasesNote({ posting }: { posting: PostingDetail }) {
+  const earlier = posting.aliases.filter((alias) => alias.source === posting.source)
+  const elsewhere = [
+    ...new Set(posting.aliases.filter((alias) => alias.source !== posting.source).map((alias) => alias.source)),
+  ]
+  if (earlier.length === 0 && elsewhere.length === 0) return null
+  const lastSeen = earlier
+    .map((alias) => alias.seen_at.slice(0, 10))
+    .sort()
+    .at(-1)
+  return (
+    <div className="flex flex-col gap-0.5 text-xs text-text-tertiary">
+      {earlier.length > 0 && (
+        <p>
+          Reposted: {earlier.length === 1 ? 'an earlier listing' : `${String(earlier.length)} earlier listings`} of
+          this role, last seen {lastSeen}
+        </p>
+      )}
+      {elsewhere.length > 0 && <p>Also on: {elsewhere.join(', ')}</p>}
     </div>
   )
 }
