@@ -452,7 +452,7 @@ def _row_to_posting_row(conn: sqlite3.Connection, row: sqlite3.Row) -> PostingRo
 
 def _existing_by_identity(conn: sqlite3.Connection, posting: Posting) -> sqlite3.Row | None:
     row: sqlite3.Row | None = conn.execute(
-        "SELECT posting_id, content_hash FROM postings "
+        "SELECT posting_id, content_hash, is_canonical FROM postings "
         "WHERE source = ? AND company_slug = ? AND source_job_id = ?",
         (posting.source.value, posting.company_slug, posting.source_job_id),
     ).fetchone()
@@ -461,10 +461,26 @@ def _existing_by_identity(conn: sqlite3.Connection, posting: Posting) -> sqlite3
 
 def _canonical_by_fingerprint(conn: sqlite3.Connection, fingerprint: str) -> sqlite3.Row | None:
     row: sqlite3.Row | None = conn.execute(
-        "SELECT posting_id, source FROM postings WHERE fingerprint = ? AND is_canonical = 1",
+        "SELECT posting_id, source, is_active FROM postings "
+        "WHERE fingerprint = ? AND is_canonical = 1",
         (fingerprint,),
     ).fetchone()
     return row
+
+
+def _takes_over(canonical: sqlite3.Row, source: Source) -> bool:
+    """Whether a posting from `source` replaces `canonical` as its fingerprint's canonical row.
+
+    An ATS posting replaces an aggregator one (case 3), and it replaces a canonical
+    the boards no longer list: the same role reposted under a new requisition id, or a
+    sibling requisition outliving the one that was canonical. Aliasing it to the
+    closed posting would keep a live offer out of the feed, which shows active
+    canonical rows only. An aggregator never takes over: it keeps listing a role for
+    weeks after the employer closed it.
+    """
+    if source in AGGREGATOR_SOURCES:
+        return False
+    return Source(canonical["source"]) in AGGREGATOR_SOURCES or not canonical["is_active"]
 
 
 def resolve_posting_id(
@@ -520,13 +536,9 @@ def resolve_dedup(conn: sqlite3.Connection, posting: Posting) -> str | None:
     canonical = _canonical_by_fingerprint(conn, posting.fingerprint)
     if canonical is None:
         return None  # brand new fingerprint: canonical
-    existing_is_aggregator = Source(canonical["source"]) in AGGREGATOR_SOURCES
-    new_is_aggregator = posting.source in AGGREGATOR_SOURCES
-    if not existing_is_aggregator:
-        return str(canonical["posting_id"])  # case 2: alias of an existing ATS posting
-    if not new_is_aggregator:
-        return None  # case 3: an ATS posting takes over from an aggregator
-    return str(canonical["posting_id"])  # both aggregators: alias, the older one stays canonical
+    if _takes_over(canonical, posting.source):
+        return None  # case 3, or a closed canonical: the new posting takes over
+    return str(canonical["posting_id"])  # alias of the canonical posting
 
 
 def _write_posting_row(
@@ -648,14 +660,16 @@ def upsert_posting(conn: sqlite3.Connection, posting: Posting, verdict: MatchVer
 
     blueprint/wp/WP02-store.md §4, three branches:
     1. Unknown fingerprint -> new canonical posting.
-    2. Known fingerprint, existing canonical is an ATS and the new one is an
-       aggregator -> the new one becomes an alias, no posting row is created.
-    3. Known fingerprint, existing canonical is an aggregator and the new one
-       is an ATS -> the ATS posting takes over as canonical; the old one is
-       demoted to an alias and its favorites/hidden flag follow the new id.
+    2. Known fingerprint, the existing canonical is active and the new posting does
+       not take it over (`_takes_over`) -> the new one becomes an alias, no posting
+       row is created.
+    3. Known fingerprint, the existing canonical is an aggregator or no longer listed,
+       and the new posting is an ATS one -> the new posting takes over as canonical;
+       the old one is demoted to an alias and its user flags follow the new id.
     """
     existing = _existing_by_identity(conn, posting)
     if existing is not None:
+        posting_id = str(existing["posting_id"])
         if existing["content_hash"] == posting.content_hash:
             # Same content already stored: touch freshness only, never rescore
             # (blueprint/wp/WP02-store.md §4) — `scored_at` stays untouched. A posting
@@ -663,29 +677,25 @@ def upsert_posting(conn: sqlite3.Connection, posting: Posting, verdict: MatchVer
             # from a listing it was missing from.
             conn.execute(
                 "UPDATE postings SET last_seen_at = ?, is_active = 1 WHERE posting_id = ?",
-                (posting.last_seen_at.isoformat(), existing["posting_id"]),
+                (posting.last_seen_at.isoformat(), posting_id),
             )
-            return str(existing["posting_id"])
-        _write_posting_row(
-            conn,
-            posting.model_copy(update={"posting_id": existing["posting_id"]}),
-            verdict,
-            is_canonical=True,
-        )
-        return str(existing["posting_id"])
+        else:
+            _write_posting_row(
+                conn,
+                posting.model_copy(update={"posting_id": posting_id}),
+                verdict,
+                is_canonical=bool(existing["is_canonical"]),
+            )
+        if not existing["is_canonical"]:
+            _reclaim_canonical(conn, posting, posting_id)
+        return posting_id
 
     canonical = _canonical_by_fingerprint(conn, posting.fingerprint)
     if canonical is None:
         _write_posting_row(conn, posting, verdict, is_canonical=True)
         return posting.posting_id
 
-    existing_is_aggregator = Source(canonical["source"]) in AGGREGATOR_SOURCES
-    new_is_aggregator = posting.source in AGGREGATOR_SOURCES
-
-    if not existing_is_aggregator:
-        # Case 2 (also covers two ATS sources sharing a fingerprint: the
-        # older one — already canonical — stays canonical, per §4's "cas
-        # réel : une société qui migre d'ATS").
+    if not _takes_over(canonical, posting.source):
         record_alias(
             conn,
             str(canonical["posting_id"]),
@@ -706,60 +716,67 @@ def upsert_posting(conn: sqlite3.Connection, posting: Posting, verdict: MatchVer
         )
         return str(canonical["posting_id"])
 
-    if not new_is_aggregator:
-        # Case 3: takeover. The old canonical row is demoted and its
-        # (source, source_job_id) becomes an alias of the new one.
-        old_id = str(canonical["posting_id"])
-        old_row = conn.execute(
-            "SELECT source, source_job_id, url, last_seen_at FROM postings WHERE posting_id = ?",
-            (old_id,),
-        ).fetchone()
-        _write_posting_row(conn, posting, verdict, is_canonical=True)
-        conn.execute("UPDATE postings SET is_canonical = 0 WHERE posting_id = ?", (old_id,))
-        conn.execute(
-            """
-            INSERT INTO posting_aliases (canonical_id, source, source_job_id, url, seen_at)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (source, source_job_id) DO UPDATE SET
-                canonical_id = excluded.canonical_id, seen_at = excluded.seen_at
-            """,
-            (
-                posting.posting_id,
-                old_row["source"],
-                old_row["source_job_id"],
-                old_row["url"],
-                old_row["last_seen_at"],
-            ),
-        )
-        moved = conn.execute(
-            "UPDATE user_flags SET posting_id = ? WHERE posting_id = ? "
-            "AND NOT EXISTS (SELECT 1 FROM user_flags WHERE posting_id = ?)",
-            (posting.posting_id, old_id, posting.posting_id),
-        )
-        if moved.rowcount == 0:
-            conn.execute("DELETE FROM user_flags WHERE posting_id = ?", (old_id,))
-        return posting.posting_id
+    _write_posting_row(conn, posting, verdict, is_canonical=True)
+    _take_over(conn, posting, posting.posting_id, str(canonical["posting_id"]))
+    return posting.posting_id
 
-    # Both aggregators sharing a fingerprint: keep the existing one canonical.
-    record_alias(
-        conn,
-        str(canonical["posting_id"]),
-        RawPosting(
-            source=posting.source,
-            company_slug=posting.company_slug,
-            source_job_id=posting.source_job_id,
-            url=posting.url,
-            title_raw=posting.title_raw,
-            description_raw="",
-            location_raw=None,
-            department_raw=None,
-            posted_at_raw=None,
-            payload=b"",
-            fetched_at=posting.last_seen_at,
-            content_hash=posting.content_hash,
+
+def _reclaim_canonical(conn: sqlite3.Connection, posting: Posting, posting_id: str) -> None:
+    """A demoted posting listed again becomes canonical when nothing live holds its place."""
+    canonical = _canonical_by_fingerprint(conn, posting.fingerprint)
+    if canonical is None:
+        conn.execute("UPDATE postings SET is_canonical = 1 WHERE posting_id = ?", (posting_id,))
+        conn.execute(
+            "DELETE FROM posting_aliases WHERE source = ? AND source_job_id = ?",
+            (posting.source.value, posting.source_job_id),
+        )
+    elif _takes_over(canonical, posting.source):
+        conn.execute("UPDATE postings SET is_canonical = 1 WHERE posting_id = ?", (posting_id,))
+        _take_over(conn, posting, posting_id, str(canonical["posting_id"]))
+
+
+def _take_over(conn: sqlite3.Connection, posting: Posting, new_id: str, old_id: str) -> None:
+    """Demote `old_id` to an alias of `new_id`, already written as canonical.
+
+    Everything that pointed at the old posting follows the new one: its aliases, and
+    its user flags (favorite, hidden, triage, application status) unless the new
+    posting already has its own. The new posting's own identity stops being an alias:
+    it may have been recorded as one while the old posting was still listed.
+    """
+    old_row = conn.execute(
+        "SELECT source, source_job_id, url, last_seen_at FROM postings WHERE posting_id = ?",
+        (old_id,),
+    ).fetchone()
+    conn.execute("UPDATE postings SET is_canonical = 0 WHERE posting_id = ?", (old_id,))
+    conn.execute(
+        "DELETE FROM posting_aliases WHERE source = ? AND source_job_id = ?",
+        (posting.source.value, posting.source_job_id),
+    )
+    conn.execute(
+        "UPDATE posting_aliases SET canonical_id = ? WHERE canonical_id = ?", (new_id, old_id)
+    )
+    conn.execute(
+        """
+        INSERT INTO posting_aliases (canonical_id, source, source_job_id, url, seen_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (source, source_job_id) DO UPDATE SET
+            canonical_id = excluded.canonical_id, seen_at = excluded.seen_at
+        """,
+        (
+            new_id,
+            old_row["source"],
+            old_row["source_job_id"],
+            old_row["url"],
+            old_row["last_seen_at"],
         ),
     )
-    return str(canonical["posting_id"])
+    moved = conn.execute(
+        "UPDATE user_flags SET posting_id = ? WHERE posting_id = ? "
+        "AND NOT EXISTS (SELECT 1 FROM user_flags WHERE posting_id = ?)",
+        (new_id, old_id, new_id),
+    )
+    if moved.rowcount == 0:
+        conn.execute("DELETE FROM user_flags WHERE posting_id = ?", (old_id,))
 
 
 def record_alias(conn: sqlite3.Connection, canonical_id: str, alias: RawPosting) -> None:
