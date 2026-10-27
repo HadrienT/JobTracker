@@ -7,7 +7,7 @@ import { App } from '@/app/App'
 import { server } from '@/mocks/server'
 
 function navButton(name: string): HTMLElement {
-  return within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name })
+  return within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name })
 }
 
 /** Every API request the page makes, as URLs — what reached the server, not what was meant to. */

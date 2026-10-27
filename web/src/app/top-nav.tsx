@@ -22,19 +22,22 @@ export function TopNav({ route, navigate }: TopNavProps) {
       <ul className="flex gap-1">
         {LINKS.map((link) => (
           <li key={link.route}>
-            <button
-              type="button"
+            <a
+              href={link.path}
               aria-current={route === link.route ? 'page' : undefined}
-              onClick={() => {
+              onClick={(event) => {
+                // Middle-click, ctrl/cmd/shift-click: let the browser open a new tab or window.
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+                event.preventDefault()
                 navigate(link.path)
               }}
               className={cn(
-                'rounded-md px-2 py-1 text-sm',
+                'block rounded-md px-2 py-1 text-sm',
                 route === link.route ? 'bg-surface-elevated text-text-primary' : 'text-text-secondary hover:text-text-primary',
               )}
             >
               {link.label}
-            </button>
+            </a>
           </li>
         ))}
       </ul>
