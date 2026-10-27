@@ -134,3 +134,20 @@ just migrate                                        # 0010_track_verdicts
 just replay --normalize-version-below 9 --apply     # tags pytorch / tensorflow / jax (NORMALIZE_VERSION 9)
 just collect                                        # les nouvelles sociétés `tech`, puis la passe des pistes
 ```
+
+## 8. La piste `tech` — les mêmes compétences, partout où la paie suit
+
+Demandée le 2026-10-27 : les postes C++ / CUDA / ML de `ch_tech`, plus la **data science** (un cran
+en dessous, en `possible`), dans les **pays bien payés** et non plus en Suisse seule.
+
+| | `ch_tech` | `tech` |
+|---|---|---|
+| Périmètre | `CH` | US, CA, GB, IE, CH, DE, AT, NL, LU, DK, SE, NO, SG, HK, JP, AU — ni Espagne, ni Inde, ni Pologne… |
+| Sujet | C++, CUDA, GPU, HPC, ML, robotique | idem + `low latency`, `high performance`, `data scientist`, `data science` |
+| Visa | poids faibles (permis suisse = formalité pour un ressortissant UE) | **poids du quant** (+8 / −25) : aux US, au Royaume-Uni, au Japon, « no sponsorship » ferme la porte |
+| Onglet | Swiss tech, `/ch` | Tech, `/tech` |
+
+Une offre suisse est notée par les deux pistes et paraît dans les deux onglets. NVIDIA, filtrée
+sur la Suisse pour `ch_tech`, est désormais listée sur les pays du périmètre (facette Workday
+`locationHierarchy1`, ~1 650 offres) : la relecture LLM (WP19), qui saute les offres qu'aucune
+piste ne montre, a donc nettement plus à lire.

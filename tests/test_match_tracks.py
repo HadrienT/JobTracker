@@ -197,3 +197,41 @@ def test_ai_inside_a_word_is_not(ch_tech: Profile) -> None:
     assert not on_topic(
         make_posting(title="Email Campaign Manager", tech=frozenset()), profile=ch_tech
     )
+
+
+# --- the tech track ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def tech(base: dict[str, Any]) -> Profile:
+    return build_tracks(base, load_yaml(CONFIGS / "tracks.yaml"))[Track.TECH]
+
+
+def _in(country: str) -> tuple[Location, ...]:
+    return (
+        Location(city=None, country=country, region=None, remote_mode=RemoteMode.ONSITE, raw=""),
+    )
+
+
+@pytest.mark.parametrize("country", ["US", "GB", "DE", "CH", "JP", "SG"])
+def test_tech_scope_is_the_well_paying_markets(tech: Profile, country: str) -> None:
+    assert in_scope(make_posting(locations=_in(country)), profile=tech)
+
+
+@pytest.mark.parametrize("country", ["ES", "IN", "PL"])
+def test_tech_scope_leaves_out_low_salary_markets(tech: Profile, country: str) -> None:
+    assert not in_scope(make_posting(locations=_in(country)), profile=tech)
+
+
+def test_tech_takes_data_science_one_notch_below_ml_engineering(tech: Profile) -> None:
+    scientist = make_posting(title="Data Scientist", tech=frozenset(), locations=_in("DE"))
+    engineer = make_posting(
+        title="Machine Learning Engineer", tech=frozenset(), locations=_in("DE")
+    )
+    assert on_topic(scientist, profile=tech)
+    assert {r.code for r in evaluate(scientist, profile=tech).reasons} >= {"title_possible"}
+    assert {r.code for r in evaluate(engineer, profile=tech).reasons} >= {"title_strong"}
+
+
+def test_tech_keeps_the_quant_visa_weights(tech: Profile, quant: Profile) -> None:
+    assert tech.weights["visa_no"] == quant.weights["visa_no"]

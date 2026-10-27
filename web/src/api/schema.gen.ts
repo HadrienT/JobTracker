@@ -940,7 +940,7 @@ export interface components {
          *     `postings` row itself. A track adds `track_verdicts` rows for the postings in its scope.
          * @enum {string}
          */
-        Track: "ch_tech";
+        Track: "ch_tech" | "tech";
         /**
          * Triage
          * @description The user's verdict on a posting they do not want in the main feed any more.

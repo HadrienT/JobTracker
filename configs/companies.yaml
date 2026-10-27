@@ -2036,9 +2036,11 @@
 
 - slug: nvidia
   name: NVIDIA
-  source: workday  # verified 2026-10-21 — Switzerland only (Workday's own facet): 30 postings, Zurich and remote
+  # verified 2026-10-27 — the tech track's countries (Workday's own facet, ids in this order):
+  # AU CA DK DE HK JP NL SG SE CH GB US — ~1650 postings, three quarters in the US
+  source: workday
   token: "nvidia"
-  extra: { wd: "5", site: NVIDIAExternalCareerSite, facets: '{"locationHierarchy1": ["2fcb99c455831013ea52e9ef1a0032ba"]}' }
+  extra: { wd: "5", site: NVIDIAExternalCareerSite, facets: '{"locationHierarchy1": ["2fcb99c455831013ea528dce556b3224", "2fcb99c455831013ea529c3b93ba3236", "d21cf68980ad0121a67d319db107a200", "2fcb99c455831013ea52adc65f5d3254", "2fcb99c455831013ea52b157d0d6325a", "2fcb99c455831013ea52c29d2e923278", "2fcb99c455831013ea52d0e0e4583290", "2fcb99c455831013ea52df1adb7432a8", "2fcb99c455831013ea52e6c3067832b4", "2fcb99c455831013ea52e9ef1a0032ba", "2fcb99c455831013ea52f785717432d2", "2fcb99c455831013ea52fb338f2932d8"]}' }
   sector: tech
   hq_country: US
   priority: 1
@@ -2142,4 +2144,307 @@
   sector: tech
   hq_country: NL
   priority: 3
+  enabled: true
+
+# --- Tech — the tech track (blueprint/wp/WP20-tracks.md §8) ---
+# C++ / CUDA / ML / data-science employers across the well-paying markets. Each board verified
+# 2026-10-27 by tools/probe_ats.py (job count in the comment). Left out: SpaceX and Anduril
+# (ITAR roles, US persons only); Mistral, Groq, Unity, QuantCo, Preferred Networks, Mujin
+# (no public board found — a `custom` entry each, case by case).
+
+- slug: databricks
+  name: Databricks
+  source: greenhouse  # verified 2026-10-27 — 893 postings
+  token: "databricks"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: scale_ai
+  name: Scale AI
+  source: greenhouse  # verified 2026-10-27 — 166 postings
+  token: "scaleai"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: cohere
+  name: Cohere
+  source: ashby  # verified 2026-10-27 — 116 postings
+  token: "cohere"
+  sector: tech
+  hq_country: CA
+  priority: 2
+  enabled: true
+
+- slug: perplexity
+  name: Perplexity
+  source: ashby  # verified 2026-10-27 — 132 postings
+  token: "perplexity"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: together_ai
+  name: Together AI
+  source: greenhouse  # verified 2026-10-27 — 87 postings
+  token: "togetherai"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: hugging_face
+  name: Hugging Face
+  source: workable  # verified 2026-10-27 — 6 postings
+  token: "huggingface"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: isomorphic_labs
+  name: Isomorphic Labs
+  source: greenhouse  # verified 2026-10-27 — 31 postings
+  token: "isomorphiclabs"
+  sector: tech
+  hq_country: GB
+  priority: 1
+  enabled: true
+
+- slug: synthesia
+  name: Synthesia
+  source: ashby  # verified 2026-10-27 — 38 postings
+  token: "synthesia"
+  sector: tech
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: aleph_alpha
+  name: Aleph Alpha
+  source: ashby  # verified 2026-10-27 — 4 postings
+  token: "alephalpha"
+  sector: tech
+  hq_country: DE
+  priority: 3
+  enabled: true
+
+- slug: deepl
+  name: DeepL
+  source: ashby  # verified 2026-10-27 — 8 postings
+  token: "deepl"
+  sector: tech
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: black_forest_labs
+  name: Black Forest Labs
+  source: ashby  # verified 2026-10-27 — 12 postings
+  token: "black-forest-labs"
+  sector: tech
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: helsing
+  name: Helsing
+  source: greenhouse  # verified 2026-10-27 — 160 postings
+  token: "helsing"
+  sector: tech
+  hq_country: DE
+  priority: 1
+  enabled: true
+
+- slug: celonis
+  name: Celonis
+  source: greenhouse  # verified 2026-10-27 — 222 postings
+  token: "celonis"
+  sector: tech
+  hq_country: DE
+  priority: 3
+  enabled: true
+
+- slug: sakana_ai
+  name: Sakana AI
+  source: workable  # verified 2026-10-27 — 24 postings
+  token: "sakana-ai"
+  sector: tech
+  hq_country: JP
+  priority: 2
+  enabled: true
+
+- slug: cerebras
+  name: Cerebras Systems
+  source: ashby  # verified 2026-10-27 — 118 postings
+  token: "cerebras"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: sambanova
+  name: SambaNova Systems
+  source: greenhouse  # verified 2026-10-27 — 67 postings
+  token: "sambanovasystems"
+  sector: tech
+  hq_country: US
+  priority: 3
+  enabled: true
+
+- slug: tenstorrent
+  name: Tenstorrent
+  source: greenhouse  # verified 2026-10-27 — 119 postings
+  token: "tenstorrent"
+  sector: tech
+  hq_country: CA
+  priority: 2
+  enabled: true
+
+- slug: graphcore
+  name: Graphcore
+  source: greenhouse  # verified 2026-10-27 — 210 postings
+  token: "graphcore"
+  sector: tech
+  hq_country: GB
+  priority: 2
+  enabled: true
+
+- slug: lambda_labs
+  name: Lambda
+  source: ashby  # verified 2026-10-27 — 99 postings
+  token: "lambda"
+  sector: tech
+  hq_country: US
+  priority: 3
+  enabled: true
+
+- slug: coreweave
+  name: CoreWeave
+  source: greenhouse  # verified 2026-10-27 — 315 postings
+  token: "coreweave"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: modal_labs
+  name: Modal
+  source: ashby  # verified 2026-10-27 — 43 postings
+  token: "modal"
+  sector: tech
+  hq_country: US
+  priority: 3
+  enabled: true
+
+- slug: waymo
+  name: Waymo
+  source: greenhouse  # verified 2026-10-27 — 370 postings
+  token: "waymo"
+  sector: tech
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: wayve
+  name: Wayve
+  source: ashby  # verified 2026-10-27 — 180 postings
+  token: "wayve"
+  sector: tech
+  hq_country: GB
+  priority: 1
+  enabled: true
+
+- slug: nuro
+  name: Nuro
+  source: greenhouse  # verified 2026-10-27 — 97 postings
+  token: "nuro"
+  sector: tech
+  hq_country: US
+  priority: 3
+  enabled: true
+
+- slug: zoox
+  name: Zoox
+  source: lever  # verified 2026-10-27 — 230 postings
+  token: "zoox"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: skydio
+  name: Skydio
+  source: ashby  # verified 2026-10-27 — 175 postings
+  token: "skydio"
+  sector: tech
+  hq_country: US
+  priority: 3
+  enabled: true
+
+- slug: figure_ai
+  name: Figure AI
+  source: greenhouse  # verified 2026-10-27 — 102 postings
+  token: "figureai"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: physical_intelligence
+  name: Physical Intelligence
+  source: ashby  # verified 2026-10-27 — 44 postings
+  token: "physicalintelligence"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: woven_by_toyota
+  name: Woven by Toyota
+  source: lever  # verified 2026-10-27 — 140 postings
+  token: "woven-by-toyota"
+  sector: tech
+  hq_country: JP
+  priority: 1
+  enabled: true
+
+- slug: roblox
+  name: Roblox
+  source: greenhouse  # verified 2026-10-27 — 268 postings
+  token: "roblox"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: epic_games
+  name: Epic Games
+  source: greenhouse  # verified 2026-10-27 — 144 postings
+  token: "epicgames"
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: stripe
+  name: Stripe
+  source: greenhouse  # verified 2026-10-27 — 714 postings
+  token: "stripe"
+  sector: tech
+  hq_country: US
+  priority: 3
+  enabled: true
+
+- slug: palantir
+  name: Palantir
+  source: lever  # verified 2026-10-27 — 306 postings
+  token: "palantir"
+  sector: tech
+  hq_country: US
+  priority: 2
   enabled: true

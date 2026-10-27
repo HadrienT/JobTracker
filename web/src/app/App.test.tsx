@@ -67,6 +67,21 @@ describe('App', () => {
     expect(csv.searchParams.get('track')).toBe('ch_tech')
   })
 
+  it('the Tech tab asks for the tech track', async () => {
+    const seen = recordRequests()
+    window.history.pushState(null, '', '/tech')
+    render(<App />)
+    await screen.findByRole('grid', { name: 'Job postings' })
+
+    expect(navButton('Tech')).toHaveAttribute('aria-current', 'page')
+    await waitFor(() => {
+      expect(seen.some((url) => url.pathname.endsWith('/postings'))).toBe(true)
+    })
+    for (const url of seen.filter((u) => /\/(postings|facets)$/.test(u.pathname))) {
+      expect(url.searchParams.get('track')).toBe('tech')
+    }
+  })
+
   it('the quant feed never sends a track', async () => {
     const seen = recordRequests()
     render(<App />)
