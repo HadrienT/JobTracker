@@ -85,3 +85,82 @@ tracks:
       # (blueprint/10-PROFILE-TARGET.md §4): a "right to work" line costs little here.
       visa_sponsors: 4
       visa_no: -5
+
+  tech:
+    # The same skills as ch_tech — C++, CUDA, machine learning, and data science one notch below —
+    # wherever tech pays well: no low-salary market (Spain, India, Poland…), by request. A Swiss
+    # posting shows in both tabs; each track scores it on its own.
+    version: 1
+
+    scope:
+      countries: [US, CA, GB, IE, CH, DE, AT, NL, LU, DK, SE, NO, SG, HK, JP, AU]
+      exclude_sectors: []
+
+    topic:
+      titles:
+        [
+          "c++",
+          "cuda",
+          "gpu",
+          "hpc",
+          "low latency",
+          "high performance",
+          "machine learning",
+          "ml",
+          "mlops",
+          "deep learning",
+          "computer vision",
+          "ai",
+          "llm",
+          "nlp",
+          "perception",
+          "robotics",
+          "data scientist",
+          "data science",
+        ]
+      tech: [cpp, cuda, pytorch, tensorflow, jax]
+
+    niche_tech: [cuda, pytorch, tensorflow, jax]
+
+    titles:
+      strong:
+        [
+          "c++",
+          "cuda",
+          "gpu",
+          "machine learning engineer",
+          "ml engineer",
+          "machine learning scientist",
+          "deep learning",
+          "computer vision",
+          "ai engineer",
+          "research engineer",
+          "hpc engineer",
+          "performance engineer",
+          "low latency",
+          "perception engineer",
+        ]
+      possible:
+        [
+          "software engineer",
+          "software developer",
+          "embedded software",
+          "robotics",
+          "research scientist",
+          "applied scientist",
+          "data scientist",
+          "data science",
+          "machine learning",
+          "algorithm",
+          "graphics",
+          "compiler",
+          "simulation",
+        ]
+
+    weights:
+      sector_tier1: 8
+      tech_cpp: 12
+      tech_python: 4
+      tech_niche: 10
+      # Visa keeps the quant weights: across the US, the UK, Japan or Singapore a "no
+      # sponsorship" line does close the door for an EU national.

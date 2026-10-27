@@ -125,3 +125,4 @@ class Track(StrEnum):
     """
 
     CH_TECH = "ch_tech"
+    TECH = "tech"

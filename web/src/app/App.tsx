@@ -30,6 +30,7 @@ export function App() {
                 {/* keyed: switching feeds is a new screen, not the same one re-filtered */}
                 {route === 'feed' && <FeedScreen key="feed" />}
                 {route === 'swiss' && <FeedScreen key="swiss" track="ch_tech" basePath="/ch" />}
+                {route === 'tech' && <FeedScreen key="tech" track="tech" basePath="/tech" />}
                 {route === 'applications' && <ApplicationsScreen />}
                 {route === 'map' && (
                   <Suspense fallback={<p className="p-4 text-sm text-text-tertiary">Loading map…</p>}>

@@ -2036,9 +2036,11 @@
 
 - slug: nvidia
   name: NVIDIA
-  source: workday  # verified 2026-10-21 — Switzerland only (Workday's own facet): 30 postings, Zurich and remote
+  # verified 2026-10-27 — the tech track's countries (Workday's own facet, ids in this order):
+  # AU CA DK DE HK JP NL SG SE CH GB US — ~1650 postings, three quarters in the US
+  source: workday
   token: "nvidia"
-  extra: { wd: "5", site: NVIDIAExternalCareerSite, facets: '{"locationHierarchy1": ["2fcb99c455831013ea52e9ef1a0032ba"]}' }
+  extra: { wd: "5", site: NVIDIAExternalCareerSite, facets: '{"locationHierarchy1": ["2fcb99c455831013ea528dce556b3224", "2fcb99c455831013ea529c3b93ba3236", "d21cf68980ad0121a67d319db107a200", "2fcb99c455831013ea52adc65f5d3254", "2fcb99c455831013ea52b157d0d6325a", "2fcb99c455831013ea52c29d2e923278", "2fcb99c455831013ea52d0e0e4583290", "2fcb99c455831013ea52df1adb7432a8", "2fcb99c455831013ea52e6c3067832b4", "2fcb99c455831013ea52e9ef1a0032ba", "2fcb99c455831013ea52f785717432d2", "2fcb99c455831013ea52fb338f2932d8"]}' }
   sector: tech
   hq_country: US
   priority: 1

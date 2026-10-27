@@ -39,12 +39,14 @@ def _place(city: str, country: str) -> tuple[Location, ...]:
 
 @pytest.fixture
 def tracks() -> dict[Track, Profile]:
-    return load_tracks(
+    # ch_tech alone: what is under test is the pass, and one track keeps its results one each.
+    loaded = load_tracks(
         CONFIGS / "profile.yaml",
         CONFIGS / "tracks.yaml",
         company_tiers={"acme": 2},
         company_sectors={"acme": "tech"},
     )
+    return {CH: loaded[CH]}
 
 
 def _seed(conn: sqlite3.Connection, n: int, **overrides: object) -> str:

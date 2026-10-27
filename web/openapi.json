@@ -1851,7 +1851,8 @@
       "Track": {
         "description": "A search scored against its own profile, beside the quant feed \u2014 blueprint/wp/WP20-tracks.md.\n\nThe quant feed is not a track: it is the default, scored into `verdicts` and the\n`postings` row itself. A track adds `track_verdicts` rows for the postings in its scope.",
         "enum": [
-          "ch_tech"
+          "ch_tech",
+          "tech"
         ],
         "title": "Track",
         "type": "string"
