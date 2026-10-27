@@ -34,6 +34,15 @@ describe('ApplicationsScreen', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 
+  it('flags the rows that carry a note, whose status may not tell everything', async () => {
+    renderScreen()
+    const flagged = (await screen.findByText('Tailspin Research')).closest('tr')
+    expect(flagged).not.toBeNull()
+    expect(within(flagged as HTMLElement).getByLabelText('Note: referral')).toHaveAttribute('title', 'referral')
+    const plain = screen.getByText('Northwind Capital').closest('tr')
+    expect(within(plain as HTMLElement).queryByText('note')).not.toBeInTheDocument()
+  })
+
   it('switches views and searches, and keeps them in the URL', async () => {
     const user = userEvent.setup()
     renderScreen()
