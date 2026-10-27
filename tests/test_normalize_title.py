@@ -117,6 +117,21 @@ def test_quantitative_in_a_non_quant_title_stays_other(taxonomy: Taxonomy, title
         ("Développeur Quantitatif C++", RoleFamily.QUANT_DEV),
         ("Financial Engineer - Structured Products", RoleFamily.QUANT_DEV),
         ("V.I.E. Programmer Analyst Pre-trade applications", RoleFamily.SWE_PLATFORM),
+        # Quant desks outside the trading floor: energy, insurance, clearing, structuring.
+        ("Analyst Intraday Trading", RoleFamily.QUANT_TRADING),
+        ("Graduate Structurer", RoleFamily.QUANT_TRADING),
+        ("Pricing Actuary", RoleFamily.QUANT_RESEARCH),
+        ("Catastrophe Modeller", RoleFamily.QUANT_RESEARCH),
+        ("Margin Methodology Analyst", RoleFamily.QUANT_RESEARCH),
+        ("Derivatives Pricing Analyst", RoleFamily.QUANT_RESEARCH),
+        ("Risk Modeller", RoleFamily.RISK),
+        ("Credit Risk Model Developer", RoleFamily.RISK),
+        ("ALM Analyst", RoleFamily.RISK),
+        ("Model Developer", RoleFamily.QUANT_DEV),
+        # ...but a finance title that names no model stays out.
+        ("Investment Analyst", RoleFamily.OTHER),
+        ("Summer Analyst - Restructuring & Liability Management", RoleFamily.OTHER),
+        ("Treasury Analyst", RoleFamily.OTHER),
         # "strat" inside another word names nothing.
         ("Strategy Analyst", RoleFamily.OTHER),
         ("Administrative Assistant", RoleFamily.OTHER),

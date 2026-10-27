@@ -2448,3 +2448,64 @@
   hq_country: US
   priority: 2
   enabled: true
+
+# --- Finance beyond the trading floor — probed 2026-10-27 -------------------
+# Energy, exchanges, systematic funds, fintech. Most names of that sweep (sovereign
+# funds, insurers, central banks, German utilities) sit behind SuccessFactors or an
+# in-house portal: tracked as a GitHub issue, not guessed here.
+
+- slug: cme_group
+  name: CME Group
+  source: workday  # verified 2026-10-27 — 66 postings
+  token: "cmegroup"
+  extra: { wd: "1", site: "cme_careers" }
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: centrica
+  name: Centrica
+  source: workday  # verified 2026-10-27 — 52 postings
+  token: "centrica"
+  extra: { wd: "3", site: "Centrica" }
+  sector: prop_trading  # an energy house trades its own book; the registry has no finer tag
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: vattenfall
+  name: Vattenfall
+  source: smartrecruiters  # verified 2026-10-27 — 342 postings, mostly field work
+  token: "vattenfall"
+  sector: prop_trading  # an energy house trades its own book; the registry has no finer tag
+  hq_country: SE
+  priority: 3
+  enabled: true
+
+- slug: crabel
+  name: Crabel Capital Management
+  source: greenhouse  # verified 2026-10-27 — 1 posting (talent network)
+  token: "crabel"
+  sector: hedge_fund
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: adyen
+  name: Adyen
+  source: greenhouse  # verified 2026-10-27 — 246 postings
+  token: "adyen"
+  sector: vendor
+  hq_country: NL
+  priority: 3
+  enabled: true
+
+- slug: robinhood
+  name: Robinhood
+  source: greenhouse  # verified 2026-10-27 — 155 postings
+  token: "robinhood"
+  sector: vendor
+  hq_country: US
+  priority: 3
+  enabled: true
