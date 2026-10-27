@@ -57,6 +57,10 @@ role_families:
       - trading analyst
       - trading operations
       - trading automation
+      # energy desks and the sell side's derivatives structurers — not "structuring", which
+      # is mostly M&A "Restructuring" and legal/tax "Corporate Structuring"
+      - intraday trading
+      - " structurer"
 
   quant_research:
     # "quantitative research" also matches "quantitative researcher" (substring)
@@ -90,6 +94,15 @@ role_families:
       - analyste quantitative
       - recherche quantitative
       - quantitatif
+      # the quant desks outside the trading floor: insurance (actuaries, catastrophe
+      # models), energy (forecasting), clearing houses (margin models)
+      - actuar
+      - catastrophe model
+      - cat model
+      - derivatives pricing
+      - pricing quant
+      - forecasting analyst
+      - margin methodology
 
   data_eng:
     keywords:
@@ -105,6 +118,10 @@ role_families:
       - quantitative risk
       - risk quant
       - model validation
+      - risk model
+      - risk methodology
+      - " alm "
+      - asset liability
 
   quant_dev:
     # a generic engineer/developer title becomes quant_dev when it also names
@@ -132,6 +149,7 @@ role_families:
       - ingénieur financier
       - developpeur quantitatif
       - développeur pricing
+      - model developer
     context_keywords:
       - " ai "
       - "ai engineer"
