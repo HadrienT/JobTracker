@@ -371,6 +371,16 @@ function ApplicationRow({
         <span className="flex flex-wrap items-center gap-1.5">
           <StatusBadge status={application.status} />
           {application.abandoned && <span className="text-xs text-text-tertiary">no news 5+ mo</span>}
+          {application.note.trim() !== '' && (
+            // The status may not be the whole story (an unattributed rejection, a referral…).
+            <span
+              title={application.note}
+              aria-label={`Note: ${application.note}`}
+              className="rounded border border-warning px-1 text-xs text-warning"
+            >
+              note
+            </span>
+          )}
           {application.reached_interview && application.status === 'rejected' && (
             <span className="text-xs text-tier-stretch" title={application.reason}>
               after interview
