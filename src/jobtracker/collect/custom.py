@@ -445,9 +445,10 @@ def _log_detail_skipped(board: Board) -> None:
 def _dig(value: Any, path: str) -> list[Any]:
     """Every value a dotted path reaches. A list met on the way is walked through, so
     `locations.city` reads the city of each location; a digit picks one element, and
-    `name=title` keeps the elements whose `name` is `title` (a list of key/value pairs)."""
+    `name=title` keeps the elements whose `name` is `title` (a list of key/value pairs).
+    `.` is the value itself: an endpoint that answers with a bare list (d.vinci)."""
     current = [value]
-    for key in path.split("."):
+    for key in path.split(".") if path != "." else []:
         wanted_key, is_filter, wanted_value = key.partition("=")
         reached: list[Any] = []
         for node in current:
