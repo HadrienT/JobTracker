@@ -3156,3 +3156,53 @@
   hq_country: NL
   priority: 2
   enabled: true
+
+- slug: gic
+  name: GIC
+  source: custom  # verified 2026-10-28 — rendered listing, 146 postings
+  token: "https://careers.gic.com.sg/search/?q=&startrow={page}"
+  extra: { link: "careers\\.gic\\.com\\.sg/job/[^/]+/(\\d+)/", pages: "8", page_start: "0", page_step: "20" }
+  sector: asset_manager
+  hq_country: SG
+  priority: 2
+  enabled: true
+
+- slug: allianz
+  name: Allianz
+  source: custom  # verified 2026-10-28 — rendered listing, 279 postings
+  token: "https://careers.allianz.com/global/en/search-results?from={page}&s=1"
+  extra: { link: "careers\\.allianz\\.com/global/en/job/([^/]+)/", pages: "60", page_start: "0", page_step: "10" }
+  sector: bank_other
+  hq_country: DE
+  priority: 3
+  enabled: true
+
+- slug: alpiq
+  name: Alpiq
+  source: custom  # verified 2026-10-28 — rendered listing, 14 postings
+  token: "https://www.alpiq.com/career/open-jobs/jobs/job-page-{page}/f1-%2A/f2-%2A/search"
+  extra: { link: "alpiq\\.com/career/open-jobs/your-application/(\\d+)", pages: "8", page_start: "1" }
+  sector: prop_trading
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: finalyse
+  name: Finalyse
+  source: custom  # verified 2026-10-28 — rendered listing, 9 postings
+  token: "https://app.skeeled.com/board/630cd21939851cc971ed0dbd"
+  extra: { link: "app\\.skeeled\\.com/offer/c/([0-9a-f]{24})" }
+  sector: vendor
+  hq_country: BE
+  priority: 1
+  enabled: true
+
+- slug: quantedge
+  name: Quantedge
+  source: custom  # verified 2026-10-28 — rendered listing, 1 postings
+  token: "https://www.quantedge.com/careers"
+  extra: { api: "https://www.quantedge.com/api/page/CAREERS", items: "data.content.jobsOpening.currentOpenings", id: "role", title: "role", location: "location", url: "{applyLink}", description: "description" }
+  sector: hedge_fund
+  hq_country: SG
+  priority: 1
+  enabled: true
