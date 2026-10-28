@@ -2579,3 +2579,580 @@
   hq_country: DE
   priority: 1
   enabled: true
+
+- slug: shell
+  name: "Shell"
+  source: workday  # verified 2026-10-28 — 148 postings
+  token: "shell"
+  extra: { wd: "3", site: "ShellCareers" }
+  sector: prop_trading
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: bp
+  name: "BP"
+  source: workday  # verified 2026-10-28 — 270 postings
+  token: "bpinternational"
+  extra: { wd: "3", site: "bpCareers" }
+  sector: prop_trading
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: hkex
+  name: "Hong Kong Exchanges and Clearing (HKEX)"
+  source: workday  # verified 2026-10-28 — 138 postings
+  token: "hkex"
+  extra: { wd: "3", site: "HKEXCareerPage" }
+  sector: vendor
+  hq_country: HK
+  priority: 2
+  enabled: true
+
+- slug: cpp_investments
+  name: "CPP Investments"
+  source: workday  # verified 2026-10-28 — 54 postings
+  token: "cppib"
+  extra: { wd: "10", site: "cppinvestments" }
+  sector: asset_manager
+  hq_country: CA
+  priority: 2
+  enabled: true
+
+- slug: otpp
+  name: "Ontario Teachers' Pension Plan"
+  source: workday  # verified 2026-10-28 — 37 postings
+  token: "otppb"
+  extra: { wd: "3", site: "OntarioTeachers_Careers" }
+  sector: asset_manager
+  hq_country: CA
+  priority: 2
+  enabled: true
+
+- slug: cdpq
+  name: "CDPQ (La Caisse)"
+  source: workday  # verified 2026-10-28 — 41 postings
+  token: "cdpq"
+  extra: { wd: "10", site: "CDPQ" }
+  sector: asset_manager
+  hq_country: CA
+  priority: 2
+  enabled: true
+
+- slug: banque_de_france
+  name: "Banque de France"
+  source: workday  # verified 2026-10-28 — 137 postings
+  token: "bdf"
+  extra: { wd: "103", site: "recrutement-banque-de-France" }
+  sector: bank_other
+  hq_country: FR
+  priority: 3
+  enabled: true
+
+- slug: euroclear
+  name: "Euroclear"
+  source: custom  # verified 2026-10-28 — endpoint, 98 postings
+  token: "https://don.fa.em2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1003/requisitions"
+  extra:
+    api: "https://don.fa.em2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1003,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://don.fa.em2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1003/job/{Id}"
+    detail: "https://don.fa.em2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=CX_1003"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
+  sector: vendor
+  hq_country: BE
+  priority: 2
+  enabled: true
+
+- slug: dtcc
+  name: "DTCC"
+  source: custom  # verified 2026-10-28 — endpoint, 453 postings
+  token: "https://ebxr.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/requisitions"
+  extra:
+    api: "https://ebxr.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://ebxr.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/{Id}"
+    detail: "https://ebxr.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=CX_1"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: scor
+  name: "SCOR"
+  source: custom  # verified 2026-10-28 — endpoint, 203 postings
+  token: "https://fa-errt-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2001/requisitions"
+  extra:
+    api: "https://fa-errt-saasfaprod1.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_2001,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://fa-errt-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2001/job/{Id}"
+    detail: "https://fa-errt-saasfaprod1.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=CX_2001"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
+  sector: bank_other
+  hq_country: FR
+  priority: 3
+  enabled: true
+
+- slug: bank_of_england
+  name: "Bank of England"
+  source: custom  # verified 2026-10-28 — endpoint, 21 postings
+  token: "https://eoff.fa.em1.ukg.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions"
+  extra:
+    api: "https://eoff.fa.em1.ukg.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://eoff.fa.em1.ukg.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/{Id}"
+    detail: "https://eoff.fa.em1.ukg.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=CX_1001"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
+  sector: bank_other
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: totalenergies
+  name: "TotalEnergies"
+  source: custom  # verified 2026-10-28 — endpoint, 370 postings
+  token: "https://fa-eocc-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/requisitions"
+  extra:
+    api: "https://fa-eocc-saasfaprod1.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX,limit={size},offset={offset},sortBy=POSTING_DATES_DESC"
+    size: "200"
+    items: items.0.requisitionList
+    total: items.0.TotalJobsCount
+    id: Id
+    title: Title
+    location: PrimaryLocation,secondaryLocations.Name
+    posted: PostedDate
+    url: "https://fa-eocc-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/{Id}"
+    detail: "https://fa-eocc-saasfaprod1.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22{Id}%22,siteNumber=CX"
+    detail_description: items.0.ExternalDescriptionStr,items.0.ExternalResponsibilitiesStr,items.0.ExternalQualificationsStr
+  sector: prop_trading
+  hq_country: FR
+  priority: 3
+  enabled: true
+
+- slug: statkraft
+  name: Statkraft
+  source: smartrecruiters  # verified 2026-10-28 — 88 postings
+  token: "Statkraft1"
+  sector: prop_trading
+  hq_country: "NO"
+  priority: 3
+  enabled: true
+
+- slug: dymon_asia
+  name: Dymon Asia Capital
+  source: greenhouse  # verified 2026-10-28 — 11 postings
+  token: "dymonasiacapitalsingaporepteltd"
+  sector: hedge_fund
+  hq_country: SG
+  priority: 2
+  enabled: true
+
+- slug: arrowstreet
+  name: Arrowstreet Capital
+  source: workday  # verified 2026-10-28 — 17 postings
+  token: "arrowstreetcapital"
+  extra: { wd: "5", site: "Arrowstreet" }
+  sector: asset_manager
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: arrowstreet_campus
+  name: Arrowstreet Capital (campus)
+  source: workday  # verified 2026-10-28 — 6 postings
+  token: "arrowstreetcapital"
+  extra: { wd: "5", site: "Campus_Careers" }
+  sector: asset_manager
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: rwe
+  name: RWE
+  source: custom  # verified 2026-10-28 — endpoint, 250 postings
+  token: "https://www.rwe.com/en/rwe-careers-portal/job-offers/"
+  extra:
+    api: "https://www.rwe.com/api/jobborse/entities/v1"
+    body: '{"skip":{offset},"SortType":"Created_tdt desc","take":"{size}","LogoContainerId":"0212b60d-b1c6-47b6-8cd4-f75dcaf7a55b","ExperienceLevel":[],"Company":[],"FunctionalArea":[],"Country":[],"Shift":[],"ShiftType":[]}'
+    size: "100"
+    items: Results
+    total: TotalCount
+    id: Id
+    title: Title
+    location: Location
+    posted: Created
+    url: "{Url}"
+    description: Description
+  sector: prop_trading
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: glencore
+  name: Glencore
+  source: custom  # verified 2026-10-28 — endpoint, 294 postings
+  token: "https://www.glencore.com/en/careers/jobs"
+  extra:
+    api: "https://www.glencore.com/.rest/api/v2/careers/?locale=en&sortBy=title-asc&offset={offset}&limit={size}"
+    size: "200"
+    items: data
+    total: totalResults
+    id: jobId
+    title: title
+    location: city,country
+    posted: startDate
+    url: "{url}"
+    description: description
+  sector: prop_trading
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: uniper
+  name: Uniper
+  source: custom  # verified 2026-10-28 — endpoint, 97 postings
+  token: "https://careers.uniper.energy/en"
+  extra:
+    api: "https://careers.uniper.energy/api/filter/map"
+    body: '{"locale":"en","filterSearchParams":{"searchQuery":"","filter":{}}}'
+    items: jobMapPins.data
+    total: totalHits
+    id: idClient
+    title: title
+    location: city,country
+    url: "https://careers.uniper.energy/en/job/job/{idClient}"
+  sector: prop_trading
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: enbw
+  name: EnBW
+  source: custom  # verified 2026-10-28 — rendered listing, 137 postings
+  token: "https://careers.enbw.com/de/de/search-results?from={page}&s=1"
+  extra: { link: "careers\\.enbw\\.com/de/de/job/(\\d+)/", pages: "60", page_start: "0", page_step: "10" }
+  sector: prop_trading
+  hq_country: DE
+  priority: 3
+  enabled: true
+
+- slug: axpo
+  name: Axpo
+  source: custom  # verified 2026-10-28 — rendered listing, 9 postings
+  token: "https://careers.axpo.com/jobs"
+  extra: { link: "careers\\.axpo\\.com/jobs/(\\d+)-" }
+  sector: prop_trading
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: lynx
+  name: Lynx Asset Management
+  source: custom  # verified 2026-10-28 — rendered listing, 3 postings
+  token: "https://careers.lynxhedge.se/jobs"
+  extra: { link: "careers\\.lynxhedge\\.se/jobs/(\\d+)-" }
+  sector: hedge_fund
+  hq_country: SE
+  priority: 2
+  enabled: true
+
+- slug: hannover_re
+  name: Hannover Re
+  source: custom  # verified 2026-10-28 — rendered listing, 56 postings
+  token: "https://jobs.hannover-re.com/search/?q=&startrow={page}"
+  extra: { link: "jobs\\.hannover-re\\.com/job/[^/]+/(\\d+)/", pages: "10", page_start: "0", page_step: "25" }
+  sector: bank_other
+  hq_country: DE
+  priority: 3
+  enabled: true
+
+- slug: temasek
+  name: Temasek
+  source: custom  # verified 2026-10-28 — rendered listing, 87 postings
+  token: "https://jobs.temasek.com.sg/search/?q=&startrow={page}"
+  extra: { link: "jobs\\.temasek\\.com\\.sg/job/[^/]+/(\\d+)/", pages: "6", page_start: "0", page_step: "25" }
+  sector: asset_manager
+  hq_country: SG
+  priority: 2
+  enabled: true
+
+- slug: sgx
+  name: SGX Group
+  source: custom  # verified 2026-10-28 — rendered listing, 30 postings
+  token: "https://careers.sgx.com/search/?q=&startrow={page}"
+  extra: { link: "careers\\.sgx\\.com/job/[^/]+/(\\d+)/", pages: "6", page_start: "0", page_step: "25" }
+  sector: vendor
+  hq_country: SG
+  priority: 2
+  enabled: true
+
+- slug: six_group
+  name: SIX Group
+  source: custom  # verified 2026-10-28 — rendered listing, 90 postings
+  token: "https://jobs.six-group.com/search/?q=&startrow={page}"
+  extra: { link: "jobs\\.six-group\\.com/job/[^/]+/(\\d+)/", pages: "12", page_start: "0", page_step: "25" }
+  sector: vendor
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: quoniam
+  name: Quoniam Asset Management
+  source: custom  # verified 2026-10-28 — rendered listing, 1 postings
+  token: "https://recruitingapp-5064.de.umantis.com/Jobs/All?lang=eng"
+  extra: { link: "recruitingapp-5064\\.de\\.umantis\\.com/Vacancies/(\\d+)/Description" }
+  sector: asset_manager
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: nbim
+  name: Norges Bank Investment Management
+  source: custom  # verified 2026-10-28 — rendered listing, 1 postings
+  token: "https://www.nbim.no/en/about-us/career/vacancies/"
+  extra: { link: "webcruiter\\.no/Main/recruit/public/(\\d+)" }
+  sector: asset_manager
+  hq_country: "NO"
+  priority: 2
+  enabled: true
+
+- slug: garda
+  name: Garda Capital Partners
+  source: greenhouse  # verified 2026-10-28 — 10 postings
+  token: "gardacp"
+  sector: hedge_fund
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: acadian
+  name: Acadian Asset Management
+  source: greenhouse  # verified 2026-10-28 — 16 postings
+  token: "acadianassetmanagementllc"
+  sector: asset_manager
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: engie
+  name: Engie
+  source: custom  # verified 2026-10-28 — endpoint, 536 postings
+  token: "https://jobs.engie.com/search/"
+  extra:
+    api: "https://jobs.engie.com/services/recruiting/v1/jobs"
+    body: '{"locale":"en_US","pageNumber":{page},"sortBy":"","keywords":"","location":"","facetFilters":{},"brand":"","skills":[],"categoryId":0,"alertId":"","rcmCandidateId":""}'
+    size: "10"
+    items: jobSearchResult.response
+    total: totalJobs
+    id: id
+    title: unifiedStandardTitle
+    location: jobLocationShort
+    url: "https://jobs.engie.com/job/{urlTitle}/{id}-en_US/"
+  sector: prop_trading
+  hq_country: FR
+  priority: 3
+  enabled: true
+
+- slug: snb
+  name: Swiss National Bank
+  source: custom  # verified 2026-10-28 — endpoint, 8 postings
+  token: "https://careers.snb.ch/search/"
+  extra:
+    api: "https://careers.snb.ch/services/recruiting/v1/jobs"
+    body: '{"locale":"de_DE","pageNumber":{page},"sortBy":"","keywords":"","location":"","facetFilters":{},"brand":"","skills":[],"categoryId":0,"alertId":"","rcmCandidateId":""}'
+    size: "10"
+    items: jobSearchResult.response
+    total: totalJobs
+    id: id
+    title: unifiedStandardTitle
+    location: jobLocationShort
+    url: "https://careers.snb.ch/job/{urlTitle}/{id}-de_DE/"
+  sector: bank_other
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: swiss_re
+  name: Swiss Re
+  source: custom  # verified 2026-10-28 — rendered listing, 241 postings
+  token: "https://careers.swissre.com/search/?q=&startrow={page}"
+  extra: { link: "careers\\.swissre\\.com/job/[^/]+/(\\d+)/", pages: "12", page_start: "0", page_step: "25" }
+  sector: bank_other
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: zurich_insurance
+  name: Zurich Insurance
+  source: custom  # verified 2026-10-28 — rendered listing, 733 postings
+  token: "https://www.careers.zurich.com/search/?q=&startrow={page}"
+  extra: { link: "careers\\.zurich\\.com/job/[^/]+/(\\d+)/", pages: "40", page_start: "0", page_step: "25" }
+  sector: bank_other
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: munich_re
+  name: Munich Re
+  source: custom  # verified 2026-10-28 — rendered listing, 600 postings
+  token: "https://careers.munichre.com/en/search-jobs?p={page}"
+  extra: { link: "careers\\.munichre\\.com/en/job/[^/]+/[^/]+/\\d+/(\\d+)", pages: "40" }
+  sector: bank_other
+  hq_country: DE
+  priority: 3
+  enabled: true
+
+- slug: cboe
+  name: Cboe Global Markets
+  source: custom  # verified 2026-10-28 — rendered listing, 106 postings
+  token: "https://careers.cboe.com/us/en/search-results?from={page}&s=1"
+  extra: { link: "careers\\.cboe\\.com/us/en/job/(R-\\d+)/", pages: "15", page_start: "0", page_step: "10" }
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: oliver_wyman
+  name: Oliver Wyman
+  source: custom  # verified 2026-10-28 — rendered listing, 288 postings
+  token: "https://careers.marsh.com/global/en/oliver-wyman-search?from={page}&s=1"
+  extra: { link: "careers\\.marsh\\.com/global/en/job/([^/]+)/", pages: "30", page_start: "0", page_step: "10" }
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: ecb
+  name: European Central Bank
+  source: custom  # verified 2026-10-28 — rendered listing, 5 postings
+  token: "https://talent.ecb.europa.eu/careers/SearchJobs/?jobOffset={page}"
+  extra: { link: "talent\\.ecb\\.europa\\.eu/careers/JobDetail/[^/]+/(\\d+)", pages: "10", page_start: "0", page_step: "10" }
+  sector: bank_other
+  hq_country: DE
+  priority: 3
+  enabled: true
+
+- slug: orsted
+  name: Orsted
+  source: custom  # verified 2026-10-28 — endpoint, 40 postings
+  token: "https://orsted.com/en/careers/vacancies-list"
+  extra:
+    api: "https://orsted.com/api/jobs/jobList"
+    body: '{"offset":0,"start":0,"length":500,"item":"41d69dfd-861a-4b9b-aa6e-8db172f7ed3e","countryFilterID":"{A86A8D05-3DCC-46B3-99DE-026C83655B58}","category":"","employmenttype":"","country":"","location":""}'
+    items: data
+    total: recordsTotal
+    id: Link
+    title: JobName
+    location: PositionWorkPlace,PositionLocation
+    url: "{Link}"
+  sector: prop_trading
+  hq_country: DK
+  priority: 3
+  enabled: true
+
+- slug: axa
+  name: AXA
+  source: custom  # verified 2026-10-28 — endpoint, 1631 postings
+  token: "https://careers.axa.com/careers-home/jobs"
+  extra:
+    api: "https://careers.axa.com/api/jobs?page={page}&limit={size}&sortBy=posted_date&descending=true&internal=false"
+    size: "100"
+    page_start: "1"
+    items: jobs.data
+    total: totalCount
+    id: req_id
+    title: title
+    location: full_location
+    posted: posted_date
+    url: "https://careers.axa.com/careers-home/jobs/{slug}"
+    description: description
+  sector: bank_other
+  hq_country: FR
+  priority: 3
+  enabled: true
+
+- slug: deutsche_borse
+  name: Deutsche Börse
+  source: custom  # verified 2026-10-28 — rendered listing, 180 postings
+  token: "https://careers.deutsche-boerse.com/search"
+  extra: { link: "careers\\.deutsche-boerse\\.com/offer-redirect/\\?offerApiId=([A-Za-z0-9=]+)" }
+  sector: vendor
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: klarna
+  name: Klarna
+  source: custom  # verified 2026-10-28 — rendered listing, 97 postings
+  token: "https://jobs.deel.com/klarna"
+  extra: { link: "jobs\\.deel\\.com/klarna/job-details/([0-9a-f-]+)" }
+  sector: vendor
+  hq_country: SE
+  priority: 3
+  enabled: true
+
+- slug: interactive_brokers
+  name: Interactive Brokers
+  source: custom  # verified 2026-10-28 — rendered listing, 25 postings
+  token: "https://jobs.dayforcehcm.com/en-US/ibgllc/CANDIDATEPORTAL"
+  extra: { link: "jobs\\.dayforcehcm\\.com/en-US/ibgllc/CANDIDATEPORTAL/jobs/(\\d+)" }
+  sector: vendor
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: etoro
+  name: eToro
+  source: custom  # verified 2026-10-28 — rendered listing, 16 postings
+  token: "https://www.etoro.com/about/careers/"
+  extra: { link: "etoro\\.com/about/careers/position/([^/]+)/", title_line: "3" }
+  sector: vendor
+  hq_country: IL
+  priority: 3
+  enabled: true
+
+- slug: bis
+  name: Bank for International Settlements
+  source: custom  # verified 2026-10-28 — rendered listing, 6 postings
+  token: "https://www.bis.org/about/careers/vacancies"
+  extra: { link: "bis\\.org/vacancy/(jr\\d+)" }
+  sector: bank_other
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: zanders
+  name: Zanders
+  source: custom  # verified 2026-10-28 — rendered listing, 20 postings
+  token: "https://careers.zandersgroup.com/jobs"
+  extra: { link: "careers\\.zandersgroup\\.com/jobs/(\\d+)-" }
+  sector: vendor
+  hq_country: NL
+  priority: 2
+  enabled: true
