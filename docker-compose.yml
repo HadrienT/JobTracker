@@ -52,5 +52,5 @@ services:
     environment:
       JT_PUBLIC_API_BASE: /api
     ports:
-      - "127.0.0.1:${JT_WEB_PORT:-5190}:8080"
+      - "${JT_WEB_BIND:-127.0.0.1}:${JT_WEB_PORT:-5190}:8080"
     restart: unless-stopped
