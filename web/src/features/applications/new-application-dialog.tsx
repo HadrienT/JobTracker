@@ -32,7 +32,7 @@ export function NewApplicationDialog({ onClose, onCreated }: NewApplicationDialo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 md:p-6"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -43,7 +43,7 @@ export function NewApplicationDialog({ onClose, onCreated }: NewApplicationDialo
         aria-modal="true"
         aria-labelledby="new-application-title"
         tabIndex={-1}
-        className="flex w-full max-w-xl flex-col gap-3 rounded-md border border-border bg-surface p-6 outline-none"
+        className="flex w-full max-w-xl flex-col gap-3 rounded-md border border-border bg-surface p-4 outline-none md:p-6"
         onSubmit={(event) => {
           event.preventDefault()
           create.mutate(
@@ -79,7 +79,7 @@ export function NewApplicationDialog({ onClose, onCreated }: NewApplicationDialo
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className={LABEL}>
             Company *
             <input

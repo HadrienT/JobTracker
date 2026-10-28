@@ -12,8 +12,10 @@ import { TRIAGE_ACTIONS, type TriageView } from '@/features/feed/triage'
 import { PostingRow } from '@/features/feed/posting-row'
 import { useFeedKeyboardShortcuts } from '@/features/feed/use-keyboard-shortcuts'
 import { useToast } from '@/features/favorites/use-toast'
+import { useIsMobile } from '@/shared/lib/use-media-query'
 
 const ROW_HEIGHT = 44
+const COMPACT_ROW_HEIGHT = 68
 const PREFETCH_ROWS_FROM_END = 10
 const OVERSCAN = 8
 
@@ -36,6 +38,7 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
   const toast = useToast()
   const parentRef = useRef<HTMLDivElement>(null)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const compact = useIsMobile()
 
   function toggleFavorite(postingId: string, value: boolean) {
     setFavorite.mutate(
@@ -95,9 +98,14 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
   const rowVirtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => (compact ? COMPACT_ROW_HEIGHT : ROW_HEIGHT),
     overscan: OVERSCAN,
   })
+
+  // Rotating a tablet across the breakpoint changes every row's height at once.
+  useEffect(() => {
+    rowVirtualizer.measure()
+  }, [compact, rowVirtualizer])
 
   useEffect(() => {
     setSelectedIndex((current) => {
@@ -218,6 +226,7 @@ export function FeedList({ filter, sort, searchInputRef, isPanelOpen, hasActiveF
                 // the detail panel (blueprint/12-WEB-UI.md §5).
                 reasons={[]}
                 selected={virtualRow.index === selectedIndex}
+                compact={compact}
                 style={{
                   position: 'absolute',
                   top: 0,

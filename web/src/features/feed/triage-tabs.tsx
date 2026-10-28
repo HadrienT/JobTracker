@@ -25,7 +25,7 @@ function patchFor(view: FeedView): Partial<PostingsFilter> {
 export function TriageTabs({ filter, onChange }: TriageTabsProps) {
   const view = feedViewOf(filter)
   return (
-    <div role="tablist" aria-label="Feed lists" className="flex rounded-md border border-border text-sm">
+    <div role="tablist" aria-label="Feed lists" className="flex w-max rounded-md border border-border text-sm">
       {FEED_VIEWS.map((option) => {
         const active = option.value === view
         return (
@@ -35,7 +35,7 @@ export function TriageTabs({ filter, onChange }: TriageTabsProps) {
             role="tab"
             aria-selected={active}
             className={cn(
-              'px-3 py-1 first:rounded-l-md last:rounded-r-md',
+              'whitespace-nowrap px-3 py-1.5 first:rounded-l-md last:rounded-r-md md:py-1',
               active ? 'bg-surface-elevated text-text-primary' : 'text-text-secondary hover:text-text-primary',
             )}
             onClick={() => {

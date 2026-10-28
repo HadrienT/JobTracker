@@ -12,6 +12,7 @@ import { SavedViews } from '@/features/filters/saved-views-menu'
 import { api } from '@/api/client'
 import { useEscapeKey } from '@/features/feed/use-keyboard-shortcuts'
 import { TriageTabs } from '@/features/feed/triage-tabs'
+import { useIsMobile } from '@/shared/lib/use-media-query'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'score', label: 'Score' },
@@ -40,7 +41,9 @@ export function FeedScreen({ track = null, basePath = '' }: FeedScreenProps) {
   const [searchDraft, setSearchDraft] = useState(filter.query ?? '')
   const [syncedQuery, setSyncedQuery] = useState(filter.query ?? null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const isMobile = useIsMobile()
   const { postingId, openPosting, closePosting } = usePostingRoute(basePath)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   // The URL can change from elsewhere — a pill's ×, Reset, the Back button —
   // so the input has to fall back into line with it, not just push to it.
@@ -70,39 +73,57 @@ export function FeedScreen({ track = null, basePath = '' }: FeedScreenProps) {
 
   useEscapeKey(() => {
     if (postingId !== null) closePosting()
+    else setFiltersOpen(false)
   })
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <header className="flex items-center gap-4 border-b border-border px-4 py-3">
+      {/* A phone gets two rows: search, filters and sort, then the lists, swiped sideways. */}
+      <header className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 md:flex-nowrap md:gap-4 md:px-4 md:py-3">
         <input
           ref={searchInputRef}
           type="search"
-          placeholder="Search titles… (press / to focus)"
+          placeholder={isMobile ? 'Search titles…' : 'Search titles… (press / to focus)'}
           aria-label="Search postings"
           value={searchDraft}
           onChange={(event) => {
             setSearchDraft(event.target.value)
           }}
-          className="w-72 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-tier-possible"
+          className="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-tier-possible md:w-72 md:flex-none"
         />
-        <TriageTabs filter={filter} onChange={setFilter} />
-        <SavedViews />
+        <button
+          type="button"
+          onClick={() => {
+            setFiltersOpen(true)
+          }}
+          className="relative rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary md:hidden"
+        >
+          Filters
+          {!isDefaultFilter(filter) && (
+            <span aria-label="(active)" className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-tier-possible" />
+          )}
+        </button>
+        <div className="no-scrollbar order-last -mx-3 w-[calc(100%+1.5rem)] overflow-x-auto px-3 md:order-none md:mx-0 md:w-auto md:px-0">
+          <TriageTabs filter={filter} onChange={setFilter} />
+        </div>
+        <div className="hidden md:block">
+          <SavedViews />
+        </div>
         <a
           href={api.exportUrl({ ...filter, sort })}
           download
-          className="rounded-md border border-border px-2 py-1 text-sm text-text-secondary hover:text-text-primary"
+          className="hidden whitespace-nowrap rounded-md border border-border px-2 py-1 text-sm text-text-secondary hover:text-text-primary md:block"
         >
           Export CSV
         </a>
-        <label className="ml-auto flex items-center gap-2 text-sm text-text-secondary">
-          Sort
+        <label className="flex items-center gap-2 text-sm text-text-secondary md:ml-auto">
+          <span className="sr-only md:not-sr-only">Sort</span>
           <select
             value={sort}
             onChange={(event) => {
               setSort(event.target.value as SortKey)
             }}
-            className="rounded-md border border-border bg-surface px-2 py-1 text-text-primary"
+            className="rounded-md border border-border bg-surface px-2 py-1.5 text-text-primary md:py-1"
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -117,7 +138,15 @@ export function FeedScreen({ track = null, basePath = '' }: FeedScreenProps) {
       <ActiveFilterPills filter={urlFilter} onChange={setFilter} />
 
       <div className="flex flex-1 overflow-hidden">
-        <FiltersPanel filter={filter} onChange={setFilter} onReset={resetFilters} />
+        <FiltersPanel
+          filter={filter}
+          onChange={setFilter}
+          onReset={resetFilters}
+          open={filtersOpen}
+          onClose={() => {
+            setFiltersOpen(false)
+          }}
+        />
         <FeedList
           filter={filter}
           sort={sort}

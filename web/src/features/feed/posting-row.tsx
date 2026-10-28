@@ -23,6 +23,8 @@ interface PostingRowProps {
   posting: PostingOut
   reasons: Reason[]
   selected: boolean
+  /** A phone: two stacked lines instead of eleven columns. */
+  compact?: boolean
   style: CSSProperties
   onSelect: () => void
   onOpen: () => void
@@ -35,6 +37,7 @@ export function PostingRow({
   posting,
   reasons,
   selected,
+  compact = false,
   style,
   onSelect,
   onOpen,
@@ -45,6 +48,30 @@ export function PostingRow({
   // an `option` may not contain one (axe `nested-interactive`, `aria-required-children`).
   // A row may hold any number of cells, so the data columns are one cell and the toggle
   // another, and `aria-activedescendant` on the grid still drives the keyboard selection.
+  const title = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="flex min-w-0 items-center gap-2">
+          {isNewSinceLastVisit(posting.first_seen_at) && (
+            <span
+              aria-label="New since your last visit"
+              title="New since your last visit"
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-tier-possible"
+            />
+          )}
+          <span className="truncate text-text-primary">{posting.title}</span>
+          {posting.application_status !== null && <StatusBadge status={posting.application_status} />}
+          {posting.rejection_reason !== null && (
+            <span className="shrink-0 rounded-full border border-tier-rejected/60 px-1.5 py-0.5 text-[10px] font-medium leading-none text-tier-rejected">
+              {rejectionReasonLabel(posting.rejection_reason)}
+            </span>
+          )}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{posting.title_raw}</TooltipContent>
+    </Tooltip>
+  )
+
   return (
     <div
       id={`posting-row-${posting.posting_id}`}
@@ -61,67 +88,78 @@ export function PostingRow({
         onOpen()
       }}
     >
-      <div role="gridcell" className={cn('grid h-full items-center gap-2 px-3 text-sm', GRID_COLUMNS)}>
-        <Score score={posting.score} tier={posting.tier} reasons={reasons} />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="flex min-w-0 items-center gap-2">
-              {isNewSinceLastVisit(posting.first_seen_at) && (
-                <span
-                  aria-label="New since your last visit"
-                  title="New since your last visit"
-                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-tier-possible"
-                />
-              )}
-              <span className="truncate text-text-primary">{posting.title}</span>
-              {posting.application_status !== null && <StatusBadge status={posting.application_status} />}
-              {posting.rejection_reason !== null && (
-                <span className="shrink-0 rounded-full border border-tier-rejected/60 px-1.5 py-0.5 text-[10px] font-medium leading-none text-tier-rejected">
-                  {rejectionReasonLabel(posting.rejection_reason)}
-                </span>
-              )}
+      {compact ? (
+        <div role="gridcell" className="flex h-full flex-col justify-center gap-1.5 px-3 text-sm">
+          {/* Right padding: the triage and favorite buttons sit over the end of the first line. */}
+          <div className="flex min-w-0 items-center gap-2 pr-28">
+            <Score score={posting.score} tier={posting.tier} reasons={reasons} />
+            {title}
+          </div>
+          <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap text-xs">
+            <span className="max-w-[45%] shrink-0 truncate text-text-secondary">{posting.company_name}</span>
+            <span className="min-w-0 truncate">
+              <LocationCell locations={posting.locations} />
             </span>
-          </TooltipTrigger>
-          <TooltipContent>{posting.title_raw}</TooltipContent>
-        </Tooltip>
+            <VisaBadge status={posting.visa_sponsorship} />
+            <span className="shrink-0">
+              <Money
+                amountMin={posting.compensation.amount_min}
+                amountMax={posting.compensation.amount_max}
+                currency={posting.compensation.currency}
+                period={posting.compensation.period}
+              />
+            </span>
+            <span className="ml-auto shrink-0">
+              <Age postedAt={posting.posted_at} firstSeenAt={posting.first_seen_at} staleAfterDays={STALE_AFTER_DAYS} />
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div role="gridcell" className={cn('grid h-full items-center gap-2 px-3 text-sm', GRID_COLUMNS)}>
+          <Score score={posting.score} tier={posting.tier} reasons={reasons} />
 
-        <span className="text-xs text-text-tertiary">{posting.alias_count > 0 ? `+${String(posting.alias_count)}` : null}</span>
+          {title}
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="truncate text-text-secondary">{posting.company_name}</span>
-          </TooltipTrigger>
-          <TooltipContent>{posting.sector}</TooltipContent>
-        </Tooltip>
+          <span className="text-xs text-text-tertiary">{posting.alias_count > 0 ? `+${String(posting.alias_count)}` : null}</span>
 
-        <LocationCell locations={posting.locations} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate text-text-secondary">{posting.company_name}</span>
+            </TooltipTrigger>
+            <TooltipContent>{posting.sector}</TooltipContent>
+          </Tooltip>
 
-        <span className="truncate text-xs text-text-tertiary">{postingMeta(posting)}</span>
+          <LocationCell locations={posting.locations} />
 
-        <VisaBadge status={posting.visa_sponsorship} />
+          <span className="truncate text-xs text-text-tertiary">{postingMeta(posting)}</span>
 
-        <Money
-          amountMin={posting.compensation.amount_min}
-          amountMax={posting.compensation.amount_max}
-          currency={posting.compensation.currency}
-          period={posting.compensation.period}
-        />
+          <VisaBadge status={posting.visa_sponsorship} />
 
-        <Age postedAt={posting.posted_at} firstSeenAt={posting.first_seen_at} staleAfterDays={STALE_AFTER_DAYS} />
+          <Money
+            amountMin={posting.compensation.amount_min}
+            amountMax={posting.compensation.amount_max}
+            currency={posting.compensation.currency}
+            period={posting.compensation.period}
+          />
 
-        <Deadline closesAt={posting.closes_at} />
+          <Age postedAt={posting.posted_at} firstSeenAt={posting.first_seen_at} staleAfterDays={STALE_AFTER_DAYS} />
 
-        <span aria-hidden="true" />
-      </div>
-      <div role="gridcell" className="absolute right-3 top-0 flex h-full items-center">
+          <Deadline closesAt={posting.closes_at} />
+
+          <span aria-hidden="true" />
+        </div>
+      )}
+      <div
+        role="gridcell"
+        className={cn('absolute flex items-center', compact ? 'right-1 top-1' : 'right-3 top-0 h-full')}
+      >
         {TRIAGE_ACTIONS.filter((action) => action.value !== posting.triage).map((action) => (
           <button
             key={action.label}
             type="button"
             aria-label={action.label}
             title={action.label}
-            className="h-8 w-7 text-sm leading-none text-text-tertiary hover:text-text-primary"
+            className={cn('text-sm leading-none text-text-tertiary hover:text-text-primary', compact ? 'h-9 w-9' : 'h-8 w-7')}
             onClick={(event) => {
               event.stopPropagation()
               onTriage(action.value)
@@ -134,7 +172,11 @@ export function PostingRow({
           type="button"
           aria-pressed={posting.favorited}
           aria-label={posting.favorited ? 'unmark favorite' : 'mark favorite'}
-          className={cn('h-8 w-8 text-base leading-none', posting.favorited ? 'text-tier-stretch' : 'text-text-tertiary')}
+          className={cn(
+            'text-base leading-none',
+            compact ? 'h-9 w-9' : 'h-8 w-8',
+            posting.favorited ? 'text-tier-stretch' : 'text-text-tertiary',
+          )}
           onClick={(event) => {
             event.stopPropagation()
             onToggleFavorite()

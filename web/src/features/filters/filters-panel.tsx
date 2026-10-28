@@ -17,32 +17,60 @@ import {
 import { FacetCheckboxGroup } from '@/features/filters/facet-checkbox-group'
 import { mergeFacetOptions } from '@/features/filters/facet-options'
 import { StackFilter } from '@/features/filters/stack-filter'
+import { cn } from '@/shared/lib/cn'
+import { useIsMobile } from '@/shared/lib/use-media-query'
 
 interface FiltersPanelProps {
   filter: PostingsFilter
   onChange: (patch: Partial<PostingsFilter>) => void
   onReset: () => void
+  /** On a phone the panel is a full-screen sheet, shown only while open; a desktop always shows it. */
+  open?: boolean
+  onClose?: () => void
 }
 
 /** The thirteen dimensions of blueprint/12-WEB-UI.md §4, each backed by the URL, not a store. */
-export function FiltersPanel({ filter, onChange, onReset }: FiltersPanelProps) {
+export function FiltersPanel({ filter, onChange, onReset, open = false, onClose }: FiltersPanelProps) {
+  const isMobile = useIsMobile()
   const facets = useFacets(filter)
   const view = feedViewOf(filter)
   const companies = useCompanies()
   const companyNameBySlug = new Map((companies.data ?? []).map((c) => [c.company_slug, c.company_name]))
 
+  if (isMobile && !open) return null
+
   return (
-    <aside aria-label="Filters" className="flex w-72 shrink-0 flex-col gap-1 overflow-y-auto border-r border-border p-4">
-      <div className="mb-2 flex items-center justify-between">
+    <aside
+      aria-label="Filters"
+      className={cn(
+        'flex flex-col gap-1 overflow-y-auto p-4',
+        isMobile ? 'fixed inset-0 z-40 bg-background pb-[max(1rem,env(safe-area-inset-bottom))]' : 'w-72 shrink-0 border-r border-border',
+      )}
+    >
+      <div
+        className={cn(
+          'mb-2 flex items-center justify-between gap-4',
+          isMobile && 'sticky -top-4 z-10 -mx-4 -mt-4 border-b border-border bg-background px-4 py-3',
+        )}
+      >
         <h2 className="text-sm font-semibold text-text-primary">Filters</h2>
         <button
           type="button"
           disabled={isDefaultFilter(filter)}
           onClick={onReset}
-          className="text-xs text-text-secondary underline decoration-dotted hover:text-text-primary disabled:pointer-events-none disabled:opacity-40"
+          className="ml-auto text-xs text-text-secondary underline decoration-dotted hover:text-text-primary disabled:pointer-events-none disabled:opacity-40"
         >
           Reset
         </button>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md bg-tier-possible px-4 py-1.5 text-sm font-medium text-background"
+          >
+            Done
+          </button>
+        )}
       </div>
 
       <FacetCheckboxGroup

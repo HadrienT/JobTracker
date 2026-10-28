@@ -11,3 +11,11 @@ body {
   font-family: var(--font-tabular);
   font-variant-numeric: tabular-nums;
 }
+
+/* Sideways-scrolling rows on a phone (the tabs, the feed lists): swipeable, no scrollbar drawn. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

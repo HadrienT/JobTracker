@@ -40,7 +40,8 @@ export function PinListPanel({ filter, place, count, onOpenPosting, onClose }: P
   return (
     <aside
       aria-label={`Postings in ${title}`}
-      className="flex w-96 shrink-0 flex-col border-l border-border bg-surface"
+      // On a phone it rises over the lower part of the map instead of squeezing it sideways.
+      className="absolute inset-x-0 bottom-0 z-20 flex h-[60%] flex-col rounded-t-lg border-t border-border bg-surface md:static md:h-auto md:w-96 md:shrink-0 md:rounded-none md:border-l md:border-t-0"
     >
       <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div>

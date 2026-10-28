@@ -14,7 +14,7 @@ export function CompaniesScreen() {
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto p-4">
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">Companies</h1>
         <label className="ml-auto flex items-center gap-2 text-sm text-text-secondary">
           Sector
@@ -39,16 +39,20 @@ export function CompaniesScreen() {
       {companies.isError && <p className="text-sm text-danger">Couldn&apos;t load the registry.</p>}
 
       {companies.data && (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-text-secondary">
               <th className="py-2 pr-4">Company</th>
               <th className="py-2 pr-4">Country</th>
-              <th className="py-2 pr-4">Sector</th>
-              <th className="py-2 pr-4">ATS</th>
-              <th className="py-2 pr-4">Active postings</th>
-              <th className="py-2 pr-4">Last successful collect</th>
-              <th className="py-2 pr-4">Enabled</th>
+              <th className="hidden py-2 pr-4 md:table-cell">Sector</th>
+              <th className="hidden py-2 pr-4 md:table-cell">ATS</th>
+              <th className="py-2 pr-4">
+                <span className="md:hidden">Jobs</span>
+                <span className="hidden md:inline">Active postings</span>
+              </th>
+              <th className="hidden py-2 pr-4 md:table-cell">Last successful collect</th>
+              <th className="hidden py-2 pr-4 md:table-cell">Enabled</th>
             </tr>
           </thead>
           <tbody>
@@ -58,21 +62,22 @@ export function CompaniesScreen() {
                 <tr key={company.company_slug} className={cn('border-b border-border/60', muted && 'bg-danger/5')}>
                   <td className="py-2 pr-4 text-text-primary">{company.company_name}</td>
                   <td className="py-2 pr-4 text-text-secondary">{company.hq_country}</td>
-                  <td className="py-2 pr-4 text-text-secondary">{company.sector}</td>
-                  <td className="py-2 pr-4 text-text-secondary">{company.source}</td>
+                  <td className="hidden py-2 pr-4 text-text-secondary md:table-cell">{company.sector}</td>
+                  <td className="hidden py-2 pr-4 text-text-secondary md:table-cell">{company.source}</td>
                   <td className={cn('py-2 pr-4 font-tabular', muted ? 'text-danger' : 'text-text-primary')}>
                     {company.postings_count}
-                    {muted && <span className="ml-1 text-xs">— possibly a broken token</span>}
+                    {muted && <span className="ml-1 hidden text-xs md:inline">— possibly a broken token</span>}
                   </td>
-                  <td className="py-2 pr-4 text-text-secondary">
+                  <td className="hidden py-2 pr-4 text-text-secondary md:table-cell">
                     {company.last_ok_at ? new Date(company.last_ok_at).toLocaleDateString() : '—'}
                   </td>
-                  <td className="py-2 pr-4 text-text-secondary">{company.enabled ? 'yes' : 'no'}</td>
+                  <td className="hidden py-2 pr-4 text-text-secondary md:table-cell">{company.enabled ? 'yes' : 'no'}</td>
                 </tr>
               )
             })}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )

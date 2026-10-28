@@ -49,7 +49,7 @@ export function PostingDetailPanel({ postingId, onClose, track = null }: Posting
         aria-modal="true"
         aria-labelledby="posting-detail-title"
         tabIndex={-1}
-        className="flex h-full w-full max-w-xl flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-6 outline-none"
+        className="flex h-full w-full max-w-xl flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-4 outline-none md:p-6"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 id="posting-detail-title" className="text-lg font-semibold text-text-primary">

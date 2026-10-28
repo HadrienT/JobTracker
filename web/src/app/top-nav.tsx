@@ -18,9 +18,10 @@ interface TopNavProps {
 
 export function TopNav({ route, navigate }: TopNavProps) {
   return (
+    // On a phone the seven tabs don't fit: the row scrolls sideways rather than wrapping.
     <nav aria-label="Main" className="flex items-center gap-4 border-b border-border px-4 py-2">
-      <span className="text-sm font-semibold text-text-primary">JobTracker</span>
-      <ul className="flex gap-1">
+      <span className="hidden text-sm font-semibold text-text-primary md:inline">JobTracker</span>
+      <ul className="no-scrollbar -mx-2 flex min-w-0 gap-1 overflow-x-auto px-2 md:mx-0 md:px-0">
         {LINKS.map((link) => (
           <li key={link.route}>
             <a
@@ -33,7 +34,7 @@ export function TopNav({ route, navigate }: TopNavProps) {
                 navigate(link.path)
               }}
               className={cn(
-                'block rounded-md px-2 py-1 text-sm',
+                'block whitespace-nowrap rounded-md px-2 py-1.5 text-sm md:py-1',
                 route === link.route ? 'bg-surface-elevated text-text-primary' : 'text-text-secondary hover:text-text-primary',
               )}
             >

@@ -1,6 +1,11 @@
 import { useHealth } from '@/api/queries'
 import { cn } from '@/shared/lib/cn'
 
+/** The API reports fractional hours (`0.195…`): minutes under one hour, whole hours after. */
+function formatHours(hours: number): string {
+  return hours < 1 ? `${String(Math.max(1, Math.round(hours * 60)))} min` : `${String(Math.round(hours))}h`
+}
+
 /** Renders `GET /health` verbatim (blueprint/12-WEB-UI.md §6) — where you look to see which source is degraded. */
 export function HealthScreen() {
   const { data, isPending, isError } = useHealth()
@@ -16,13 +21,13 @@ export function HealthScreen() {
         <>
           <section className="flex flex-col gap-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Feed</h2>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <span className={cn('font-tabular', data.feed.stale ? 'text-warning' : 'text-tier-strong')}>
                 {data.feed.stale ? 'Stale' : 'Fresh'}
               </span>
               <span className="text-text-secondary">{data.feed.active_postings} active postings</span>
               {data.feed.newest_posting_age_h !== null && (
-                <span className="text-text-secondary">Newest posting: {data.feed.newest_posting_age_h}h ago</span>
+                <span className="text-text-secondary">Newest posting: {formatHours(data.feed.newest_posting_age_h)} ago</span>
               )}
             </div>
           </section>
@@ -43,6 +48,7 @@ export function HealthScreen() {
 
           <section className="flex flex-col gap-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">Sources</h2>
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-text-secondary">
@@ -76,6 +82,7 @@ export function HealthScreen() {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         </>
       )}

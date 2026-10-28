@@ -10,6 +10,7 @@ import { useEscapeKey } from '@/features/feed/use-keyboard-shortcuts'
 import { PinListPanel, type Place } from '@/features/map/pin-list-panel'
 import { pinKey, type MapPin } from '@/features/map/pin-utils'
 import { WorldMap } from '@/features/map/world-map'
+import { isDefaultFilter } from '@/features/filters/defaults'
 
 /**
  * The feed, on a map: same filters (and the same URL state), one pin per city. A pin that holds
@@ -21,11 +22,13 @@ export function MapScreen() {
   const { filter, setFilter, resetFilters } = useFeedUrlState()
   const { postingId, openPosting, closePosting } = usePostingRoute('/map')
   const [place, setPlace] = useState<Place | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const pinsQuery = useMapPins(filter)
   const pins = pinsQuery.data?.pins ?? []
 
   useEscapeKey(() => {
     if (postingId !== null) closePosting()
+    else if (filtersOpen) setFiltersOpen(false)
     else setPlace(null)
   })
 
@@ -48,15 +51,36 @@ export function MapScreen() {
       <StaleFeedBanner />
       <ActiveFilterPills filter={filter} onChange={setFilter} />
 
-      <div className="flex flex-1 overflow-hidden">
-        <FiltersPanel filter={filter} onChange={setFilter} onReset={resetFilters} />
+      <div className="relative flex flex-1 overflow-hidden">
+        <FiltersPanel
+          filter={filter}
+          onChange={setFilter}
+          onReset={resetFilters}
+          open={filtersOpen}
+          onClose={() => {
+            setFiltersOpen(false)
+          }}
+        />
 
         <div className="relative flex-1 overflow-hidden">
           <WorldMap pins={pins} selectedKey={place ? pinKey(place) : null} onSelectPin={onSelectPin} />
 
+          <button
+            type="button"
+            onClick={() => {
+              setFiltersOpen(true)
+            }}
+            className="absolute left-3 top-3 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary md:hidden"
+          >
+            Filters
+            {!isDefaultFilter(filter) && (
+              <span aria-label="(active)" className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-tier-possible" />
+            )}
+          </button>
+
           <p
             role="status"
-            className="pointer-events-none absolute bottom-3 left-3 rounded-md border border-border bg-surface/90 px-3 py-1.5 text-xs text-text-secondary"
+            className="pointer-events-none absolute bottom-3 left-3 right-3 rounded-md md:right-auto border border-border bg-surface/90 px-3 py-1.5 text-xs text-text-secondary"
           >
             {pinsQuery.isError && 'Couldn’t load the pins.'}
             {pinsQuery.data &&

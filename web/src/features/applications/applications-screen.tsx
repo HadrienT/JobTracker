@@ -52,21 +52,24 @@ function percent(value: number | null): string {
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="flex min-w-28 flex-col rounded-md border border-border px-3 py-2" title={hint}>
-      <span className="text-xs text-text-secondary">{label}</span>
+    <div className="flex min-w-0 flex-col rounded-md border border-border px-2 py-1.5 md:min-w-28 md:px-3 md:py-2" title={hint}>
+      <span className="text-xs leading-tight text-text-secondary">{label}</span>
       <span className="font-tabular text-lg font-semibold text-text-primary">{value}</span>
     </div>
   )
 }
 
-const COLUMNS: { column: SortColumn | null; label: string }[] = [
+/** `wide`: a phone drops the column — the company moves under the job title instead. */
+const COLUMNS: { column: SortColumn | null; label: string; wide?: boolean }[] = [
   { column: 'applied', label: 'Applied' },
-  { column: 'company', label: 'Company' },
+  { column: 'company', label: 'Company', wide: true },
   { column: null, label: 'Job' },
-  { column: null, label: 'Location' },
+  { column: null, label: 'Location', wide: true },
   { column: 'status', label: 'Status' },
-  { column: 'answer', label: 'Answer' },
+  { column: 'answer', label: 'Answer', wide: true },
 ]
+
+const WIDE_ONLY = 'hidden md:table-cell'
 
 /**
  * Every application, collected posting or not (blueprint/wp/WP21-applications.md §6): the
@@ -107,7 +110,7 @@ export function ApplicationsScreen() {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto p-4">
+    <div className="flex flex-1 flex-col overflow-y-auto p-3 md:p-4">
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <h1 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">Applications</h1>
         <button
@@ -126,7 +129,7 @@ export function ApplicationsScreen() {
 
       {applications.data && (
         <>
-          <section aria-label="Summary" className="mb-4 flex flex-wrap gap-2">
+          <section aria-label="Summary" className="mb-4 grid grid-cols-3 gap-2 md:flex md:flex-wrap">
             <Stat label="Applications" value={String(stats.total)} />
             <Stat
               label="Open"
@@ -254,10 +257,10 @@ export function ApplicationsScreen() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-text-secondary">
-                  {COLUMNS.map(({ column, label }) => (
+                  {COLUMNS.map(({ column, label, wide }) => (
                     <th
                       key={label}
-                      className="py-2 pr-4"
+                      className={cn('py-2 pr-4', wide && WIDE_ONLY)}
                       aria-sort={
                         column !== null && sort.column === column
                           ? sort.descending
@@ -346,7 +349,7 @@ function ApplicationRow({
           </span>
         )}
       </td>
-      <td className="py-1.5 pr-4 text-text-primary">{application.company}</td>
+      <td className={cn('py-1.5 pr-4 text-text-primary', WIDE_ONLY)}>{application.company}</td>
       <td className="py-1.5 pr-4">
         <button
           type="button"
@@ -358,8 +361,11 @@ function ApplicationRow({
         >
           {application.title ?? <span className="text-text-tertiary">(no title)</span>}
         </button>
+        <span className="block text-xs text-text-secondary md:hidden">
+          {[application.company, application.location].filter(Boolean).join(' · ')}
+        </span>
       </td>
-      <td className={cn('py-1.5 pr-4 text-text-secondary', countryTint(application.countries[0]))}>
+      <td className={cn('py-1.5 pr-4 text-text-secondary', WIDE_ONLY, countryTint(application.countries[0]))}>
         <span className="flex flex-wrap items-center gap-1.5">
           {application.countries.map((code) => (
             <CountryChip key={code} code={code} />
@@ -388,7 +394,7 @@ function ApplicationRow({
           )}
         </span>
       </td>
-      <td className="whitespace-nowrap py-1.5 pr-4 font-tabular text-text-secondary">
+      <td className={cn('whitespace-nowrap py-1.5 pr-4 font-tabular text-text-secondary', WIDE_ONLY)}>
         {delay === null ? '—' : delay.waiting ? `waiting ${String(delay.days)}d` : `${String(delay.days)}d`}
       </td>
     </tr>

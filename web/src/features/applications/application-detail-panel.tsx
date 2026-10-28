@@ -58,7 +58,7 @@ export function ApplicationDetailPanel({ applicationId, onClose }: ApplicationDe
         aria-modal="true"
         aria-labelledby="application-detail-title"
         tabIndex={-1}
-        className="flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-6 outline-none"
+        className="flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-4 outline-none md:p-6"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 id="application-detail-title" className="text-lg font-semibold text-text-primary">
