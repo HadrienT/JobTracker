@@ -568,6 +568,17 @@ def test_api_fields_can_be_picked_from_a_list_of_key_value_pairs() -> None:
     ]
 
 
+def test_an_api_answer_that_is_a_bare_list_is_read_from_its_root() -> None:
+    url = "https://shop.example/jobPublication/list.json"
+    session = _Api({url: [{"id": 7, "position": "Quant Analyst", "url": "https://shop.example/7"}]})
+    board = _board(
+        token=_LISTING,
+        extra={"api": url, "items": ".", "id": "id", "title": "position", "url": "{url}"},
+    )
+    result = CustomCollector().fetch(board, session)
+    assert [(p.source_job_id, p.title_raw) for p in result.postings] == [("7", "Quant Analyst")]
+
+
 def test_an_api_answer_with_no_postings_is_empty_not_an_error() -> None:
     result = CustomCollector().fetch(
         _api_board(description="text"), _Api({_page(0): {"unexpected": True}})

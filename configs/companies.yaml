@@ -2509,3 +2509,73 @@
   hq_country: US
   priority: 3
   enabled: true
+
+# --- Finance portals — career-page reconnaissance, 2026-10-28 ---------------
+# Found by rendering each career page and reading its network calls (issue #10).
+
+- slug: tudor
+  name: Tudor Investment
+  source: greenhouse  # verified 2026-10-28 — 5 postings
+  token: "tudorgroup"
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: jain_global
+  name: Jain Global
+  source: workday  # verified 2026-10-28 — 37 postings
+  token: "jainglobal"
+  extra: { wd: "5", site: "LinkedInCareerSite" }
+  sector: hedge_fund
+  hq_country: US
+  priority: 1
+  enabled: true
+
+- slug: saxo_bank
+  name: Saxo Bank
+  source: workday  # verified 2026-10-28 — 55 postings
+  token: "saxobank"
+  extra: { wd: "3", site: "CareeratSaxoBank" }
+  sector: vendor
+  hq_country: DK
+  priority: 3
+  enabled: true
+
+- slug: ig_group
+  name: IG Group
+  source: workday  # verified 2026-10-28 — 82 postings
+  token: "ig"
+  extra: { wd: "103", site: "EXT_IG" }
+  sector: vendor
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: cmc_markets
+  name: CMC Markets
+  source: workday  # verified 2026-10-28 — 62 postings
+  token: "cmcmarkets"
+  extra: { wd: "3", site: "CMC_Markets_Careers" }
+  sector: vendor
+  hq_country: GB
+  priority: 3
+  enabled: true
+
+- slug: d_fine
+  name: d-fine
+  source: custom  # verified 2026-10-28 — d.vinci endpoint, 11 postings with their text
+  token: "https://www.d-fine.com/en/career/job-portal/"
+  extra:
+    api: "https://jobs.d-fine.com/jobPublication/list.json?language=en"
+    items: "."
+    id: jobOpening.id
+    title: position
+    location: jobOpening.locations.name,jobOpening.locations.country.name
+    url: "{jobPublicationURL}"
+    posted: startDate
+    description: "introduction,tasks,profile,weOffer"
+  sector: vendor
+  hq_country: DE
+  priority: 1
+  enabled: true
