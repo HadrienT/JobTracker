@@ -96,8 +96,8 @@ describe('PostingDetailPanel', () => {
     await screen.findByText(target.title)
 
     const closeButton = screen.getByRole('button', { name: 'Close' })
-    // The offer PDF link is the panel's last focusable element.
-    const lastLink = await screen.findByRole('link', { name: 'Offer PDF' })
+    // Back to top, at the end of the action bar, is the panel's last focusable element.
+    const lastLink = await screen.findByRole('button', { name: 'Back to top' })
 
     lastLink.focus()
     expect(document.activeElement).toBe(lastLink)
