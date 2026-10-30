@@ -306,7 +306,7 @@ def _aggregate_status(
     if blocked:
         return "blocked"
     if not had_due_boards:
-        return "empty"
+        return "skipped"  # no board's turn: nothing was asked, so silence says nothing
     if not any_success:
         return "error"
     return "ok" if totals.fetched > 0 else "empty"

@@ -168,7 +168,8 @@ def _board_counts(runs: list[SourceRun]) -> tuple[int, int]:
     return ok, error
 
 
-def _detect_alert(aggregate_runs: list[SourceRun], empty_runs_before_alert: int) -> str | None:
+def _detect_alert(all_runs: list[SourceRun], empty_runs_before_alert: int) -> str | None:
+    aggregate_runs = [run for run in all_runs if run.status != "skipped"]
     recent = aggregate_runs[:empty_runs_before_alert]
     if len(recent) == empty_runs_before_alert and all(r.status == "empty" for r in recent):
         return "source_mute"

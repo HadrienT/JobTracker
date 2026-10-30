@@ -88,6 +88,25 @@ def test_n_consecutive_empty_runs_trigger_source_mute(store_conn: sqlite3.Connec
     assert snapshot.alerts[0].source == "greenhouse"
 
 
+def test_cycles_with_no_board_due_say_nothing_about_a_source(
+    store_conn: sqlite3.Connection,
+) -> None:
+    """A weekly board alone in its family: six cycles out of seven ask nothing."""
+    sync_companies(store_conn, [make_board(source=Source.GREENHOUSE, enabled=True)])
+    record_run(store_conn, _run(run_id="r-ok", status="ok", fetched=20))
+    for i in range(4):
+        started = datetime(2026, 3, 2 + i, tzinfo=UTC)
+        record_run(
+            store_conn, _run(run_id=f"r{i}", status="skipped", fetched=0, started_at=started)
+        )
+    store_conn.commit()
+
+    snapshot = health_snapshot(store_conn, empty_runs_before_alert=3)
+
+    assert snapshot.sources[0].alert is None
+    assert snapshot.alerts == ()
+
+
 def test_fewer_than_n_empty_runs_does_not_trigger_source_mute(
     store_conn: sqlite3.Connection,
 ) -> None:
