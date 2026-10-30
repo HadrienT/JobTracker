@@ -48,6 +48,13 @@ n'est pas un contrôle d'accès, et derrière elle `POST /api/postings/{id}/favo
 Access authentifie à l'edge : nginx et l'API ne voient que des requêtes déjà
 authentifiées. Si Access est un jour retiré, retirer aussi le tunnel.
 
+### Accès à distance par VPN
+
+La stack `docker-compose.yml` n'est pas exposée sur Internet : `JT_WEB_BIND` la lie à
+l'IP LAN du serveur, joignable de l'extérieur par le VPN WireGuard du Raspberry Pi
+(`~/remoteControlApp`). Le pair doit inclure le LAN dans ses `AllowedIPs`
+(`192.168.1.0/24`). Le trafic du VPN arrive au serveur avec l'IP du Pi.
+
 ---
 
 ## 1. Première installation (de zéro au flux visible)
