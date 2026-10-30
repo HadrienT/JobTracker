@@ -24,6 +24,14 @@ def test_classify_tells_offer_cv_and_letter_apart() -> None:
     assert classify(Path("LM.odt"), siblings) is FileKind.LETTER
 
 
+def test_a_document_beside_the_named_cv_is_the_offer_even_with_its_latex_source() -> None:
+    siblings = frozenset({"CV_Someone.pdf", "CV_Someone.tex", "Acme_QD.pdf", "Acme_QD.tex"})
+    assert classify(Path("Acme_QD.pdf"), siblings) is FileKind.OFFER
+    assert classify(Path("Acme_QD.tex"), siblings) is FileKind.OFFER
+    assert classify(Path("CV_Someone.pdf"), siblings) is FileKind.CV
+    assert classify(Path("CV_Someone.tex"), siblings) is FileKind.CV
+
+
 def test_each_folder_holding_files_is_one_application(tmp_path: Path) -> None:
     _touch(tmp_path / "Acme" / "Quant Dev NY" / "1.png", date(2026, 3, 20))
     _touch(tmp_path / "Acme" / "Quant Dev NY" / "CV.pdf", date(2026, 3, 19))

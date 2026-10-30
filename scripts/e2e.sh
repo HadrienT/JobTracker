@@ -2,7 +2,7 @@
 # Browser end-to-end suite against the real compose images — blueprint/wp/WP14-quality.md §2.3.
 #
 #   scripts/e2e.sh                 run the suite
-#   scripts/e2e.sh --update        run it and rewrite the visual baselines
+#   scripts/e2e.sh --update-snapshots   run it and rewrite the visual baselines
 #   E2E_KEEP=1 scripts/e2e.sh      leave the stack up afterwards, for debugging
 #
 # Seeds a frozen demo database (tools/seed_demo_db.py), brings up api + web on their own

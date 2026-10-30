@@ -125,8 +125,9 @@ Un jeton d'ATS cassé ne lève pas d'erreur : il renvoie zéro offre (P3).
 | Quoi | Comment | Fréquence |
 |---|---|---|
 | `jobtracker.db` | `./scripts/backup.sh` → API de sauvegarde SQLite (**jamais `cp`** sur une base WAL) | quotidienne (timer systemd, 03:30) |
+| `data/career/` (CV, pièces de candidature) | archive `career-*.tar.gz` écrite par la même commande, relue avant d'être gardée | quotidienne |
 | `configs/` | dans git | à chaque commit |
-| Rétention | 30 jours glissants (volume `jt_backups` et `JT_BACKUP_DIR`) | |
+| Rétention | 30 jours glissants pour la base, 7 pour `data/career/` (volume `jt_backups` et `JT_BACKUP_DIR`) | |
 
 Chaque sauvegarde est vérifiée (`PRAGMA integrity_check`) juste après écriture ; une
 sauvegarde qui échoue est supprimée, pas gardée comme fausse assurance. Elle est faite
@@ -145,6 +146,10 @@ disque mort.
 Le script : vérifie l'intégrité de la sauvegarde, **arrête** collecteur et API, garde la
 base actuelle à côté (`jobtracker.db.pre-restore-<horodatage>`, jamais supprimée),
 supprime les `-wal`/`-shm` obsolètes, copie la sauvegarde, redémarre la stack.
+
+Avec les pièces : `./scripts/restore.sh <base> backups/career-….tar.gz` ; le dossier actuel
+est gardé à côté (`career.pre-restore-<horodatage>`). Sans la stack de prod : déplacer
+`data/career`, puis `tar -xzf backups/career-….tar.gz -C data`.
 
 **Test effectué le 2026-09-18** sur la stack réelle : sauvegarde à chaud pendant un
 cycle de collecte (1 060 offres, `integrity_check = ok`) → base vidée volontairement

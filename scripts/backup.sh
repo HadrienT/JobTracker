@@ -1,5 +1,6 @@
 #!/bin/bash
-# One online, integrity-checked backup of jobtracker.db (blueprint/wp/WP15-deploy.md §5).
+# One online, integrity-checked backup of jobtracker.db (blueprint/wp/WP15-deploy.md §5),
+# and an archive of the career folder beside it (CVs and application files, WP22).
 #
 # Uses SQLite's backup API through `jobtracker backup` — never `cp` on a WAL database,
 # which copies an inconsistent file. Safe while the collector is mid-cycle.
@@ -7,7 +8,7 @@
 # The backup is written into the `jt_backups` volume (the container is non-root and
 # cannot write to a host directory), then copied to ${JT_BACKUP_DIR:-./backups} on the
 # host — point that at an off-machine mount (NAS, USB, rclone) for real protection.
-# 30 rolling days are kept, in the volume and on the host.
+# 30 rolling days of databases and 7 of career archives are kept, in the volume and on the host.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 compose=(docker compose -f docker-compose.prod.yml)
@@ -24,4 +25,5 @@ mkdir -p "$dest"
 "${compose[@]}" create --no-recreate collector > /dev/null   # `cp` needs a container to exist
 "${compose[@]}" cp collector:/backups/. "$dest"
 find "$dest" -maxdepth 1 -name 'jobtracker-*.db' -mtime +30 -delete
+find "$dest" -maxdepth 1 -name 'career-*.tar.gz' -mtime +7 -delete
 echo "backups in $dest: $(find "$dest" -maxdepth 1 -name 'jobtracker-*.db' | wc -l) file(s), newest $(ls -1 "$dest"/jobtracker-*.db | tail -1)"

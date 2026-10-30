@@ -40,7 +40,13 @@ def classify(path: Path, siblings: frozenset[str]) -> FileKind:
         return FileKind.OTHER
     if stem in {"lm", "cover", "cover_letter", "letter"} or stem.startswith(("lm_", "cover")):
         return FileKind.LETTER
-    if suffix != ".pdf" or "cv" in stem or f"{path.stem}.tex" in siblings:
+    if "cv" in stem:
+        return FileKind.CV
+    # Offers were typeset in LaTeX too (`Acme_QD.tex` + `.pdf`): beside a file named as the CV,
+    # a document is the offer. Alone, a source file means a CV.
+    if any("cv" in Path(name).stem.lower() for name in siblings):
+        return FileKind.OFFER
+    if suffix != ".pdf" or f"{path.stem}.tex" in siblings:
         return FileKind.CV
     return FileKind.OFFER  # offer.pdf, 1.pdf: a posting saved as PDF
 
