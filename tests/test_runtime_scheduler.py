@@ -328,6 +328,7 @@ def test_force_refetches_a_board_that_is_not_due(
     forced = run_source_cycle(store_conn, Source.GREENHOUSE, [board], ctx=ctx, force=True)
 
     assert skipped.fetched == 0
+    assert skipped.status == "skipped"  # not `empty`: nothing was asked
     assert forced.fetched == 1
 
 
