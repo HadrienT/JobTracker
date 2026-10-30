@@ -1,80 +1,113 @@
 # JobTracker
 
-Agent de veille sur le marché de l'emploi quant. Il collecte les offres de
-~400 sociétés de finance, les normalise, les qualifie contre un profil cible —
-**quant developer junior, mobile à l'international** — et les sert dans un front
-web dense où l'on scrolle, trie et filtre par pays, ville, société, séniorité,
-stack et statut de sponsorship visa.
+JobTracker monitors the quantitative finance job market. It collects postings from
+about 300 hedge funds, trading firms, banks, asset managers and financial software
+vendors, normalizes them into typed records, scores them against a target profile,
+and serves them through a dense web interface.
 
-## Mise en route (usage local)
+The system collects, qualifies and displays. It does not apply on anyone's behalf.
 
-Deux gestes : aller voir toutes les sources, puis parcourir le résultat.
+## How it works
+
+```text
+collect → normalize → match → store → FastAPI → React
+```
+
+| Stage | Responsibility |
+|---|---|
+| **Collect** | One collector per ATS family (Greenhouse, Workday, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Personio), plus a configuration-driven collector for custom portals, read through a headless browser or their own JSON endpoints. Aggregators are optional and disabled by default. |
+| **Normalize** | Turns raw payloads into structured postings: location, seniority, tech stack, compensation, visa status and a deduplication fingerprint. Performs no I/O, so it is fully testable offline. |
+| **Match** | Applies a deterministic score against the profile in `configs/profile.yaml`. Additional searches are defined as tracks in `configs/tracks.yaml`. An optional local LLM resolves the ambiguous residue and reviews extracted fields, with each correction backed by a quotation from the posting. |
+| **Store** | A single SQLite file with FTS5 search and a compressed archive of raw payloads. |
+| **Serve** | A FastAPI backend with filters, facets and keyset pagination, and a React front end with a virtualized feed, a map, an application tracker and a health view. |
+
+## Design principles
+
+- **The company registry is the core asset.** `configs/companies.yaml` records which
+  companies exist and which ATS each one uses. Adding a company is a configuration
+  change, not new code.
+- **ATS records are canonical.** A posting seen on an aggregator becomes an alias of the
+  ATS record, never a duplicate.
+- **Silent failures are treated as outages.** A dead board token returns zero postings
+  rather than an error, so every stage that can go quiet has a counter and alerting.
+- **Visa sponsorship has three states.** `sponsors`, `no` and `unknown` stay distinct, and
+  `unknown` is never collapsed into either of the others.
+- **Rejections are explicit.** A discarded posting always keeps a persisted reason.
+- **Normalizer changes are measurable.** Raw payloads are archived so that any change can
+  be replayed against past inputs and compared stage by stage.
+
+## Tech stack
+
+- **Backend:** Python 3.13, FastAPI, pydantic v2, SQLite, httpx, Playwright, structlog
+- **Front end:** React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query and Virtual
+- **Quality:** ruff, `mypy --strict`, import-linter, pytest, Hypothesis, Vitest, Playwright
+- **Operations:** Docker Compose, nginx, Cloudflare Tunnel, systemd timers
+
+## Getting started
+
+Requires [uv](https://docs.astral.sh/uv/), [just](https://just.systems/) and Docker.
 
 ```bash
 uv sync --all-extras
+just browser-install     # Chromium for custom portals, once per machine
 cp .env.example .env
-just collect    # un passage sur les sources activées → ./data/jobtracker.db
-just up         # API + front dans docker → http://127.0.0.1:5190
-just down       # arrêt
+
+just collect             # one pass over all enabled sources, writes ./data/jobtracker.db
+just up                  # API and front end on http://127.0.0.1:5190
+just down
 ```
 
-Relancer `just collect` met la base à jour ; l'interface la relit sans redémarrage.
-Quelles sources sont interrogées : `configs/sources.yaml` (`enabled: true|false`) et
-`configs/companies.yaml` (le registre des sociétés et de leur ATS).
+Run `just collect` again to refresh the database. The interface picks up new data
+without a restart. Use `just timers-install` to schedule collection with user-level
+systemd timers.
 
-Développement : `just api` (API sur 127.0.0.1:8100), `just web` (front Vite),
-`just lint`, `just arch`, `just test`, `just test-golden`, `just ci`.
+## Configuration
 
-## Déploiement (optionnel)
+| File | Purpose |
+|---|---|
+| `.env` | Paths, ports, LLM and aggregator switches |
+| `configs/companies.yaml` | Company registry |
+| `configs/sources.yaml` | Enabled sources and collection cadence |
+| `configs/profile.yaml` | Target profile and scoring weights |
+| `configs/tracks.yaml` | Additional search tracks |
 
-À ne regarder que pour un serveur allumé en permanence. Stack `docker compose` auto-hébergée (collecteur, API, nginx) derrière un tunnel
-Cloudflare, sans port ouvert :
+The LLM is off by default and the pipeline runs fully without it. To enable it, set
+`JT_LLM_ENABLED=true` and point `JT_LLM_BASE_URL` at a local OpenAI-compatible server
+such as `llama-server`.
+
+Personal data, including application history and CVs, stays under `data/`, which is
+excluded from version control.
+
+## Development
 
 ```bash
-cp .env.example .env && $EDITOR .env
-./scripts/deploy.sh          # build + up + attente que ça réponde
-./scripts/backup.sh          # sauvegarde à chaud, vérifiée
-./scripts/restore.sh <fichier>
+just api          # API on 127.0.0.1:8100
+just web          # Vite dev server on 127.0.0.1:5190
+just ci           # lint, architecture contracts, tests, front-end checks, API contract
+just ci-full      # the above plus Playwright end-to-end tests
+just              # list all tasks
 ```
 
-Procédures complètes (installation, mise à jour, pannes, restauration, rotation des
-secrets, **protection d'accès**) : [`deploy/RUNBOOK.md`](deploy/RUNBOOK.md).
+Dependencies between packages are enforced by import-linter contracts. After changing an
+API route or schema, run `just types` to regenerate the committed OpenAPI schema and
+TypeScript client types.
 
-## Architecture
+## Deployment
 
-Sept packages sous `src/jobtracker/`, contrats d'import vérifiés par
-`import-linter` :
+The production stack runs on Docker Compose (collector, API, nginx) and is exposed over
+HTTPS through a Cloudflare Tunnel, with no open inbound ports.
 
-| Package | Rôle |
-|---|---|
-| `core` | config, logging, erreurs, base SQLite, DTO, horloge, monnaie, géo, hachage |
-| `store` | migrations, dépôts, facettes, FTS5, archive brute, rétention |
-| `collect` | un collecteur par **famille d'ATS**, politique HTTP commune |
-| `normalize` | `RawPosting` → `Posting` : lieu, séniorité, stack, salaire, visa, empreinte. **Hors ligne** |
-| `match` | scoring déterministe contre le profil ; `match.llm` pour le résidu ambigu |
-| `api` | FastAPI en lecture : filtres, facettes, pagination keyset |
-| `runtime` | ordonnanceur, disjoncteur, chien de garde inversé, CLI |
+```bash
+./scripts/deploy.sh
+./scripts/backup.sh
+./scripts/restore.sh <file>
+```
 
-Front dans `web/` : React 19 + Vite + TypeScript strict + Tailwind v4 +
-TanStack Query/Virtual.
-
-Le LLM d'inférence est **local** (`llama-server` sur `127.0.0.1:8000`, partagé
-avec OpenHands) : concurrence 1, décodage contraint par schéma, et le système
-tourne entièrement sans lui.
+See [`deploy/RUNBOOK.md`](deploy/RUNBOOK.md) for installation, upgrades, access protection
+and incident procedures.
 
 ## Documentation
 
-- **[blueprint/](blueprint/)** — la spécification d'implémentation normative.
-  Commencer par [blueprint/README.md](blueprint/README.md), puis
-  [blueprint/00-PRIMER.md](blueprint/00-PRIMER.md).
-- **[blueprint/dependencies.md](blueprint/dependencies.md)** — la matrice de
-  parallélisation : quels lots peuvent être codés simultanément, et sur quels
-  fichiers on se marche dessus.
-- **[CLAUDE.md](CLAUDE.md)** — commandes, conventions, suivi du travail.
-
-## État
-
-Blueprint complet, socle du dépôt posé. Aucun lot de travail implémenté.
-Prochaine étape : les trois racines sans prérequis — **WP00** (registre
-d'entreprises), **WP01** (`core`), **WP09** (fondations du front) — qui peuvent
-démarrer en parallèle.
+The design documentation is in [`blueprint/`](blueprint/README.md) and is written in
+French. It covers the architecture, data model, interfaces, testing strategy and
+architecture decisions.
