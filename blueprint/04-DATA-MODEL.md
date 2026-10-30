@@ -264,7 +264,7 @@ de 2 à 4 Go. SQLite tient ça sans transpirer — d'où ADR-002.
 
 | # | Invariant |
 |---|---|
-| **I4** | Une seule offre `is_canonical=1` par `fingerprint` |
+| **I4** | Une seule offre `is_canonical=1` par contenu pour une empreinte et un board ; à travers les sources, une seule par empreinte. Deux réquisitions vivantes d'un même board, même titre et contenu différent (une autre ville), sont deux offres — `03-INTERFACES.md` §3.4 |
 | **I5** | `tier='rejected'` ⟺ `rejection_reason IS NOT NULL` |
 | **I7** | Toute ligne de `postings` a exactement une ligne de `raw_payloads` tant que la rétention ne l'a pas purgée |
 | — | `user_flags` survit à un rejeu complet du pipeline sur les mêmes offres |

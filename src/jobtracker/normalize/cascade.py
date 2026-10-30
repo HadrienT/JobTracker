@@ -25,6 +25,8 @@ from jobtracker.normalize.title import classify_role, clean_title
 from jobtracker.normalize.visa import parse_visa
 
 # Bumped whenever a parser or referential change should be replayed onto stored postings.
+#  11: a location's country is read when its city is unknown ("Pune, India", "Plano, TX",
+#      "IND-BLR-…"): countries and states in geo.yaml, and the back-office cities of the banks
 #  10: quant desks outside the trading floor are no longer "other": actuaries, catastrophe and
 #      risk models, structurers, intraday trading, margin methodology
 #   9: pytorch / tensorflow / jax stack tags and Swiss cities in geo.yaml (the ch_tech track,
@@ -35,7 +37,7 @@ from jobtracker.normalize.visa import parse_visa
 #      period-less small figures are dropped, "between X and Y"
 #   3: more cities in geo.yaml, and "Office" / "and" / "&" read in locations
 #   2: quant trading / strategist / quantitative-risk titles are no longer "other"
-NORMALIZE_VERSION = 10
+NORMALIZE_VERSION = 11
 
 _PHD_REQUIRED_RE = re.compile(
     r"\bphd\s+(?:is\s+)?required\b|\brequires?\s+a\s+phd\b|\bmust\s+have\s+a\s+phd\b",

@@ -266,3 +266,22 @@ def test_empty_board_is_zero_postings_no_exception() -> None:
     session = FakeHttpSession(responses=[_list_page([], total=0)])
     result = WorkdayCollector().fetch(_board(), session)
     assert result.postings == ()
+
+
+def test_a_counted_location_without_detail_reads_the_place_in_the_path() -> None:
+    """A title the prefilter skips gets no detail request, but its path names a place."""
+    job = _job("Teller", "/job/Pune-Maharashtra-India/Teller_R1", location="2 Locations")
+    session = FakeHttpSession(responses=[_list_page([job], total=1)])
+
+    (posting,) = WorkdayCollector().fetch(_board(), session).postings
+
+    assert posting.location_raw == "Pune Maharashtra India"
+
+
+def test_a_path_with_no_place_keeps_the_counted_location() -> None:
+    job = _job("Teller", "/job/1", location="2 Locations")
+    session = FakeHttpSession(responses=[_list_page([job], total=1)])
+
+    (posting,) = WorkdayCollector().fetch(_board(), session).postings
+
+    assert posting.location_raw == "2 Locations"

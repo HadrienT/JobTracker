@@ -1,6 +1,17 @@
+from pathlib import Path
+
+import pytest
+from hypothesis import given
+from hypothesis import strategies as st
+
 from jobtracker.core.enums import RemoteMode
-from jobtracker.core.geo import GeoIndex
+from jobtracker.core.geo import GeoIndex, load_geo_index
 from jobtracker.normalize.location import parse_location
+
+_GEO = load_geo_index(Path(__file__).resolve().parents[1] / "configs" / "geo.yaml")
+_KNOWN_COUNTRIES = {
+    entry.iso for entry in (*_GEO.country_names.values(), *_GEO.country_codes.values())
+} | {entry.country for entries in _GEO.by_city.values() for entry in entries}
 
 
 def test_city_state_country_resolves_to_one_location(geo_index: GeoIndex) -> None:
@@ -118,3 +129,47 @@ def test_remote_in_a_named_country_keeps_the_country(geo_index: GeoIndex) -> Non
 def test_a_sentence_is_not_mined_for_a_city_in_the_middle(geo_index: GeoIndex) -> None:
     (loc,) = parse_location("Flexible, anywhere near London", geo=geo_index)
     assert loc.city is None
+
+
+@pytest.mark.parametrize(
+    ("text", "city", "country"),
+    [
+        ("Pune, India", "Pune", "IN"),
+        ("Plano, TX, United States", "Plano", "US"),
+        ("Malvern, PA", "Malvern", "US"),
+        ("Quincy, Massachusetts", "Quincy", "US"),
+        ("Mississauga Ontario Canada", "Mississauga", "CA"),
+        ("Switzerland - Zürich", "Zurich", "CH"),
+        ("Basel, Switzerland", "Basel", "CH"),
+        ("India - Pune", "Pune", "IN"),
+        ("Chennai, IND", "Chennai", "IN"),
+        ("GLASGOW, LANARKSHIRE, United Kingdom", "Glasgow", "GB"),
+        ("Atlanta, Georgia", "Atlanta", "US"),
+        ("Panama City, FL", "Panama City", "US"),
+        ("Santa Fe, New Mexico", "Santa Fe", "US"),
+        ("Poland", None, "PL"),
+        ("US Remote", None, "US"),
+        ("IND-BLR-Divyasree Technopolis", None, "IN"),
+        ("123 Main Street, Newark, DE, United States", None, "US"),
+    ],
+)
+def test_a_stated_country_is_read_when_the_city_is_unknown(
+    geo_index: GeoIndex, text: str, city: str | None, country: str
+) -> None:
+    (loc,) = parse_location(text, geo=geo_index)
+    assert (loc.city, loc.country) == (city, country)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["One Island East", "Headquarters", "2 Locations", "Madison Ave Corp", "Join us", "in, on, at"],
+)
+def test_no_country_is_invented_for_a_place_that_names_none(geo_index: GeoIndex, text: str) -> None:
+    (loc,) = parse_location(text, geo=geo_index)
+    assert (loc.city, loc.country) == (None, None)
+
+
+@given(st.text(max_size=60))
+def test_any_text_parses_and_a_country_is_always_a_known_code(text: str) -> None:
+    for loc in parse_location(text, geo=_GEO):
+        assert loc.country is None or loc.country in _KNOWN_COUNTRIES

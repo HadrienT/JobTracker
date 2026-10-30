@@ -13,12 +13,14 @@ from jobtracker.store.postings import (
     SortKey,
     count_active_canonical,
     deactivate_missing,
+    find_duplicates,
     get_posting_row,
     get_verdict,
     list_aliases,
     list_postings,
     mark_favorite,
     mark_hidden,
+    merge_duplicates,
     newest_first_seen_at,
     record_alias,
     resolve_dedup,
@@ -734,3 +736,141 @@ def test_triage_keeps_the_favorite_and_the_application_status(
     assert [(r.posting_id, r.triage, r.is_favorite) for r in back.items] == [
         (posting_id, None, True)
     ]
+
+
+def _canonical(conn: sqlite3.Connection) -> set[str]:
+    rows = conn.execute("SELECT posting_id FROM postings WHERE is_canonical = 1").fetchall()
+    return {row["posting_id"] for row in rows}
+
+
+def test_a_live_sibling_requisition_is_kept_apart_not_hidden(
+    store_conn: sqlite3.Connection,
+) -> None:
+    """Same title, same unknown country, another city: a role of its own (issue #8)."""
+    _upsert(store_conn, posting_id="p-ldn", source_job_id="j-1", fingerprint="fp", content_hash="a")
+    posting = make_posting(
+        posting_id="p-mnl", source_job_id="j-2", fingerprint="fp", content_hash="b"
+    )
+    assert resolve_dedup(store_conn, posting) is None
+    assert upsert_posting(store_conn, posting, make_verdict(posting_id="p-mnl")) == "p-mnl"
+    assert _canonical(store_conn) == {"p-ldn", "p-mnl"}
+
+
+def test_the_same_content_under_another_requisition_is_still_a_duplicate(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn, posting_id="p-a", source_job_id="j-1", fingerprint="fp", content_hash="a")
+    posting = make_posting(
+        posting_id="p-b", source_job_id="j-2", fingerprint="fp", content_hash="a"
+    )
+    assert resolve_dedup(store_conn, posting) == "p-a"
+
+
+def test_a_sibling_prefers_its_exact_twin_among_several_canonicals(
+    store_conn: sqlite3.Connection,
+) -> None:
+    for name, content in (("a", "ca"), ("b", "cb")):
+        _upsert(
+            store_conn,
+            posting_id=f"p-{name}",
+            source_job_id=f"j-{name}",
+            fingerprint="fp",
+            content_hash=content,
+        )
+    twin = make_posting(posting_id="p-c", source_job_id="j-c", fingerprint="fp", content_hash="cb")
+    assert resolve_dedup(store_conn, twin) == "p-b"
+
+
+def test_a_posting_seen_as_an_alias_stops_being_one_when_it_becomes_a_sibling(
+    store_conn: sqlite3.Connection,
+) -> None:
+    """What the old rule hid comes back by itself, at the next collection."""
+    _upsert(store_conn, posting_id="p-a", source_job_id="j-1", fingerprint="fp", content_hash="a")
+    _upsert(store_conn, posting_id="p-x", source_job_id="j-2", fingerprint="fp", content_hash="a")
+    assert store_conn.execute("SELECT COUNT(*) FROM posting_aliases").fetchone()[0] == 1
+
+    _upsert(store_conn, posting_id="p-b", source_job_id="j-2", fingerprint="fp", content_hash="b")
+
+    assert _canonical(store_conn) == {"p-a", "p-b"}
+    assert store_conn.execute("SELECT COUNT(*) FROM posting_aliases").fetchone()[0] == 0
+
+
+def test_an_edit_that_makes_two_postings_identical_leaves_one(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn, posting_id="p-a", source_job_id="j-1", fingerprint="fp", content_hash="a")
+    _upsert(store_conn, posting_id="p-b", source_job_id="j-2", fingerprint="fp", content_hash="b")
+    _upsert(store_conn, posting_id="p-b", source_job_id="j-2", fingerprint="fp", content_hash="a")
+    assert _canonical(store_conn) == {"p-a"}
+
+
+def _application(conn: sqlite3.Connection, posting_id: str) -> None:
+    now = "2026-10-30T00:00:00+00:00"
+    conn.execute(
+        "INSERT INTO applications (application_id, company, status, posting_id, origin, "
+        "created_at, updated_at) VALUES ('app', 'Acme', 'applied', ?, 'feed', ?, ?)",
+        (posting_id, now, now),
+    )
+
+
+def test_a_takeover_carries_the_application_with_the_posting(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _upsert(store_conn, posting_id="p-old", source_job_id="j-1", fingerprint="fp")
+    _application(store_conn, "p-old")
+    deactivate_missing(store_conn, Source.GREENHOUSE, "acme", {"j-other"})
+    _upsert(store_conn, posting_id="p-new", source_job_id="j-2", fingerprint="fp")
+    row = store_conn.execute("SELECT posting_id FROM applications").fetchone()
+    assert row["posting_id"] == "p-new"
+
+
+def _two_rows(conn: sqlite3.Connection, **shared: object) -> None:
+    """Two identical live rows, as the old identity branch could leave them."""
+    _upsert(conn, posting_id="p-a", source_job_id="j-1", fingerprint="fp", content_hash="a")
+    _upsert(conn, posting_id="p-b", source_job_id="j-2", fingerprint="fp", content_hash="b")
+    conn.execute(
+        "UPDATE postings SET content_hash = 'same', score = CASE posting_id WHEN 'p-b' THEN 80 "
+        "ELSE 10 END",
+    )
+    if shared:
+        conn.execute("UPDATE postings SET location_raw = ?", (shared["location_raw"],))
+
+
+def test_identical_rows_merge_into_the_best_one_and_follow_it(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _two_rows(store_conn)
+    _application(store_conn, "p-a")
+    ((group), *_), left_alone = find_duplicates(store_conn)
+    assert (group.keep, group.drop, left_alone) == ("p-b", ("p-a",), [])
+
+    merge_duplicates(store_conn, group)
+
+    assert _canonical(store_conn) == {"p-b"}
+    aliases = store_conn.execute("SELECT source_job_id, canonical_id FROM posting_aliases")
+    assert [tuple(row) for row in aliases] == [("j-1", "p-b")]
+    row = store_conn.execute("SELECT posting_id FROM applications").fetchone()
+    assert row["posting_id"] == "p-b"
+
+
+def test_the_row_the_user_marked_is_the_one_kept(store_conn: sqlite3.Connection) -> None:
+    _two_rows(store_conn)
+    mark_favorite(store_conn, "p-a", True)
+    groups, _ = find_duplicates(store_conn)
+    assert groups[0].keep == "p-a"
+
+
+def test_two_rows_the_user_marked_are_never_merged(store_conn: sqlite3.Connection) -> None:
+    _two_rows(store_conn)
+    mark_favorite(store_conn, "p-a", True)
+    mark_favorite(store_conn, "p-b", True)
+    groups, left_alone = find_duplicates(store_conn)
+    assert groups == []
+    assert [set(ids) for ids in left_alone] == [{"p-a", "p-b"}]
+
+
+def test_counted_locations_are_not_known_to_be_the_same_place(
+    store_conn: sqlite3.Connection,
+) -> None:
+    _two_rows(store_conn, location_raw="3 Locations")
+    assert find_duplicates(store_conn) == ([], [])
