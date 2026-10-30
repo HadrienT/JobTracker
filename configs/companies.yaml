@@ -111,8 +111,8 @@
 
 - slug: old_mission
   name: Old Mission
-  source: greenhouse  # verified 2026-10-07
-  token: "oldmissioncapital"
+  source: ashby  # verified 2026-10-31 — moved off Greenhouse, read on its career page
+  token: "old-mission-capital"
   sector: prop_trading
   hq_country: US
   priority: 1
@@ -156,12 +156,13 @@
 
 - slug: wolverine_trading
   name: Wolverine Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "wolverine-trading"
+  source: custom  # verified 2026-10-31 — Pinpoint, its public postings.json
+  token: "https://www.wolve.com/open-positions"
+  extra: { api: "https://wolve.pinpointhq.com/postings.json", items: data, id: id, title: title, location: location.name, url: "{url}" }
   sector: prop_trading
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: peak6
   name: Peak6
@@ -294,12 +295,12 @@
 
 - slug: tibra_trading
   name: Tibra Trading
-  source: workable  # token confirmed on the rendered career page 2026-10-08, board empty that day — [À CONFIRMER] re-probe
+  source: workable  # verified 2026-10-31 — token read on its career page; no opening on that day
   token: "tibra-capital-1"
   sector: prop_trading
   hq_country: AU
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: simplex_investment
   name: Simplex Investment Advisors
@@ -384,7 +385,7 @@
 
 - slug: hehmeyer_trading
   name: Hehmeyer Trading
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: smartrecruiters  # [À CONFIRMER] domain parked on 2026-10-31
   token: "hehmeyer-trading"
   sector: prop_trading
   hq_country: US
@@ -582,21 +583,22 @@
 
 - slug: cfm
   name: Capital Fund Management (CFM)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "capital-fund-management-cfm"
+  source: custom  # verified 2026-10-31 — SuccessFactors RMK
+  token: "https://jobs.cfm.com/search/?q=&startrow={page}"
+  extra: { link: "jobs\\.cfm\\.com/job/[^/]+/(\\d+)/", pages: "3", page_start: "0", page_step: "25" }
   sector: hedge_fund
   hq_country: FR
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: bluecrest
   name: BlueCrest Capital Management
-  source: greenhouse  # verified 2026-09-17
+  source: greenhouse  # [À CONFIRMER] closed 2026-10-31: board 404, bluecrest.com for sale; no portal found
   token: "bluecrestcapitalmanagement"
   sector: hedge_fund
   hq_country: GB
   priority: 1
-  enabled: true
+  enabled: false
 
 - slug: verition
   name: Verition Fund Management
@@ -609,12 +611,12 @@
 
 - slug: walleye
   name: Walleye Capital
-  source: greenhouse  # token confirmed on the career page 2026-10-07, board empty that day — [À CONFIRMER] re-probe
-  token: "walleyecapital"
+  source: greenhouse  # verified 2026-10-31 — `walleyecapital` is empty; the career page links this board
+  token: "walleyecapital-external-students"
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: aqr
   name: AQR Capital Management
@@ -636,12 +638,12 @@
 
 - slug: voleon
   name: The Voleon Group
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "the-voleon-group"
+  source: ashby  # verified 2026-10-31
+  token: "voleon"
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: pdt_partners
   name: PDT Partners
@@ -673,7 +675,7 @@
 
 - slug: man_numeric
   name: Man Numeric
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: smartrecruiters  # [À CONFIRMER] part of Man Group, collected with it
   token: "man-numeric"
   sector: hedge_fund
   hq_country: US
@@ -753,12 +755,13 @@
 
 - slug: ellington_management
   name: Ellington Management Group
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "ellington-management-group"
+  source: custom  # verified 2026-10-31 — Taleo Business Edition
+  token: "https://phh.tbe.taleo.net/phh03/ats/careers/v2/searchResults?org=ELLINGTONMGMTGRP&cws=37"
+  extra: { link: "viewRequisition\\?org=ELLINGTONMGMTGRP&cws=37&rid=(\\d+)", title: heading }
   sector: hedge_fund
   hq_country: US
   priority: 1
-  enabled: false
+  enabled: true
 
 - slug: graham_global
   name: Graham Global Investment
@@ -1102,12 +1105,13 @@
 
 - slug: abn_amro
   name: ABN AMRO
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-31 — its API 404s past page 2 outside the site
+  token: "https://www.werkenbijabnamro.nl/en/vacancies?page={page}"
+  extra: { link: "werkenbijabnamro\\.nl/en/vacancy/(\\d+)/", pages: "18" }
   sector: bank_other  # not sell-side: custody, private banking, advisory or commercial
   hq_country: NL
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: unicredit
   name: UniCredit
@@ -1294,7 +1298,7 @@
 
 - slug: axa_im
   name: AXA IM
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
+  source: workday  # [À CONFIRMER] absorbed by BNP Paribas AM (axa-im.com redirects there), collected with bnp_paribas
   token: ""
   sector: asset_manager
   hq_country: FR
@@ -1383,12 +1387,13 @@
 
 - slug: tikehau_capital
   name: Tikehau Capital
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-31 — Talentview
+  token: "https://tikehau-capital-career.talentview.io/en?page={page}"
+  extra: { link: "talentview\\.io/jobs/([^/?#]+)", pages: "5" }
   sector: asset_manager
   hq_country: FR
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: ostrum
   name: Ostrum Asset Management
@@ -1431,12 +1436,13 @@
 
 - slug: franklin_templeton
   name: Franklin Templeton
-  source: workday  # [À CONFIRMER] tenant/site/wd non découverts — nécessite l'inspection réseau de la page carrière (WP06, blueprint/11-SOURCES.md §3)
-  token: ""
+  source: custom  # verified 2026-10-31 — Phenom
+  token: "https://careers.franklintempleton.com/us/en/search-results?from={page}&s=1"
+  extra: { link: "careers\\.franklintempleton\\.com/us/en/job/([^/]+)/", pages: "60", page_start: "0", page_step: "10" }
   sector: asset_manager
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: neuberger_berman
   name: Neuberger Berman
@@ -1522,12 +1528,13 @@
 
 - slug: msci
   name: MSCI
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "msci"
+  source: custom  # verified 2026-10-31 — rendered Algolia listing
+  token: "https://careers.msci.com/job-search?production__mscicare2201__sort-rank%5Bpage%5D={page}"
+  extra: { link: "careers\\.msci\\.com/job/[^/]+/[^/]+/[^/]+/(\\d{4}-\\d+)", pages: "40", title: heading }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: factset
   name: FactSet
@@ -1609,26 +1616,28 @@
 
 - slug: quantifi
   name: Quantifi
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "quantifi"
+  source: custom  # verified 2026-10-31 — Freshteam
+  token: "https://quantifisolutions.freshteam.com/jobs"
+  extra: { link: "quantifisolutions\\.freshteam\\.com/jobs/([^/?#]+)/" }
   sector: vendor
   hq_country: US
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: opengamma
   name: OpenGamma
-  source: greenhouse  # token confirmed on the rendered career page 2026-10-08, board empty that day — [À CONFIRMER] re-probe
+  source: greenhouse  # verified 2026-10-31 — token read on its career page; no opening on that day
   token: "opengamma"
   sector: vendor
   hq_country: GB
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: kaiko
   name: Kaiko
-  source: personio  # verified 2026-09-17
-  token: "kaiko"
+  source: custom  # verified 2026-10-31 — Lever EU host; no opening on that day
+  token: "https://jobs.eu.lever.co/kaiko"
+  extra: { api: "https://api.eu.lever.co/v0/postings/kaiko?mode=json", items: ., id: id, title: text, location: categories.location, url: "{hostedUrl}", description: descriptionPlain }
   sector: vendor
   hq_country: FR
   priority: 2
@@ -1695,12 +1704,13 @@
 
 - slug: iress
   name: Iress
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: workday  # verified 2026-10-31
   token: "iress"
+  extra: { wd: "3", site: IRESS_EXTERNAL }
   sector: vendor
   hq_country: AU
   priority: 2
-  enabled: false
+  enabled: true
 
 - slug: temenos
   name: Temenos
@@ -1788,8 +1798,9 @@
 
 - slug: trade_republic
   name: Trade Republic
-  source: greenhouse  # verified 2026-09-17
-  token: "traderepublic"
+  source: custom  # verified 2026-10-31 — the site's own API; its Greenhouse board went empty
+  token: "https://traderepublic.com/en-de/about#career"
+  extra: { api: "https://api.traderepublic.com/api/v1/career/jobs?content=true", items: jobs, id: id, title: title, location: offices.name, url: "{absolute_url}", description: content }
   sector: vendor
   hq_country: DE
   priority: 2
@@ -1880,7 +1891,7 @@
 
 - slug: cumberland
   name: Cumberland (DRW)
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
+  source: smartrecruiters  # [À CONFIRMER] its roles are DRW's, collected with drw
   token: "cumberland-drw"
   sector: crypto
   hq_country: US
@@ -1898,12 +1909,12 @@
 
 - slug: qcp_capital
   name: QCP Capital
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "qcp-capital"
+  source: workable  # verified 2026-10-31
+  token: "qcp-group"
   sector: crypto
   hq_country: SG
   priority: 3
-  enabled: false
+  enabled: true
 
 - slug: auros
   name: Auros
@@ -3205,4 +3216,218 @@
   sector: hedge_fund
   hq_country: SG
   priority: 1
+  enabled: true
+
+# --- Portals read off each career page's network calls, 2026-10-31 (#2, #3, #9, #10) ---
+- slug: mistral_ai
+  name: Mistral AI
+  source: ashby  # verified 2026-10-31
+  token: "mistral.ai"
+  sector: tech
+  hq_country: FR
+  priority: 2
+  enabled: true
+
+- slug: neural_concept
+  name: Neural Concept
+  source: ashby  # verified 2026-10-31
+  token: "neuralconcept"
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: flyability
+  name: Flyability
+  source: workable  # verified 2026-10-31
+  token: "flyability"
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: auterion
+  name: Auterion
+  source: greenhouse  # verified 2026-10-31
+  token: "auterion"
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: dfinity
+  name: DFINITY
+  source: greenhouse  # verified 2026-10-31 — token read on its site; no opening on that day
+  token: "dfinity"
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: quantco
+  name: QuantCo
+  source: lever  # verified 2026-10-31
+  token: "quantco-"
+  sector: tech
+  hq_country: DE
+  priority: 2
+  enabled: true
+
+- slug: mujin
+  name: Mujin
+  source: lever  # verified 2026-10-31
+  token: "mujininc"
+  sector: tech
+  hq_country: JP
+  priority: 3
+  enabled: true
+
+- slug: intel
+  name: Intel
+  source: workday  # verified 2026-10-31
+  token: "intel"
+  extra: { wd: "1", site: External }
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: logitech
+  name: Logitech
+  source: workday  # verified 2026-10-31
+  token: "logitech"
+  extra: { wd: "5", site: Logitech }
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: swisscom
+  name: Swisscom
+  source: workday  # verified 2026-10-31
+  token: "swisscom"
+  extra: { wd: "103", site: SwisscomExternalCareers }
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: zuehlke
+  name: Zühlke
+  source: workday  # verified 2026-10-31
+  token: "zuehlke"
+  extra: { wd: "3", site: Zuhlke-Careers }
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: roche
+  name: Roche
+  source: workday  # verified 2026-10-31 — 1 249 postings; list checked, not run in full
+  token: "roche"
+  extra: { wd: "3", site: roche-ext }
+  sector: tech
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: groq
+  name: Groq
+  source: custom  # verified 2026-10-31 — Gem
+  token: "https://jobs.gem.com/groq"
+  extra: { api: "https://api.gem.com/job_board/v0/groq/job_posts/", items: ., id: id, title: title, location: location.name, url: "{absolute_url}", description: content }
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: amd
+  name: AMD
+  source: custom  # verified 2026-10-31 — iCIMS behind its own API
+  token: "https://careers.amd.com/careers-home/jobs"
+  extra: { api: "https://careers.amd.com/api/jobs?page={page}&sortBy=relevance&descending=false&internal=false", size: "10", page_start: "1", items: jobs, total: totalCount, id: data.req_id, title: data.title, location: data.full_location, url: "https://careers.amd.com/careers-home/jobs/{data.slug}", description: data.description }
+  sector: tech
+  hq_country: US
+  priority: 2
+  enabled: true
+
+- slug: arm
+  name: Arm
+  source: custom  # verified 2026-10-31
+  token: "https://careers.arm.com/search-jobs?p={page}"
+  extra: { link: "careers\\.arm\\.com/job/[^/]+/[^/]+/33099/(\\d+)", pages: "12" }
+  sector: tech
+  hq_country: GB
+  priority: 2
+  enabled: true
+
+- slug: microsoft_ch
+  name: Microsoft (Switzerland)
+  source: custom  # verified 2026-10-31 — Eightfold, Switzerland only
+  token: "https://apply.careers.microsoft.com/careers"
+  extra: { api: "https://apply.careers.microsoft.com/api/pcsx/search?domain=microsoft.com&query=&location=Switzerland&start={offset}&", size: "10", items: data.positions, total: data.count, id: id, title: name, location: locations, url: "https://apply.careers.microsoft.com{positionUrl}", detail: "https://apply.careers.microsoft.com/api/pcsx/position_details?position_id={id}&domain=microsoft.com&hl=en", detail_description: data.jobDescription }
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: meta_zurich
+  name: Meta (Zurich)
+  source: custom  # verified 2026-10-31 — rendered, first page only
+  token: "https://www.metacareers.com/jobsearch/?offices[0]=Zurich%2C%20Switzerland"
+  extra: { link: "metacareers\\.com/profile/job_details/(\\d+)" }
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: novartis
+  name: Novartis (Switzerland)
+  source: custom  # verified 2026-10-31
+  token: "https://www.novartis.com/careers/career-search?search_api_fulltext=&country%5B0%5D=LOC_CH&page={page}"
+  extra: { link: "novartis\\.com/careers/career-search/job/details/(req-\\d+)", pages: "12", page_start: "0" }
+  sector: tech
+  hq_country: CH
+  priority: 3
+  enabled: true
+
+- slug: eth_zurich
+  name: ETH Zurich
+  source: custom  # verified 2026-10-31
+  token: "https://jobs.ethz.ch/"
+  extra: { link: "jobs\\.ethz\\.ch/job/view/(JOPG_\\w+|\\d+)" }
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: epfl
+  name: EPFL
+  source: custom  # verified 2026-10-31
+  token: "https://careers.epfl.ch/search/?q=&startrow={page}"
+  extra: { link: "careers\\.epfl\\.ch/job/[^/]+/(\\d+)/", pages: "12", page_start: "0", page_step: "25" }
+  sector: tech
+  hq_country: CH
+  priority: 2
+  enabled: true
+
+- slug: euronext
+  name: Euronext
+  source: custom  # verified 2026-10-31 — its firewall blocked a fast walk once: it is read at the custom jitter
+  token: "https://www.euronext.com/en/about/careers/open-positions?page={page}"
+  extra: { link: "job-offers/(r\\d+)-", pages: "4", page_start: "0" }
+  sector: bank_other
+  hq_country: NL
+  priority: 2
+  enabled: true
+
+- slug: sensirion
+  name: Sensirion
+  source: custom  # verified 2026-10-31
+  token: "https://sensirion.com/career"
+  extra: { link: "jobs\\.sensirion\\.com/job-vacancies/[^/]+/[^/]+/([0-9a-f-]+)", title: heading }
+  sector: tech
+  hq_country: CH
+  priority: 2
   enabled: true
