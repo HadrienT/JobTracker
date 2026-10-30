@@ -111,6 +111,10 @@ probe company:
 replay since:
     uv run jobtracker replay --since {{since}} --dry-run
 
+# offres identiques d'un même board (invariant I4) : dry-run par défaut, --apply pour écrire
+dedupe-postings *args:
+    uv run jobtracker dedupe-postings {{args}}
+
 # rapport hebdomadaire
 report:
     uv run jobtracker report --weekly

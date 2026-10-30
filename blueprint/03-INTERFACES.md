@@ -266,6 +266,12 @@ L'empreinte est calculée sur :
 | pays | code ISO-3166 alpha-2, ou `"??"` si inconnu |
 | date | **compartiment de 14 jours** sur `posted_at` si présent, sinon ignoré |
 
+**Une empreinte ne prouve un doublon qu'entre sources différentes.** Au sein d'un même board, deux
+réquisitions de même empreinte et de contenu différent sont des offres sœurs (le même intitulé dans
+une autre ville, surtout quand le pays manque) : elles restent deux lignes, jusqu'à ce que l'une
+ferme. Seul un contenu identique y est un doublon. `jobtracker dedupe-postings` fusionne ce qu'une
+édition aurait laissé en double, sauf deux lignes portant chacune des marques de l'utilisateur.
+
 **Résolution des collisions**, dans cet ordre strict :
 
 1. Si une offre existe déjà avec la même empreinte et une **source ATS**, la

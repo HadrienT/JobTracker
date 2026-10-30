@@ -228,6 +228,9 @@ def _map_summary(
         if detail.locations and _COUNTED_LOCATIONS.match(str(location_raw or "")):
             location_raw = detail.locations
 
+    if _COUNTED_LOCATIONS.match(str(location_raw or "")):
+        location_raw = _place_in_path(str(external_path)) or location_raw
+
     return (
         RawPosting(
             source=Source.WORKDAY,
@@ -246,6 +249,19 @@ def _map_summary(
         requests_made,
         truncated,
     )
+
+
+def _place_in_path(external_path: str) -> str | None:
+    """`/job/Pune-Maharashtra-India/Quant_R123` -> "Pune Maharashtra India".
+
+    The list says "3 Locations" and only a relevant title earns a detail request, but the
+    path always names the first place. Without it, every such posting has no country.
+    """
+    parts = external_path.split("/")
+    if len(parts) < 4 or parts[1] != "job":
+        return None
+    place = parts[2].replace("-", " ").strip()
+    return place or None
 
 
 @dataclass(frozen=True)

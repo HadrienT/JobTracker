@@ -172,8 +172,8 @@ def test_an_alias_never_reaches_match_evaluate(
     profile: Profile,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # A second ATS posting sharing a fingerprint with an existing canonical
-    # one must become an alias — and must never call evaluate() at all
+    # A second posting of the same board with the same fingerprint and the same content
+    # must become an alias — and must never call evaluate() at all
     # (blueprint/wp/WP08-runtime.md §2: dedup precedes scoring).
     first = ingest(store_conn, _raw(), taxonomy=taxonomy, geo=geo_index, profile=profile)
     assert first.outcome == "new"
@@ -187,7 +187,7 @@ def test_an_alias_never_reaches_match_evaluate(
 
     monkeypatch.setattr(pipeline, "evaluate", _fail_if_called)
 
-    duplicate = _raw(source_job_id="job-2", content_hash="hash-2")
+    duplicate = _raw(source_job_id="job-2")
     result = ingest(store_conn, duplicate, taxonomy=taxonomy, geo=geo_index, profile=profile)
 
     assert called is False

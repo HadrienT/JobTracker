@@ -557,9 +557,294 @@ cities:
     lon: -115.1398
     aliases: ["Las Vegas, NV"]
 
+  # --- Back offices and regional hubs: where banks list most of their tech roles ---
+  - city: Pune
+    country: IN
+    region: apac
+    lat: 18.5204
+    lon: 73.8567
+  - city: Hyderabad
+    country: IN
+    region: apac
+    lat: 17.385
+    lon: 78.4867
+  - city: Chennai
+    country: IN
+    region: apac
+    lat: 13.0827
+    lon: 80.2707
+    aliases: [Madras]
+  - city: Noida
+    country: IN
+    region: apac
+    lat: 28.5355
+    lon: 77.391
+  - city: Kolkata
+    country: IN
+    region: apac
+    lat: 22.5726
+    lon: 88.3639
+  - city: Manila
+    country: PH
+    region: apac
+    lat: 14.5995
+    lon: 120.9842
+    aliases: [Metro Manila]
+  - city: Taguig
+    country: PH
+    region: apac
+    lat: 14.5176
+    lon: 121.0509
+    aliases: [Taguig City]
+  - city: Bucharest
+    country: RO
+    region: emea
+    lat: 44.4268
+    lon: 26.1025
+    aliases: [Bucuresti, București]
+  - city: Cluj-Napoca
+    country: RO
+    region: emea
+    lat: 46.7712
+    lon: 23.6236
+  - city: Sofia
+    country: BG
+    region: emea
+    lat: 42.6977
+    lon: 23.3219
+  - city: Krakow
+    country: PL
+    region: emea
+    lat: 50.0647
+    lon: 19.945
+    aliases: [Kraków, Cracow]
+  - city: Wroclaw
+    country: PL
+    region: emea
+    lat: 51.1079
+    lon: 17.0385
+    aliases: [Wrocław]
+  - city: Istanbul
+    country: TR
+    region: emea
+    lat: 41.0082
+    lon: 28.9784
+  - city: Beirut
+    country: LB
+    region: emea
+    lat: 33.8938
+    lon: 35.5018
+  - city: Charlotte
+    country: US
+    region: amer
+    lat: 35.2271
+    lon: -80.8431
+  - city: Dallas
+    country: US
+    region: amer
+    lat: 32.7767
+    lon: -96.797
+  - city: Fort Worth
+    country: US
+    region: amer
+    lat: 32.7555
+    lon: -97.3308
+  - city: Seattle
+    country: US
+    region: amer
+    lat: 47.6062
+    lon: -122.3321
+  - city: Los Angeles
+    country: US
+    region: amer
+    lat: 34.0522
+    lon: -118.2437
+  - city: Atlanta
+    country: US
+    region: amer
+    lat: 33.749
+    lon: -84.388
+  - city: Jacksonville
+    country: US
+    region: amer
+    lat: 30.3322
+    lon: -81.6557
+  - city: Mexico City
+    country: MX
+    region: amer
+    lat: 19.4326
+    lon: -99.1332
+    aliases: [CDMX, Ciudad de Mexico, Ciudad de México]
+  - city: Kuala Lumpur
+    country: MY
+    region: apac
+    lat: 3.139
+    lon: 101.6869
+  - city: Jakarta
+    country: ID
+    region: apac
+    lat: -6.2088
+    lon: 106.8456
+    aliases: [Jakarta Selatan]
+  - city: Guangzhou
+    country: CN
+    region: apac
+    lat: 23.1291
+    lon: 113.2644
+
 ambiguous:
   london:
     default_country: GB   # UK by default in our sector context — see blueprint/06-CONFIG.md §5
   cambridge: {}
   birmingham: {}
   "saint petersburg": {}
+
+# Country referential — used when a location names a country or a state but no known city:
+# the country is a fact the text states, so it is read even when the city is not in `cities`.
+# Codes (`iso3`, `codes`) count upper-case only: `Chennai, IND`, `IND-BLR-…`, `US Remote`.
+# Georgia is left out on purpose: in a job location it is the US state.
+countries:
+  - {iso: AE, iso3: ARE, region: emea, names: ["United Arab Emirates", "UAE", "Dubai UAE"]}
+  - {iso: AF, iso3: AFG, region: apac, names: ["Afghanistan"]}
+  - {iso: AL, iso3: ALB, region: emea, names: ["Albania"]}
+  - {iso: AM, iso3: ARM, region: emea, names: ["Armenia"]}
+  - {iso: AO, iso3: AGO, region: emea, names: ["Angola"]}
+  - {iso: AR, iso3: ARG, region: amer, names: ["Argentina"]}
+  - {iso: AT, iso3: AUT, region: emea, names: ["Austria", "Osterreich", "Österreich"]}
+  - {iso: AU, iso3: AUS, region: apac, names: ["Australia"]}
+  - {iso: AZ, iso3: AZE, region: emea, names: ["Azerbaijan"]}
+  - {iso: BA, iso3: BIH, region: emea, names: ["Bosnia and Herzegovina", "Bosnia"]}
+  - {iso: BB, iso3: BRB, region: amer, names: ["Barbados"]}
+  - {iso: BD, iso3: BGD, region: apac, names: ["Bangladesh"]}
+  - {iso: BE, iso3: BEL, region: emea, names: ["Belgium", "Belgique", "België"]}
+  - {iso: BG, iso3: BGR, region: emea, names: ["Bulgaria"]}
+  - {iso: BH, iso3: BHR, region: emea, names: ["Bahrain"]}
+  - {iso: BM, iso3: BMU, region: amer, names: ["Bermuda"]}
+  - {iso: BN, iso3: BRN, region: apac, names: ["Brunei", "Brunei Darussalam"]}
+  - {iso: BO, iso3: BOL, region: amer, names: ["Bolivia"]}
+  - {iso: BR, iso3: BRA, region: amer, names: ["Brazil", "Brasil"]}
+  - {iso: BS, iso3: BHS, region: amer, names: ["Bahamas"]}
+  - {iso: BW, iso3: BWA, region: emea, names: ["Botswana"]}
+  - {iso: BY, iso3: BLR, region: emea, names: ["Belarus"]}
+  - {iso: CA, iso3: CAN, region: amer, names: ["Canada"]}
+  - {iso: CH, iso3: CHE, region: emea, names: ["Switzerland", "Suisse", "Schweiz", "Svizzera"]}
+  - {iso: CI, iso3: CIV, region: emea, names: ["Ivory Coast", "Cote d'Ivoire", "Côte d'Ivoire"]}
+  - {iso: CL, iso3: CHL, region: amer, names: ["Chile"]}
+  - {iso: CM, iso3: CMR, region: emea, names: ["Cameroon"]}
+  - {iso: CN, iso3: CHN, region: apac, names: ["China", "PRC", "Mainland China", "People's Republic of China"]}
+  - {iso: CO, iso3: COL, region: amer, names: ["Colombia"]}
+  - {iso: CR, iso3: CRI, region: amer, names: ["Costa Rica"]}
+  - {iso: CY, iso3: CYP, region: emea, names: ["Cyprus"]}
+  - {iso: CZ, iso3: CZE, region: emea, names: ["Czech Republic", "Czechia"]}
+  - {iso: DE, iso3: DEU, region: emea, names: ["Germany", "Deutschland"]}
+  - {iso: DK, iso3: DNK, region: emea, names: ["Denmark", "Danmark"]}
+  - {iso: DO, iso3: DOM, region: amer, names: ["Dominican Republic"]}
+  - {iso: DZ, iso3: DZA, region: emea, names: ["Algeria"]}
+  - {iso: EC, iso3: ECU, region: amer, names: ["Ecuador"]}
+  - {iso: EE, iso3: EST, region: emea, names: ["Estonia"]}
+  - {iso: EG, iso3: EGY, region: emea, names: ["Egypt"]}
+  - {iso: ES, iso3: ESP, region: emea, names: ["Spain", "España", "Espana"]}
+  - {iso: ET, iso3: ETH, region: emea, names: ["Ethiopia"]}
+  - {iso: FI, iso3: FIN, region: emea, names: ["Finland"]}
+  - {iso: FR, iso3: FRA, region: emea, names: ["France"]}
+  - {iso: GB, iso3: GBR, codes: ["UK", "GB"], region: emea, names: ["United Kingdom", "Great Britain", "England", "Scotland", "Wales", "Northern Ireland"]}
+  - {iso: GH, iso3: GHA, region: emea, names: ["Ghana"]}
+  - {iso: GI, iso3: GIB, region: emea, names: ["Gibraltar"]}
+  - {iso: GG, iso3: GGY, region: emea, names: ["Guernsey"]}
+  - {iso: GR, iso3: GRC, region: emea, names: ["Greece"]}
+  - {iso: GT, iso3: GTM, region: amer, names: ["Guatemala"]}
+  - {iso: HK, iso3: HKG, region: apac, names: ["Hong Kong", "Hong Kong SAR", "HKSAR"]}
+  - {iso: HN, iso3: HND, region: amer, names: ["Honduras"]}
+  - {iso: HR, iso3: HRV, region: emea, names: ["Croatia"]}
+  - {iso: HU, iso3: HUN, region: emea, names: ["Hungary"]}
+  - {iso: ID, iso3: IDN, region: apac, names: ["Indonesia"]}
+  - {iso: IE, iso3: IRL, region: emea, names: ["Ireland"]}
+  - {iso: IL, iso3: ISR, region: emea, names: ["Israel"]}
+  - {iso: IM, iso3: IMN, region: emea, names: ["Isle of Man"]}
+  - {iso: IN, iso3: IND, region: apac, names: ["India"]}
+  - {iso: IS, iso3: ISL, region: emea, names: ["Iceland"]}
+  - {iso: IT, iso3: ITA, region: emea, names: ["Italy", "Italia"]}
+  - {iso: JM, iso3: JAM, region: amer, names: ["Jamaica"]}
+  - {iso: JO, iso3: JOR, region: emea, names: ["Jordan"]}
+  - {iso: JP, iso3: JPN, region: apac, names: ["Japan"]}
+  - {iso: KE, iso3: KEN, region: emea, names: ["Kenya"]}
+  - {iso: KH, iso3: KHM, region: apac, names: ["Cambodia"]}
+  - {iso: KR, iso3: KOR, region: apac, names: ["South Korea", "Republic of Korea", "Korea"]}
+  - {iso: KW, iso3: KWT, region: emea, names: ["Kuwait"]}
+  - {iso: KY, iso3: CYM, region: amer, names: ["Cayman Islands"]}
+  - {iso: KZ, iso3: KAZ, region: apac, names: ["Kazakhstan"]}
+  - {iso: LB, iso3: LBN, region: emea, names: ["Lebanon"]}
+  - {iso: LK, iso3: LKA, region: apac, names: ["Sri Lanka"]}
+  - {iso: LT, iso3: LTU, region: emea, names: ["Lithuania"]}
+  - {iso: LU, iso3: LUX, region: emea, names: ["Luxembourg"]}
+  - {iso: LV, iso3: LVA, region: emea, names: ["Latvia"]}
+  - {iso: MA, iso3: MAR, region: emea, names: ["Morocco"]}
+  - {iso: MC, iso3: MCO, region: emea, names: ["Monaco"]}
+  - {iso: MD, iso3: MDA, region: emea, names: ["Moldova"]}
+  - {iso: ME, iso3: MNE, region: emea, names: ["Montenegro"]}
+  - {iso: MK, iso3: MKD, region: emea, names: ["North Macedonia"]}
+  - {iso: MM, iso3: MMR, region: apac, names: ["Myanmar"]}
+  - {iso: MN, iso3: MNG, region: apac, names: ["Mongolia"]}
+  - {iso: MO, iso3: MAC, region: apac, names: ["Macau", "Macao"]}
+  - {iso: MT, iso3: MLT, region: emea, names: ["Malta"]}
+  - {iso: MU, iso3: MUS, region: emea, names: ["Mauritius"]}
+  - {iso: MX, iso3: MEX, region: amer, names: ["Mexico", "México"]}
+  - {iso: MY, iso3: MYS, region: apac, names: ["Malaysia"]}
+  - {iso: NG, iso3: NGA, region: emea, names: ["Nigeria"]}
+  - {iso: NL, iso3: NLD, region: emea, names: ["Netherlands", "The Netherlands", "Nederland", "Holland"]}
+  - {iso: NO, iso3: NOR, region: emea, names: ["Norway", "Norge"]}
+  - {iso: NP, iso3: NPL, region: apac, names: ["Nepal"]}
+  - {iso: NZ, iso3: NZL, region: apac, names: ["New Zealand"]}
+  - {iso: OM, iso3: OMN, region: emea, names: ["Oman"]}
+  - {iso: PA, iso3: PAN, region: amer, names: ["Panama"]}
+  - {iso: PE, iso3: PER, region: amer, names: ["Peru"]}
+  - {iso: PH, iso3: PHL, region: apac, names: ["Philippines"]}
+  - {iso: PK, iso3: PAK, region: apac, names: ["Pakistan"]}
+  - {iso: PL, iso3: POL, region: emea, names: ["Poland", "Polska"]}
+  - {iso: PR, iso3: PRI, region: amer, names: ["Puerto Rico"]}
+  - {iso: PT, iso3: PRT, region: emea, names: ["Portugal"]}
+  - {iso: PY, iso3: PRY, region: amer, names: ["Paraguay"]}
+  - {iso: QA, iso3: QAT, region: emea, names: ["Qatar"]}
+  - {iso: RO, iso3: ROU, region: emea, names: ["Romania", "România"]}
+  - {iso: RS, iso3: SRB, region: emea, names: ["Serbia"]}
+  - {iso: RU, iso3: RUS, region: emea, names: ["Russia", "Russian Federation"]}
+  - {iso: RW, iso3: RWA, region: emea, names: ["Rwanda"]}
+  - {iso: SA, iso3: SAU, region: emea, names: ["Saudi Arabia", "KSA"]}
+  - {iso: SE, iso3: SWE, region: emea, names: ["Sweden", "Sverige"]}
+  - {iso: SG, iso3: SGP, region: apac, names: ["Singapore"]}
+  - {iso: SI, iso3: SVN, region: emea, names: ["Slovenia"]}
+  - {iso: SK, iso3: SVK, region: emea, names: ["Slovakia", "Slovak Republic"]}
+  - {iso: SN, iso3: SEN, region: emea, names: ["Senegal"]}
+  - {iso: SV, iso3: SLV, region: amer, names: ["El Salvador"]}
+  - {iso: TH, iso3: THA, region: apac, names: ["Thailand"]}
+  - {iso: TN, iso3: TUN, region: emea, names: ["Tunisia"]}
+  - {iso: TR, iso3: TUR, region: emea, names: ["Turkey", "Türkiye", "Turkiye"]}
+  - {iso: TT, iso3: TTO, region: amer, names: ["Trinidad and Tobago"]}
+  - {iso: TW, iso3: TWN, region: apac, names: ["Taiwan"]}
+  - {iso: TZ, iso3: TZA, region: emea, names: ["Tanzania"]}
+  - {iso: UA, iso3: UKR, region: emea, names: ["Ukraine"]}
+  - {iso: UG, iso3: UGA, region: emea, names: ["Uganda"]}
+  - {iso: US, iso3: USA, codes: ["US"], region: amer, names: ["United States", "United States of America", "USA", "U.S.A.", "U.S."]}
+  - {iso: UY, iso3: URY, region: amer, names: ["Uruguay"]}
+  - {iso: UZ, iso3: UZB, region: apac, names: ["Uzbekistan"]}
+  - {iso: VE, iso3: VEN, region: amer, names: ["Venezuela"]}
+  - {iso: VN, iso3: VNM, region: apac, names: ["Vietnam", "Viet Nam"]}
+  - {iso: ZA, iso3: ZAF, region: emea, names: ["South Africa"]}
+  - {iso: ZM, iso3: ZMB, region: emea, names: ["Zambia"]}
+  - {iso: ZW, iso3: ZWE, region: emea, names: ["Zimbabwe"]}
+
+# States and provinces: `, TX` and `Texas` both say the country. Codes count upper-case only.
+# Only where job locations habitually stop at the state.
+subdivisions:
+  US:
+    codes: ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+    names: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District of Columbia", "D.C.", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+  CA:
+    codes: ["AB", "BC", "MB", "NB", "NL", "NS", "ON", "PE", "QC", "SK"]
+    names: ["Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland", "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan"]
+  AU:
+    codes: ["NSW", "VIC", "QLD", "TAS", "ACT"]
+    names: ["New South Wales", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"]
+  IN:
+    codes: []
+    names: ["Maharashtra", "Karnataka", "Telangana", "Tamil Nadu", "Haryana", "Gujarat", "Uttar Pradesh", "West Bengal", "Delhi", "Andhra Pradesh", "Kerala"]

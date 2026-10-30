@@ -106,7 +106,7 @@ dégradés qu'on ne peut pas provoquer.
 | **I1** | Le normaliseur ne lève **jamais** d'exception sur une entrée arbitraire | `normalize` | `hypothesis` sur du texte quelconque |
 | **I2** | `normalize` est **déterministe** : deux appels sur la même entrée donnent le même résultat, horloge figée | `normalize` | corpus × 2 |
 | **I3** | Le préfiltre LLM a **zéro faux négatif** : toute offre écartée sans appel LLM aurait été rejetée par les règles de toute façon | `match.prefilter` | exhaustif sur le corpus + `hypothesis` |
-| **I4** | Une seule offre canonique par empreinte | `store` | test `db` avec republications |
+| **I4** | Une seule offre canonique par contenu, pour une empreinte et un board | `store` | test `db` avec republications |
 | **I5** | `tier='rejected'` ⟺ `rejection_reason` non nul | `match`, `store` | corpus + contrainte SQL |
 | **I6** | Les facettes restent non nulles sur leur propre dimension sous filtre | `store.facets` | test `db` |
 | **I7** | Toute offre a sa charge utile brute tant que la rétention ne l'a pas purgée | `store` | test `db` |

@@ -9,9 +9,10 @@ refine.
 """
 
 import re
+from collections.abc import Mapping
 
 from jobtracker.core.enums import RemoteMode
-from jobtracker.core.geo import GeoIndex, resolve_location
+from jobtracker.core.geo import Country, GeoIndex, resolve_location
 from jobtracker.core.models import Location
 
 _HYBRID_RE = re.compile(r"\bhybrid\b", re.IGNORECASE)
@@ -25,6 +26,10 @@ _PAREN_QUALIFIER_RE = re.compile(r"\(([^)]*)\)")
 _DASH_QUALIFIER_RE = re.compile(r"(?:remote|hybrid)\s*[-–:]\s*([a-z ]+)$", re.IGNORECASE)
 _SPLIT_RE = re.compile(r"\s*/\s*|\s*;\s*|\s+or\s+|\s+and\s+|\s*&\s*", re.IGNORECASE)
 _OFFICE_RE = re.compile(r"\boffices?\b", re.IGNORECASE)  # "Chicago Office" is Chicago
+_WORD_RE = re.compile(r"[^\W\d_]+(?:['’.][^\W\d_]+)*\.?")
+_DASH_SEPARATOR_RE = re.compile(r"\s[-–—]\s")
+_LONGEST_NAME = 5  # words: "United States of America"
+_LONGEST_CITY = 4
 
 _REGION_WORDS = {"emea": "emea", "amer": "amer", "americas": "amer", "apac": "apac"}
 _COUNTRY_RESTRICTION_WORDS = {
@@ -184,13 +189,16 @@ def _resolve_segment(segment: str, geo: GeoIndex, hq_country: str | None) -> lis
     if bare_country is not None:
         return [bare_country]
     if "," not in segment:
-        return [_resolve_leading_words(segment, geo, hq_country) or whole]
+        resolved = _resolve_leading_words(segment, geo, hq_country)
+        return [resolved or _resolve_country(segment, geo) or whole]
     distinct: dict[tuple[str | None, str | None], Location] = {}
     for part in segment.split(","):
         candidate = resolve_location(part.strip(), geo, hq_country=hq_country)
         if candidate.city is not None:
             distinct[(candidate.city, candidate.country)] = candidate
-    return list(distinct.values()) or [whole]
+    if distinct:
+        return list(distinct.values())
+    return [_resolve_country(segment, geo) or whole]
 
 
 def _resolve_leading_words(segment: str, geo: GeoIndex, hq_country: str | None) -> Location | None:
@@ -205,3 +213,81 @@ def _resolve_leading_words(segment: str, geo: GeoIndex, hq_country: str | None) 
         if candidate.city is not None:
             return candidate
     return None
+
+
+def _name_at_end(words: list[str], table: Mapping[str, Country]) -> tuple[Country, int] | None:
+    for size in range(min(_LONGEST_NAME, len(words)), 0, -1):
+        found = table.get(" ".join(words[-size:]).lower())
+        if found is not None:
+            return found, size
+    return None
+
+
+def _name_at_start(words: list[str], geo: GeoIndex) -> tuple[Country, int] | None:
+    for size in range(min(_LONGEST_NAME, len(words)), 0, -1):
+        found = geo.country_names.get(" ".join(words[:size]).lower())
+        if found is not None:
+            return found, size
+    code = geo.country_codes.get(words[0])
+    return (code, 1) if code is not None else None
+
+
+def _city_before(words: list[str], segment: str, geo: GeoIndex) -> str | None:
+    """What precedes the country, when it reads as a place name; a street address does not."""
+    while (found := _name_at_end(words, geo.subdivision_names)) is not None:
+        words = words[: -found[1]]
+    if "," in segment:
+        words = _WORD_RE.findall(segment.split(",", 1)[0])
+    if not words or len(words) > _LONGEST_CITY:
+        return None
+    if any(char.isdigit() for char in segment.split(",", 1)[0]):
+        return None
+    name = " ".join(words)
+    return name.title() if name.isupper() else name
+
+
+def _ends_on_code(segment: str, word: str, geo: GeoIndex) -> bool:
+    """`, TX` at the very end: alone, two capitals are too easily something else."""
+    return word in geo.subdivision_codes and "," in segment and segment.rstrip(" .").endswith(word)
+
+
+def _resolve_country(segment: str, geo: GeoIndex) -> Location | None:
+    """ "Pune, India", "Plano, TX", "Switzerland - Zürich", "IND-BLR-Tower 3": the city is not in
+    the referential, but the text states the country, or a state that settles it.
+
+    An exact reading of names only: nothing here guesses from the employer, and a location that
+    names no country stays unresolved.
+    """
+    words = _WORD_RE.findall(segment)
+    if not words:
+        return None
+    city: str | None = None
+    # The longest name wins: "New Mexico" is a state, whatever "Mexico" alone would say.
+    named = _name_at_end(words, geo.country_names)
+    state = _name_at_end(words, geo.subdivision_names)
+    tail = state if state is not None and (named is None or state[1] > named[1]) else named
+    if tail is None and words[-1] in geo.country_codes:
+        tail = geo.country_codes[words[-1]], 1
+    if tail is None and _ends_on_code(segment, words[-1], geo):
+        tail = geo.subdivision_codes[words[-1]], 1
+    if tail is not None:
+        country, size = tail
+        city = _city_before(words[:-size], segment, geo)
+    else:
+        head = _name_at_start(words, geo)
+        if head is None:
+            return None
+        country, size = head
+        if _DASH_SEPARATOR_RE.search(segment):
+            city = _city_before(words[size:], segment, geo)
+    # "Switzerland - Zürich" is the Zurich of the referential: one city, one spelling, its pin.
+    known = resolve_location(city, geo, hq_country=country.iso)
+    if known.city is not None and known.country == country.iso:
+        city = known.city
+    return Location(
+        city=city,
+        country=country.iso,
+        region=country.region,
+        remote_mode=RemoteMode.UNKNOWN,
+        raw=segment,
+    )

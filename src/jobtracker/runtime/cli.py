@@ -51,6 +51,7 @@ from jobtracker.runtime.watchdog import full_health_snapshot
 from jobtracker.store import llm_queue, llm_reviews
 from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_career, backup_database
 from jobtracker.store.companies import list_discovered, sync_companies
+from jobtracker.store.postings import find_duplicates, merge_duplicates
 from jobtracker.store.retention import run_retention
 from jobtracker.store.schema import MIGRATIONS_DIR
 
@@ -407,6 +408,24 @@ def cmd_llm_drain(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dedupe_postings(args: argparse.Namespace) -> int:
+    """Identical live postings on one board: a dry run by default, like `replay`."""
+    settings = load_settings()
+    conn = _connect_and_migrate(settings)
+    groups, left_alone = find_duplicates(conn)
+    extra = sum(len(group.drop) for group in groups)
+    print(f"{len(groups)} groups, {extra} postings to merge; {len(left_alone)} left alone")
+    for ids in left_alone:
+        print(f"  left alone, each carries the user's marks: {', '.join(ids)}")
+    if args.apply:
+        for group in groups:
+            merge_duplicates(conn, group)
+        conn.commit()
+        print(f"{extra} postings merged")
+    conn.close()
+    return 0
+
+
 def cmd_discover_employers(_args: argparse.Namespace) -> int:
     """Employers seen at an aggregator and absent from `companies.yaml` — WP13 §4.
 
@@ -639,6 +658,10 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "discover-employers", help="employers seen only at aggregators, for the registry"
     ).set_defaults(func=cmd_discover_employers)
+
+    dedupe = subparsers.add_parser("dedupe-postings", help="merge identical live postings")
+    dedupe.add_argument("--apply", action="store_true", help="write; the default is a dry run")
+    dedupe.set_defaults(func=cmd_dedupe_postings)
 
     replay = subparsers.add_parser("replay", help="replay the normalizer on archived inputs")
     replay.add_argument("--since", default=None, help="ISO date: only postings first seen since")

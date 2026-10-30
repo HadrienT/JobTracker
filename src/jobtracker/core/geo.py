@@ -7,7 +7,7 @@ that cannot be resolved yields `city=None`, never an invention.
 """
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -37,12 +37,24 @@ class ResolvedCity:
 
 
 @dataclass(frozen=True)
+class Country:
+    iso: str
+    region: str
+
+
+@dataclass(frozen=True)
 class GeoIndex:
     """Pre-built lookup tables — not a wire DTO, so a plain dataclass suffices."""
 
     alias_to_city: Mapping[str, str]
     by_city: Mapping[str, tuple[CityEntry, ...]]
     ambiguous_defaults: Mapping[str, str]
+    # What a location says about its country when its city is unknown (lower-cased names,
+    # codes as written).
+    country_names: Mapping[str, Country] = field(default_factory=dict)
+    country_codes: Mapping[str, Country] = field(default_factory=dict)
+    subdivision_names: Mapping[str, Country] = field(default_factory=dict)
+    subdivision_codes: Mapping[str, Country] = field(default_factory=dict)
 
 
 def _normalize(text: str) -> str:
@@ -96,7 +108,42 @@ def build_geo_index(data: Mapping[str, Any], *, source: Path | str | None = None
         alias_to_city=alias_to_city,
         by_city={k: tuple(v) for k, v in by_city.items()},
         ambiguous_defaults=ambiguous_defaults,
+        **_country_tables(data, where),
     )
+
+
+def _country_tables(data: Mapping[str, Any], where: str) -> dict[str, dict[str, Country]]:
+    """`countries` and `subdivisions`: names match case-insensitively, codes as written."""
+    names: dict[str, Country] = {}
+    codes: dict[str, Country] = {}
+    by_iso: dict[str, Country] = {}
+    for i, entry in enumerate(data.get("countries", [])):
+        try:
+            country = Country(iso=str(entry["iso"]).upper(), region=str(entry["region"]))
+            for code in (entry["iso3"], *entry.get("codes", [])):
+                codes[str(code)] = country
+            for name in entry["names"]:
+                names[_normalize(str(name))] = country
+        except (KeyError, TypeError) as exc:
+            raise ConfigError(f"geo config{where}: countries[{i}] is malformed: {exc}") from exc
+        by_iso[country.iso] = country
+
+    subdivision_names: dict[str, Country] = {}
+    subdivision_codes: dict[str, Country] = {}
+    for iso, entry in data.get("subdivisions", {}).items():
+        owner = by_iso.get(str(iso).upper())
+        if owner is None:
+            raise ConfigError(f"geo config{where}: subdivisions of unknown country {iso!r}")
+        for name in entry.get("names", []):
+            subdivision_names.setdefault(_normalize(str(name)), owner)
+        for code in entry.get("codes", []):
+            subdivision_codes.setdefault(str(code), owner)
+    return {
+        "country_names": names,
+        "country_codes": codes,
+        "subdivision_names": subdivision_names,
+        "subdivision_codes": subdivision_codes,
+    }
 
 
 def load_geo_index(path: Path) -> GeoIndex:

@@ -9,8 +9,10 @@ import base64
 import json
 import sqlite3
 from collections.abc import Sequence
+from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
+from itertools import groupby
 
 from pydantic import BaseModel
 from ulid import ULID
@@ -459,13 +461,40 @@ def _existing_by_identity(conn: sqlite3.Connection, posting: Posting) -> sqlite3
     return row
 
 
-def _canonical_by_fingerprint(conn: sqlite3.Connection, fingerprint: str) -> sqlite3.Row | None:
-    row: sqlite3.Row | None = conn.execute(
-        "SELECT posting_id, source, is_active FROM postings "
-        "WHERE fingerprint = ? AND is_canonical = 1",
-        (fingerprint,),
-    ).fetchone()
-    return row
+def _canonical_by_fingerprint(
+    conn: sqlite3.Connection, posting: Posting, *, excluding: str | None = None
+) -> sqlite3.Row | None:
+    """The canonical row `posting` repeats, if any (invariant I4, 03-INTERFACES §3.4).
+
+    A fingerprint only says "same employer, same title, same country". Across sources that is
+    a republication. Within one board it can be a sibling requisition, the same title in
+    another city: only the same content makes it a duplicate there, so a live sibling is kept
+    apart rather than hidden behind it. A board with nothing live left falls through: the
+    role was reposted, and `_takes_over` decides.
+    """
+    rows: list[sqlite3.Row] = [
+        row
+        for row in conn.execute(
+            "SELECT posting_id, source, company_slug, content_hash, is_active FROM postings "
+            "WHERE fingerprint = ? AND is_canonical = 1 "
+            "ORDER BY is_active DESC, last_seen_at DESC, posting_id",
+            (posting.fingerprint,),
+        )
+        if row["posting_id"] != excluding
+    ]
+    if not rows:
+        return None
+    if posting.source in AGGREGATOR_SOURCES:
+        return rows[0]
+    board = [
+        row
+        for row in rows
+        if row["source"] == posting.source.value and row["company_slug"] == posting.company_slug
+    ]
+    for row in board:
+        if row["content_hash"] == posting.content_hash:
+            return row
+    return None if any(row["is_active"] for row in board) else rows[0]
 
 
 def _takes_over(canonical: sqlite3.Row, source: Source) -> bool:
@@ -533,9 +562,9 @@ def resolve_dedup(conn: sqlite3.Connection, posting: Posting) -> str | None:
     """
     if _existing_by_identity(conn, posting) is not None:
         return None  # same (source, company_slug, source_job_id): always the canonical path
-    canonical = _canonical_by_fingerprint(conn, posting.fingerprint)
+    canonical = _canonical_by_fingerprint(conn, posting)
     if canonical is None:
-        return None  # brand new fingerprint: canonical
+        return None  # a new fingerprint, or a sibling of a live posting: canonical
     if _takes_over(canonical, posting.source):
         return None  # case 3, or a closed canonical: the new posting takes over
     return str(canonical["posting_id"])  # alias of the canonical posting
@@ -659,7 +688,8 @@ def upsert_posting(conn: sqlite3.Connection, posting: Posting, verdict: MatchVer
     """Insert or refresh a posting, resolving fingerprint collisions.
 
     blueprint/wp/WP02-store.md §4, three branches:
-    1. Unknown fingerprint -> new canonical posting.
+    1. Unknown fingerprint, or a live sibling requisition on the same board (see
+       `_canonical_by_fingerprint`) -> new canonical posting.
     2. Known fingerprint, the existing canonical is active and the new posting does
        not take it over (`_takes_over`) -> the new one becomes an alias, no posting
        row is created.
@@ -686,13 +716,16 @@ def upsert_posting(conn: sqlite3.Connection, posting: Posting, verdict: MatchVer
                 verdict,
                 is_canonical=bool(existing["is_canonical"]),
             )
+            if existing["is_canonical"]:
+                _merge_into_twin(conn, posting, posting_id)
         if not existing["is_canonical"]:
             _reclaim_canonical(conn, posting, posting_id)
         return posting_id
 
-    canonical = _canonical_by_fingerprint(conn, posting.fingerprint)
+    canonical = _canonical_by_fingerprint(conn, posting)
     if canonical is None:
         _write_posting_row(conn, posting, verdict, is_canonical=True)
+        _forget_alias(conn, posting.source.value, posting.source_job_id)
         return posting.posting_id
 
     if not _takes_over(canonical, posting.source):
@@ -721,15 +754,29 @@ def upsert_posting(conn: sqlite3.Connection, posting: Posting, verdict: MatchVer
     return posting.posting_id
 
 
+def _merge_into_twin(conn: sqlite3.Connection, posting: Posting, posting_id: str) -> None:
+    """An edit made this posting identical to another live one on its board: one row stays."""
+    twin = _canonical_by_fingerprint(conn, posting, excluding=posting_id)
+    if twin is None or twin["content_hash"] != posting.content_hash or not twin["is_active"]:
+        return
+    if twin["source"] != posting.source.value:
+        return
+    _demote(conn, new_id=str(twin["posting_id"]), old_id=posting_id)
+
+
+def _forget_alias(conn: sqlite3.Connection, source: str, source_job_id: str) -> None:
+    conn.execute(
+        "DELETE FROM posting_aliases WHERE source = ? AND source_job_id = ?",
+        (source, source_job_id),
+    )
+
+
 def _reclaim_canonical(conn: sqlite3.Connection, posting: Posting, posting_id: str) -> None:
     """A demoted posting listed again becomes canonical when nothing live holds its place."""
-    canonical = _canonical_by_fingerprint(conn, posting.fingerprint)
+    canonical = _canonical_by_fingerprint(conn, posting, excluding=posting_id)
     if canonical is None:
         conn.execute("UPDATE postings SET is_canonical = 1 WHERE posting_id = ?", (posting_id,))
-        conn.execute(
-            "DELETE FROM posting_aliases WHERE source = ? AND source_job_id = ?",
-            (posting.source.value, posting.source_job_id),
-        )
+        _forget_alias(conn, posting.source.value, posting.source_job_id)
     elif _takes_over(canonical, posting.source):
         conn.execute("UPDATE postings SET is_canonical = 1 WHERE posting_id = ?", (posting_id,))
         _take_over(conn, posting, posting_id, str(canonical["posting_id"]))
@@ -738,20 +785,23 @@ def _reclaim_canonical(conn: sqlite3.Connection, posting: Posting, posting_id: s
 def _take_over(conn: sqlite3.Connection, posting: Posting, new_id: str, old_id: str) -> None:
     """Demote `old_id` to an alias of `new_id`, already written as canonical.
 
-    Everything that pointed at the old posting follows the new one: its aliases, and
-    its user flags (favorite, hidden, triage, application status) unless the new
-    posting already has its own. The new posting's own identity stops being an alias:
-    it may have been recorded as one while the old posting was still listed.
+    The new posting's own identity stops being an alias: it may have been recorded as
+    one while the old posting was still listed.
     """
+    _forget_alias(conn, posting.source.value, posting.source_job_id)
+    _demote(conn, new_id=new_id, old_id=old_id)
+
+
+def _demote(conn: sqlite3.Connection, *, new_id: str, old_id: str) -> None:
+    """`old_id` becomes an alias of `new_id`. Everything that pointed at it follows: its
+    aliases, its applications, and its user flags (favorite, hidden, triage, application
+    status) unless the new posting already has its own."""
     old_row = conn.execute(
         "SELECT source, source_job_id, url, last_seen_at FROM postings WHERE posting_id = ?",
         (old_id,),
     ).fetchone()
     conn.execute("UPDATE postings SET is_canonical = 0 WHERE posting_id = ?", (old_id,))
-    conn.execute(
-        "DELETE FROM posting_aliases WHERE source = ? AND source_job_id = ?",
-        (posting.source.value, posting.source_job_id),
-    )
+    conn.execute("UPDATE applications SET posting_id = ? WHERE posting_id = ?", (new_id, old_id))
     conn.execute(
         "UPDATE posting_aliases SET canonical_id = ? WHERE canonical_id = ?", (new_id, old_id)
     )
@@ -777,6 +827,59 @@ def _take_over(conn: sqlite3.Connection, posting: Posting, new_id: str, old_id: 
     )
     if moved.rowcount == 0:
         conn.execute("DELETE FROM user_flags WHERE posting_id = ?", (old_id,))
+
+
+@dataclass(frozen=True)
+class DuplicateGroup:
+    """Live canonical rows of one board with the same fingerprint and the same content."""
+
+    keep: str
+    drop: tuple[str, ...]
+
+
+def find_duplicates(conn: sqlite3.Connection) -> tuple[list[DuplicateGroup], list[tuple[str, ...]]]:
+    """Duplicates to merge, and groups left alone: two rows carrying the user's own flags
+    cannot be merged without choosing between them. The row kept is the one the user marked,
+    else the best scored, else the most recent.
+
+    "3 Locations" says nothing about the place: two such rows without a description are not
+    known to be the same posting, whatever their hash.
+    """
+    rows = conn.execute(
+        """
+        SELECT p.posting_id, p.fingerprint, p.source, p.company_slug, p.content_hash,
+               u.posting_id IS NOT NULL AS flagged
+        FROM postings p
+        JOIN (
+            SELECT fingerprint, source, company_slug, content_hash FROM postings
+            WHERE is_canonical = 1 AND is_active = 1
+                AND COALESCE(location_raw, '') NOT GLOB '[0-9]* Location*'
+            GROUP BY 1, 2, 3, 4 HAVING COUNT(*) > 1
+        ) d ON (d.fingerprint, d.source, d.company_slug, d.content_hash)
+             = (p.fingerprint, p.source, p.company_slug, p.content_hash)
+        LEFT JOIN user_flags u ON u.posting_id = p.posting_id
+        WHERE p.is_canonical = 1 AND p.is_active = 1
+        ORDER BY p.fingerprint, p.source, p.company_slug, p.content_hash,
+                 flagged DESC, p.score DESC, p.last_seen_at DESC, p.posting_id DESC
+        """
+    ).fetchall()
+    groups: list[DuplicateGroup] = []
+    left_alone: list[tuple[str, ...]] = []
+    for _, members in groupby(
+        rows, key=lambda r: (r["fingerprint"], r["source"], r["company_slug"], r["content_hash"])
+    ):
+        group = list(members)
+        ids = tuple(str(row["posting_id"]) for row in group)
+        if sum(bool(row["flagged"]) for row in group) > 1:
+            left_alone.append(ids)
+        else:
+            groups.append(DuplicateGroup(keep=ids[0], drop=ids[1:]))
+    return groups, left_alone
+
+
+def merge_duplicates(conn: sqlite3.Connection, group: DuplicateGroup) -> None:
+    for posting_id in group.drop:
+        _demote(conn, new_id=group.keep, old_id=posting_id)
 
 
 def record_alias(conn: sqlite3.Connection, canonical_id: str, alias: RawPosting) -> None:
