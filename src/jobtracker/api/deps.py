@@ -35,6 +35,22 @@ def get_conn(request: Request) -> sqlite3.Connection:
 
 Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
+# An uploaded file is a CV, a letter, a screenshot: a few MB at most.
+_MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+
+
+async def read_upload(request: Request) -> bytes:
+    """The raw request body of a file upload, bounded."""
+    declared = int(request.headers.get("content-length") or 0)
+    if declared > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="file too large (20 MB at most)")
+    data = await request.body()
+    if not data:
+        raise HTTPException(status_code=422, detail="empty file")
+    if len(data) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="file too large (20 MB at most)")
+    return data
+
 
 def get_posting_filter(  # noqa: PLR0917 — one named query param per PostingFilter field
     countries: Annotated[list[str], Query()] = [],  # noqa: B006

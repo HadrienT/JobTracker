@@ -11,6 +11,10 @@
     "rejected",
     "withdrawn"
   ],
+  "CvSource": [
+    "confirmed",
+    "inferred"
+  ],
   "RemoteMode": [
     "hybrid",
     "onsite",

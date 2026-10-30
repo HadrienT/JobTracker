@@ -128,4 +128,99 @@ describe('ApplicationsScreen', () => {
     })
     expect(screen.queryByText('Tailspin Research')).not.toBeInTheDocument()
   })
+
+  it('shows the CV sent, and finds the applications without one', async () => {
+    const user = userEvent.setup()
+    renderScreen('/applications?view=all')
+    await screen.findByText('Northwind Capital')
+    const row = screen.getByText('Northwind Capital').closest('tr') as HTMLElement
+    expect(await within(row).findByText('v2')).toBeInTheDocument()
+    const assumed = screen.getByText('Tailspin Research').closest('tr') as HTMLElement
+    expect(within(assumed).getByTitle('Assumed, not confirmed')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'No CV (1)' }))
+    expect(screen.getAllByTestId('application-row')).toHaveLength(1)
+    expect(screen.getByText('Contoso Trading')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(window.location.search).toBe('?view=all&cv=none')
+    })
+  })
+
+  it('offers the versions, and the CVs written for one offer on demand', async () => {
+    const user = userEvent.setup()
+    renderScreen('/applications/p/app-open')
+    const panel = await screen.findByRole('dialog', { name: 'Quantitative Developer' })
+    const section = within(panel).getByRole('region', { name: 'CV' })
+    const menu = within(section).getByRole<HTMLSelectElement>('combobox', { name: 'CV used' })
+    await waitFor(() => {
+      expect(menu).toHaveValue('cv-v2')
+    })
+    expect(within(section).getByRole('link', { name: 'Preview ↗' })).toHaveAttribute('href', '/cvs/cv-v2/file')
+    expect(within(menu).queryByText(/Tailspin/)).not.toBeInTheDocument()
+    await user.click(within(section).getByRole('checkbox', { name: /written for one offer/ }))
+    expect(within(menu).getByText(/Tailspin/)).toBeInTheDocument()
+
+    await user.selectOptions(menu, 'cv-v1')
+    await waitFor(() => {
+      expect(menu).toHaveValue('cv-v1')
+    })
+    await user.selectOptions(menu, '')
+    await waitFor(() => {
+      expect(menu).toHaveValue('')
+    })
+  })
+
+  it('confirms a CV that was only assumed', async () => {
+    const user = userEvent.setup()
+    renderScreen('/applications/p/app-by-hand')
+    const panel = await screen.findByRole('dialog', { name: 'Junior Quant Researcher' })
+    await user.click(within(panel).getByRole('button', { name: 'Confirm this CV' }))
+    await waitFor(() => {
+      expect(within(panel).queryByText('Assumed, not confirmed.')).not.toBeInTheDocument()
+    })
+  })
+
+  it('adds a version and picks it, and refuses what is no PDF', async () => {
+    const user = userEvent.setup({ applyAccept: false })
+    renderScreen('/applications/p/app-rejected')
+    const panel = await screen.findByRole('dialog', { name: 'C++ Developer' })
+    const input = within(panel).getByLabelText('Add a CV version')
+    await user.upload(input, new File(['<html>'], 'page.pdf', { type: 'application/pdf' }))
+    expect(await within(panel).findByText(/not a PDF/)).toBeInTheDocument()
+
+    await user.upload(input, new File(['%PDF-1.5'], 'CV_v3.pdf', { type: 'application/pdf' }))
+    await waitFor(() => {
+      expect(within(panel).getByRole('combobox', { name: 'CV used' })).toHaveValue('cv-4')
+    })
+    expect(within(panel).getByRole('textbox', { name: 'CV name' })).toHaveValue('CV_v3')
+  })
+
+  it('renames a CV', async () => {
+    const user = userEvent.setup()
+    renderScreen('/applications/p/app-rejected')
+    const panel = await screen.findByRole('dialog', { name: 'C++ Developer' })
+    const name = await within(panel).findByRole('textbox', { name: 'CV name' })
+    await user.clear(name)
+    await user.type(name, 'first version')
+    await user.click(within(panel).getByRole('button', { name: 'Rename' }))
+    expect(await within(panel).findByRole('option', { name: /first version/ })).toBeInTheDocument()
+  })
+
+  it('presets the version in use on a new application', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('Northwind Capital')
+    await user.click(screen.getByRole('button', { name: 'New application' }))
+    const dialog = screen.getByRole('dialog', { name: 'New application' })
+    await waitFor(() => {
+      expect(within(dialog).getByRole('combobox', { name: 'CV sent' })).toHaveValue('cv-v2')
+    })
+  })
+
+  it('tells what became of each version', async () => {
+    renderScreen()
+    const summary = await screen.findByText('CV versions')
+    const table = within(summary.closest('details') as HTMLElement)
+    expect(table.getByText('(1 inferred)')).toBeInTheDocument()
+  })
 })

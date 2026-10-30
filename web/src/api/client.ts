@@ -178,6 +178,33 @@ export const api = {
       headers: { 'content-type': 'application/octet-stream' },
     })
   },
+  setApplicationCv(applicationId: string, cvId: string | null): Promise<Schemas['ApplicationDetailOut']> {
+    return request(`/applications/${encodeURIComponent(applicationId)}/cv`, {
+      method: 'POST',
+      body: JSON.stringify({ cv_id: cvId }),
+    })
+  },
+  // --- CVs (blueprint/wp/WP22-cvs.md §4) ---
+  listCvs(): Promise<Schemas['CvOut'][]> {
+    return request('/cvs')
+  },
+  uploadCv(file: File): Promise<Schemas['CvOut']> {
+    return request(`/cvs${buildSearch({ name: file.name })}`, {
+      method: 'POST',
+      body: file,
+      headers: { 'content-type': 'application/octet-stream' },
+    })
+  },
+  editCv(cvId: string, body: Schemas['CvEditRequest']): Promise<Schemas['CvOut']> {
+    return request(`/cvs/${encodeURIComponent(cvId)}/edit`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  /** A plain link to the PDF, opened by the browser. */
+  cvFileUrl(cvId: string): string {
+    return `${apiBase()}/cvs/${encodeURIComponent(cvId)}/file`
+  },
   /** A plain link to one of the application's files (PDF, screenshot), opened by the browser. */
   applicationFileUrl(applicationId: string, path: string): string {
     const segments = path.split('/').map(encodeURIComponent).join('/')

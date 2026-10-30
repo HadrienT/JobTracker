@@ -25,6 +25,7 @@ type PostingDetailOut = Schemas['PostingDetailOut']
 const PAGE_SIZE = 50
 const POSTINGS_ROOT_KEY = 'postings' as const
 const APPLICATIONS_ROOT_KEY = 'applications' as const
+const CVS_ROOT_KEY = 'cvs' as const
 
 export function postingsQueryKey(filter: PostingsFilter, sort: SortKey) {
   return [POSTINGS_ROOT_KEY, filter, sort] as const
@@ -288,6 +289,7 @@ function useApplicationWrite<TVariables>(write: (variables: TVariables) => Promi
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: [APPLICATIONS_ROOT_KEY] })
       void queryClient.invalidateQueries({ queryKey: [POSTINGS_ROOT_KEY] })
+      void queryClient.invalidateQueries({ queryKey: [CVS_ROOT_KEY] })
     },
   })
 }
@@ -323,6 +325,46 @@ export function useUploadApplicationFile() {
       api.uploadApplicationFile(applicationId, file),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: [APPLICATIONS_ROOT_KEY] })
+      void queryClient.invalidateQueries({ queryKey: [CVS_ROOT_KEY] })
+    },
+  })
+}
+
+// --- CVs (blueprint/wp/WP22-cvs.md §4) -------------------------------------------------------
+
+export type CvOut = Schemas['CvOut']
+
+/** Every CV, newest first — the versions are the pinned ones. */
+export function useCvs() {
+  return useQuery({
+    queryKey: [CVS_ROOT_KEY],
+    queryFn: () => api.listCvs(),
+  })
+}
+
+/** Also what confirms a CV that was only assumed: choosing it again is the user's answer. */
+export function useSetApplicationCv() {
+  return useApplicationWrite(({ applicationId, cvId }: { applicationId: string; cvId: string | null }) =>
+    api.setApplicationCv(applicationId, cvId),
+  )
+}
+
+export function useUploadCv() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => api.uploadCv(file),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: [CVS_ROOT_KEY] })
+    },
+  })
+}
+
+export function useEditCv() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ cvId, body }: { cvId: string; body: Schemas['CvEditRequest'] }) => api.editCv(cvId, body),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: [CVS_ROOT_KEY] })
     },
   })
 }

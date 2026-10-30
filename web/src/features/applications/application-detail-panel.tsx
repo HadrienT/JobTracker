@@ -5,10 +5,14 @@ import {
   type ApplicationStatus,
   useApplicationDetail,
   useArchiveOffer,
+  useCvs,
   useDeleteApplication,
   useEditApplication,
+  useEditCv,
   useRecordApplicationStatus,
+  useSetApplicationCv,
   useUploadApplicationFile,
+  useUploadCv,
 } from '@/api/queries'
 import { todayIso } from '@/features/applications/model'
 import { StatusBadge } from '@/features/feed/status-badge'
@@ -119,6 +123,7 @@ function ApplicationBody({ application, onDeleted }: { application: ApplicationD
 
       <StatusSection application={application} />
       <NoteSection key={`note-${id}`} application={application} />
+      <CvSection application={application} />
       <FilesSection application={application} />
       <OfferSection application={application} />
       <EditSection key={`edit-${id}`} application={application} />
@@ -268,6 +273,134 @@ function NoteSection({ application }: { application: ApplicationDetailOut }) {
       />
       {edit.isError && <p className="text-xs text-danger">Couldn&apos;t save the note.</p>}
     </section>
+  )
+}
+
+/**
+ * Which CV went out (blueprint/wp/WP22-cvs.md §5). The menu offers the versions; a CV written for
+ * one offer stays behind the checkbox. Choosing is the user's answer, so an assumed CV is
+ * confirmed by the same request.
+ */
+function CvSection({ application }: { application: ApplicationDetailOut }) {
+  const cvs = useCvs()
+  const choose = useSetApplicationCv()
+  const upload = useUploadCv()
+  const [tailored, setTailored] = useState(false)
+  const id = application.application_id
+  const all = cvs.data ?? []
+  const current = all.find((cv) => cv.cv_id === application.cv_id)
+  const options = all.filter((cv) => tailored || cv.pinned || cv.cv_id === application.cv_id)
+
+  return (
+    <section aria-label="CV" className={SECTION}>
+      <h3 className={HEADING}>CV used</h3>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          aria-label="CV used"
+          value={application.cv_id ?? ''}
+          disabled={choose.isPending}
+          onChange={(event) => {
+            choose.mutate({ applicationId: id, cvId: event.target.value || null })
+          }}
+          className={`${FIELD} min-w-0 max-w-full`}
+        >
+          <option value="">Not recorded</option>
+          {options.map((cv) => (
+            <option key={cv.cv_id} value={cv.cv_id}>
+              {cv.label} · {cv.created_at.slice(0, 10)} · {cv.applications} sent
+            </option>
+          ))}
+        </select>
+        {current && (
+          <a
+            href={api.cvFileUrl(current.cv_id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-text-primary underline"
+          >
+            Preview ↗
+          </a>
+        )}
+      </div>
+      {application.cv_source === 'inferred' && application.cv_id !== null && (
+        <p className="flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
+          Assumed, not confirmed.
+          <button
+            type="button"
+            className={BUTTON}
+            disabled={choose.isPending}
+            onClick={() => {
+              choose.mutate({ applicationId: id, cvId: application.cv_id })
+            }}
+          >
+            Confirm this CV
+          </button>
+        </p>
+      )}
+      <label className="flex items-center gap-2 text-xs text-text-secondary">
+        <input
+          type="checkbox"
+          checked={tailored}
+          onChange={(event) => {
+            setTailored(event.target.checked)
+          }}
+        />
+        Show the CVs written for one offer
+      </label>
+      {current && <RenameCv key={current.cv_id} cvId={current.cv_id} label={current.label} />}
+      <label className="flex items-center gap-2 text-sm text-text-secondary">
+        Add a version (PDF)
+        <input
+          type="file"
+          accept="application/pdf"
+          aria-label="Add a CV version"
+          disabled={upload.isPending}
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) {
+              upload.mutate(file, {
+                onSuccess: (cv) => {
+                  choose.mutate({ applicationId: id, cvId: cv.cv_id })
+                },
+              })
+            }
+            event.target.value = ''
+          }}
+          className="text-xs"
+        />
+      </label>
+      {cvs.isError && <p className="text-xs text-danger">Couldn&apos;t load the CVs.</p>}
+      {choose.isError && <p className="text-xs text-danger">Couldn&apos;t save the CV.</p>}
+      {upload.isError && <p className="text-xs text-danger">{upload.error.message}</p>}
+    </section>
+  )
+}
+
+function RenameCv({ cvId, label }: { cvId: string; label: string }) {
+  const edit = useEditCv()
+  const [draft, setDraft] = useState(label)
+  return (
+    <form
+      className="flex flex-wrap items-center gap-2"
+      onSubmit={(event) => {
+        event.preventDefault()
+        edit.mutate({ cvId, body: { label: draft.trim() } })
+      }}
+    >
+      <input
+        aria-label="CV name"
+        value={draft}
+        maxLength={200}
+        onChange={(event) => {
+          setDraft(event.target.value)
+        }}
+        className={`${FIELD} min-w-0 flex-1`}
+      />
+      <button type="submit" className={BUTTON} disabled={edit.isPending || draft.trim() === '' || draft === label}>
+        Rename
+      </button>
+      {edit.isError && <p className="text-xs text-danger">Couldn&apos;t rename the CV.</p>}
+    </form>
   )
 }
 

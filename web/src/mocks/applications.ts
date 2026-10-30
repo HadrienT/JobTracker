@@ -36,8 +36,45 @@ function application(overrides: Partial<Detail> & Pick<Detail, 'application_id' 
     dossier: null,
     posting_title: null,
     posting_url: null,
+    cv_id: null,
+    cv_source: null,
     ...overrides,
   }
+}
+
+function cvFixtures(): Schemas['CvOut'][] {
+  return [
+    {
+      cv_id: 'cv-tailored',
+      label: 'Tailspin — Junior QR',
+      file_name: 'CV_Tailspin.pdf',
+      size: 70_000,
+      pinned: false,
+      created_at: '2026-10-18T00:00:00Z',
+      applications: 0,
+      current: false,
+    },
+    {
+      cv_id: 'cv-v2',
+      label: 'v2',
+      file_name: 'CV_v2.pdf',
+      size: 80_000,
+      pinned: true,
+      created_at: '2026-10-13T00:00:00Z',
+      applications: 2,
+      current: true,
+    },
+    {
+      cv_id: 'cv-v1',
+      label: 'v1',
+      file_name: 'CV_v1.pdf',
+      size: 80_000,
+      pinned: true,
+      created_at: '2026-09-01T00:00:00Z',
+      applications: 1,
+      current: false,
+    },
+  ]
 }
 
 function fixtures(): Detail[] {
@@ -45,6 +82,8 @@ function fixtures(): Detail[] {
     application({
       application_id: 'app-open',
       company: 'Northwind Capital',
+      cv_id: 'cv-v2',
+      cv_source: 'confirmed',
       dossier: 'Northwind Capital/Quant Dev London',
       files: [
         {
@@ -77,6 +116,8 @@ function fixtures(): Detail[] {
     application({
       application_id: 'app-rejected',
       company: 'Fabrikam Securities',
+      cv_id: 'cv-v1',
+      cv_source: 'confirmed',
       title: 'C++ Developer',
       location: 'USA (Chicago) IL',
       countries: ['US'],
@@ -100,6 +141,8 @@ function fixtures(): Detail[] {
     application({
       application_id: 'app-by-hand',
       company: 'Tailspin Research',
+      cv_id: 'cv-v2',
+      cv_source: 'inferred',
       title: 'Junior Quant Researcher',
       location: 'Singapore',
       countries: ['SG'],
@@ -113,9 +156,11 @@ function fixtures(): Detail[] {
 }
 
 let store = new Map<string, Detail>()
+let cvs = new Map<string, Schemas['CvOut']>()
 
 export function resetApplications(): void {
   store = new Map(fixtures().map((a) => [a.application_id, a]))
+  cvs = new Map(cvFixtures().map((cv) => [cv.cv_id, cv]))
 }
 resetApplications()
 
@@ -138,6 +183,8 @@ const SUMMARY_FIELDS = [
   'last_news_on',
   'reached_interview',
   'countries',
+  'cv_id',
+  'cv_source',
 ] as const
 
 function summary(detail: Detail): Schemas['ApplicationOut'] {
@@ -188,6 +235,8 @@ export const applicationHandlers = [
       events: [{ on_date: appliedOn, status: 'applied', reason: '' }],
       files: offer,
       dossier: id,
+      cv_id: body.cv_id ?? null,
+      cv_source: body.cv_id ? 'confirmed' : null,
     })
     store.set(id, created)
     return HttpResponse.json(created, { status: 201 })
@@ -226,6 +275,46 @@ export const applicationHandlers = [
     const changes = Object.fromEntries(Object.entries(body).filter(([, value]) => value !== null))
     const updated: Detail = { ...found, ...changes }
     store.set(found.application_id, updated)
+    return HttpResponse.json(updated)
+  }),
+
+  http.post(`${API_BASE}/applications/:id/cv`, async ({ params, request }) => {
+    const found = store.get(String(params.id))
+    if (!found) return notFound(params.id)
+    const { cv_id: cvId } = (await request.json()) as Schemas['ApplicationCvRequest']
+    const updated: Detail = { ...found, cv_id: cvId, cv_source: cvId === null ? null : 'confirmed' }
+    store.set(found.application_id, updated)
+    return HttpResponse.json(updated)
+  }),
+
+  http.get(`${API_BASE}/cvs`, () => HttpResponse.json([...cvs.values()])),
+
+  http.post(`${API_BASE}/cvs`, async ({ request }) => {
+    const name = new URL(request.url).searchParams.get('name') ?? 'cv.pdf'
+    const data = await request.arrayBuffer()
+    if (new TextDecoder().decode(data.slice(0, 5)) !== '%PDF-') {
+      return HttpResponse.json({ detail: `not a PDF: '${name}'` }, { status: 422 })
+    }
+    const cv: Schemas['CvOut'] = {
+      cv_id: `cv-${String(cvs.size + 1)}`,
+      label: name.replace(/\.pdf$/, ''),
+      file_name: name,
+      size: data.byteLength,
+      pinned: true,
+      created_at: '2026-10-21T00:00:00Z',
+      applications: 0,
+      current: false,
+    }
+    cvs.set(cv.cv_id, cv)
+    return HttpResponse.json(cv, { status: 201 })
+  }),
+
+  http.post(`${API_BASE}/cvs/:id/edit`, async ({ params, request }) => {
+    const found = cvs.get(String(params.id))
+    if (!found) return HttpResponse.json({ detail: 'no such CV' }, { status: 404 })
+    const body = (await request.json()) as Schemas['CvEditRequest']
+    const updated = { ...found, label: body.label ?? found.label, pinned: body.pinned ?? found.pinned }
+    cvs.set(found.cv_id, updated)
     return HttpResponse.json(updated)
   }),
 

@@ -3,7 +3,7 @@
 change what the front already depends on.
 """
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Any
 
@@ -14,6 +14,7 @@ from jobtracker.career.lifecycle import is_abandoned, is_open, last_news
 from jobtracker.core.enums import (
     ApplicationOrigin,
     ApplicationStatus,
+    CvSource,
     RemoteMode,
     RoleFamily,
     SalaryPeriod,
@@ -24,7 +25,7 @@ from jobtracker.core.enums import (
     VisaStatus,
 )
 from jobtracker.core.geo import GeoIndex
-from jobtracker.core.models import Application, Reason
+from jobtracker.core.models import Application, Cv, Reason
 from jobtracker.store.postings import PostingAliasRow, PostingRow
 
 # A note is a reminder, not a document: bounded so one request cannot fill the database.
@@ -240,6 +241,8 @@ class ApplicationOut(BaseModel):
     reached_interview: bool
     # ISO 3166-1 alpha-2, read off the location (else the title) — the sheet's colour code.
     countries: tuple[str, ...]
+    cv_id: str | None
+    cv_source: CvSource | None
 
     @classmethod
     def from_application(
@@ -268,6 +271,8 @@ class ApplicationOut(BaseModel):
             )
             or application.status in {ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER},
             countries=application_countries(application.location, application.title, geo=geo),
+            cv_id=application.cv_id,
+            cv_source=application.cv_source,
         )
 
 
@@ -279,9 +284,38 @@ class ApplicationDetailOut(ApplicationOut):
     posting_url: str | None
 
 
+class CvOut(BaseModel):
+    cv_id: str
+    label: str
+    file_name: str
+    size: int
+    pinned: bool  # a version, offered in the menus
+    created_at: datetime
+    applications: int
+    current: bool  # the version a new application assumes
+
+    @classmethod
+    def from_cv(cls, cv: Cv, *, current: bool) -> "CvOut":
+        return cls(**cv.model_dump(), current=current)
+
+
+class CvEditRequest(BaseModel):
+    """Only the fields given change."""
+
+    label: _Name | None = None
+    pinned: bool | None = None
+
+
+class ApplicationCvRequest(BaseModel):
+    """The CV sent, as the user says: `null` when it is unknown after all."""
+
+    cv_id: str | None
+
+
 class ApplicationCreate(BaseModel):
     """An application typed in. `url` of a collected posting links it; `offer_text` (the offer
-    pasted) is typeset into the archived offer.pdf."""
+    pasted) is typeset into the archived offer.pdf. `cv_id` left out assumes the current version
+    (inferred); given, even `null`, it is the user's answer."""
 
     company: _Name
     title: _Name
@@ -291,6 +325,7 @@ class ApplicationCreate(BaseModel):
     status: ApplicationStatus = ApplicationStatus.APPLIED
     note: Annotated[str, StringConstraints(max_length=NOTE_MAX_LENGTH)] = ""
     offer_text: Annotated[str, StringConstraints(max_length=OFFER_TEXT_MAX_LENGTH)] | None = None
+    cv_id: str | None = None
 
 
 class ApplicationStatusRequest(BaseModel):

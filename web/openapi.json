@@ -29,7 +29,7 @@
         "type": "object"
       },
       "ApplicationCreate": {
-        "description": "An application typed in. `url` of a collected posting links it; `offer_text` (the offer\npasted) is typeset into the archived offer.pdf.",
+        "description": "An application typed in. `url` of a collected posting links it; `offer_text` (the offer\npasted) is typeset into the archived offer.pdf. `cv_id` left out assumes the current version\n(inferred); given, even `null`, it is the user's answer.",
         "properties": {
           "applied_on": {
             "anyOf": [
@@ -48,6 +48,17 @@
             "minLength": 1,
             "title": "Company",
             "type": "string"
+          },
+          "cv_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv Id"
           },
           "location": {
             "anyOf": [
@@ -109,6 +120,27 @@
         "title": "ApplicationCreate",
         "type": "object"
       },
+      "ApplicationCvRequest": {
+        "description": "The CV sent, as the user says: `null` when it is unknown after all.",
+        "properties": {
+          "cv_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv Id"
+          }
+        },
+        "required": [
+          "cv_id"
+        ],
+        "title": "ApplicationCvRequest",
+        "type": "object"
+      },
       "ApplicationDetailOut": {
         "properties": {
           "abandoned": {
@@ -168,6 +200,27 @@
             },
             "title": "Countries",
             "type": "array"
+          },
+          "cv_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv Id"
+          },
+          "cv_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CvSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "dossier": {
             "anyOf": [
@@ -303,6 +356,8 @@
           "last_news_on",
           "reached_interview",
           "countries",
+          "cv_id",
+          "cv_source",
           "events",
           "files",
           "dossier",
@@ -509,6 +564,27 @@
             "title": "Countries",
             "type": "array"
           },
+          "cv_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv Id"
+          },
+          "cv_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CvSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "last_news_on": {
             "anyOf": [
               {
@@ -595,7 +671,9 @@
           "abandoned",
           "last_news_on",
           "reached_interview",
-          "countries"
+          "countries",
+          "cv_id",
+          "cv_source"
         ],
         "title": "ApplicationOut",
         "type": "object"
@@ -780,6 +858,95 @@
         ],
         "title": "CompensationOut",
         "type": "object"
+      },
+      "CvEditRequest": {
+        "description": "Only the fields given change.",
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "pinned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned"
+          }
+        },
+        "title": "CvEditRequest",
+        "type": "object"
+      },
+      "CvOut": {
+        "properties": {
+          "applications": {
+            "title": "Applications",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          },
+          "cv_id": {
+            "title": "Cv Id",
+            "type": "string"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cv_id",
+          "label",
+          "file_name",
+          "size",
+          "pinned",
+          "created_at",
+          "applications",
+          "current"
+        ],
+        "title": "CvOut",
+        "type": "object"
+      },
+      "CvSource": {
+        "description": "How an application's CV is known (blueprint/wp/WP22-cvs.md \u00a72).",
+        "enum": [
+          "confirmed",
+          "inferred"
+        ],
+        "title": "CvSource",
+        "type": "string"
       },
       "FacetCounts": {
         "properties": {
@@ -2051,6 +2218,59 @@
         ]
       }
     },
+    "/applications/{application_id}/cv": {
+      "post": {
+        "description": "The CV sent, as the user says: this also confirms one that was only assumed.",
+        "operationId": "post_application_cv_applications__application_id__cv_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "title": "Application Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCvRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Application Cv",
+        "tags": [
+          "applications"
+        ]
+      }
+    },
     "/applications/{application_id}/delete": {
       "post": {
         "description": "The row goes; its folder stays on disk.",
@@ -2412,6 +2632,166 @@
         "summary": "Get Companies",
         "tags": [
           "companies"
+        ]
+      }
+    },
+    "/cvs": {
+      "get": {
+        "description": "Every CV, newest first; `pinned` are the versions, `current` the one to assume next.",
+        "operationId": "get_cvs_cvs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CvOut"
+                  },
+                  "title": "Response Get Cvs Cvs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Cvs",
+        "tags": [
+          "cvs"
+        ]
+      },
+      "post": {
+        "description": "Add a version: the raw PDF, named by `name`.",
+        "operationId": "post_cv_cvs_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CvOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Cv",
+        "tags": [
+          "cvs"
+        ]
+      }
+    },
+    "/cvs/{cv_id}/edit": {
+      "post": {
+        "operationId": "post_cv_edit_cvs__cv_id__edit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cv_id",
+            "required": true,
+            "schema": {
+              "title": "Cv Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CvEditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CvOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Cv Edit",
+        "tags": [
+          "cvs"
+        ]
+      }
+    },
+    "/cvs/{cv_id}/file": {
+      "get": {
+        "description": "The PDF itself, shown inline. The id comes from the table, never from the path as given.",
+        "operationId": "get_cv_file_cvs__cv_id__file_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cv_id",
+            "required": true,
+            "schema": {
+              "title": "Cv Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Cv File",
+        "tags": [
+          "cvs"
         ]
       }
     },
