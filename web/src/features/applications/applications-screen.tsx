@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { type ApplicationOut, useApplications } from '@/api/queries'
+import { type ApplicationOut, type CvOut, useApplications, useCvs } from '@/api/queries'
 import { ApplicationDetailPanel } from '@/features/applications/application-detail-panel'
 import {
   type ApplicationFilter,
@@ -7,6 +7,7 @@ import {
   answerDelay,
   applicationStats,
   countryCounts,
+  cvStats,
   filterApplications,
   type SortColumn,
   sortApplications,
@@ -33,6 +34,7 @@ function readFilter(): ApplicationFilter {
     query: params.get('q') ?? '',
     year: Number.isInteger(year) && year > 2000 ? year : null,
     country: /^[A-Z]{2}$/.test(params.get('country') ?? '') ? params.get('country') : null,
+    noCv: params.get('cv') === 'none',
   }
 }
 
@@ -42,6 +44,7 @@ function writeFilter(filter: ApplicationFilter) {
   if (filter.query !== '') params.set('q', filter.query)
   if (filter.year !== null) params.set('year', String(filter.year))
   if (filter.country !== null) params.set('country', filter.country)
+  if (filter.noCv) params.set('cv', 'none')
   const search = params.toString()
   window.history.replaceState(null, '', `${window.location.pathname}${search === '' ? '' : `?${search}`}`)
 }
@@ -67,6 +70,7 @@ const COLUMNS: { column: SortColumn | null; label: string; wide?: boolean }[] = 
   { column: null, label: 'Location', wide: true },
   { column: 'status', label: 'Status' },
   { column: 'answer', label: 'Answer', wide: true },
+  { column: null, label: 'CV', wide: true },
 ]
 
 const WIDE_ONLY = 'hidden md:table-cell'
@@ -78,6 +82,7 @@ const WIDE_ONLY = 'hidden md:table-cell'
  */
 export function ApplicationsScreen() {
   const applications = useApplications()
+  const cvs = useCvs()
   const route = usePostingRoute('/applications')
   const [filter, setFilter] = useState<ApplicationFilter>(readFilter)
   const [sort, setSort] = useState<{ column: SortColumn; descending: boolean }>({
@@ -98,6 +103,10 @@ export function ApplicationsScreen() {
     [all, filter, sort, today],
   )
   const years = useMemo(() => yearsOf(all), [all])
+  const allCvs = useMemo(() => cvs.data ?? [], [cvs.data])
+  const cvLabels = useMemo(() => new Map(allCvs.map((cv) => [cv.cv_id, cv.label])), [allCvs])
+  const versions = useMemo(() => cvStats(allCvs, all), [allCvs, all])
+  const withoutCv = useMemo(() => all.filter((application) => application.cv_id === null).length, [all])
   // The legend counts what the other filters leave, so a click never lands on an empty list.
   const countries = useMemo(() => countryCounts(filterApplications(all, { ...filter, country: null })), [all, filter])
 
@@ -155,6 +164,8 @@ export function ApplicationsScreen() {
             />
           </section>
 
+          {versions.length > 0 && <CvVersions versions={versions} />}
+
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <div role="group" aria-label="View" className="flex flex-wrap gap-1">
               {VIEWS.map((view) => (
@@ -210,6 +221,21 @@ export function ApplicationsScreen() {
                 ))}
               </select>
             </label>
+            <button
+              type="button"
+              aria-pressed={filter.noCv}
+              onClick={() => {
+                setFilter((current) => ({ ...current, noCv: !current.noCv }))
+              }}
+              className={cn(
+                'rounded-md border px-2 py-1 text-sm',
+                filter.noCv
+                  ? 'border-text-secondary bg-surface-elevated text-text-primary'
+                  : 'border-border text-text-secondary hover:text-text-primary',
+              )}
+            >
+              No CV ({withoutCv})
+            </button>
             <span className="text-xs text-text-tertiary" aria-live="polite">
               {shown.length} shown
             </span>
@@ -293,6 +319,7 @@ export function ApplicationsScreen() {
                     key={application.application_id}
                     application={application}
                     today={today}
+                    cvLabel={application.cv_id === null ? null : (cvLabels.get(application.cv_id) ?? null)}
                     onOpen={route.openPosting}
                   />
                 ))}
@@ -320,13 +347,51 @@ export function ApplicationsScreen() {
   )
 }
 
+function CvVersions({ versions }: { versions: ReturnType<typeof cvStats> }) {
+  return (
+    <details className="mb-4 rounded-md border border-border px-3 py-2 text-sm">
+      <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-text-secondary">
+        CV versions
+      </summary>
+      <table className="mt-2 w-full border-collapse">
+        <thead>
+          <tr className="text-left text-xs text-text-secondary">
+            <th className="py-1 pr-4 font-normal">Version</th>
+            <th className="py-1 pr-4 font-normal">Sent</th>
+            <th className="py-1 pr-4 font-normal">Interviews</th>
+            <th className="py-1 font-normal">Response rate</th>
+          </tr>
+        </thead>
+        <tbody className="font-tabular text-text-primary">
+          {versions.map(({ cv, sent, inferred, interviews, responseRate }) => (
+            <tr key={cv.cv_id} className="border-t border-border/60">
+              <td className="py-1 pr-4">{cv.label}</td>
+              <td className="py-1 pr-4">
+                {sent}
+                {inferred > 0 && <span className="text-text-tertiary"> ({inferred} inferred)</span>}
+              </td>
+              <td className="py-1 pr-4">{interviews}</td>
+              <td className="py-1">{percent(responseRate)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-2 text-xs text-text-tertiary">
+        A trend, not a cause: each version went to different offers.
+      </p>
+    </details>
+  )
+}
+
 function ApplicationRow({
   application,
   today,
+  cvLabel,
   onOpen,
 }: {
   application: ApplicationOut
   today: string
+  cvLabel: CvOut['label'] | null
   onOpen: (applicationId: string) => void
 }) {
   const delay = answerDelay(application, today)
@@ -396,6 +461,15 @@ function ApplicationRow({
       </td>
       <td className={cn('whitespace-nowrap py-1.5 pr-4 font-tabular text-text-secondary', WIDE_ONLY)}>
         {delay === null ? '—' : delay.waiting ? `waiting ${String(delay.days)}d` : `${String(delay.days)}d`}
+      </td>
+      <td className={cn('max-w-44 truncate py-1.5 pr-4 text-text-secondary', WIDE_ONLY)} title={cvLabel ?? undefined}>
+        {cvLabel ?? <span className="text-text-tertiary">—</span>}
+        {application.cv_source === 'inferred' && (
+          <span title="Assumed, not confirmed" className="text-text-tertiary">
+            {' '}
+            ?
+          </span>
+        )}
       </td>
     </tr>
   )

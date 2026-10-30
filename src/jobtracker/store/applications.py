@@ -19,15 +19,17 @@ from collections import defaultdict
 from datetime import date
 
 from jobtracker.core.clock import utc_now
-from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus
+from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus, CvSource
 from jobtracker.core.models import Application, ApplicationEvent
 
 _CLOSING = frozenset({ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN})
 _SLUG = re.compile(r"[^a-z0-9]+")
 _COLUMNS = (
     "application_id, company, company_slug, title, location, applied_on, applied_on_estimated, "
-    "closed_on, status, reason, posting_id, dossier, origin, note, created_at, updated_at"
+    "closed_on, status, reason, posting_id, dossier, origin, note, created_at, updated_at, "
+    "cv_id, cv_source"
 )
+_PLACEHOLDERS = ", ".join("?" * 18)
 
 
 def _iso(day: date | None) -> str | None:
@@ -66,6 +68,8 @@ def _values(application: Application, now: str) -> tuple[object, ...]:
         application.note,
         now,
         now,
+        application.cv_id,
+        application.cv_source.value if application.cv_source else None,
     )
 
 
@@ -120,7 +124,7 @@ def _mirror(conn: sqlite3.Connection, posting_id: str | None) -> None:
 def create_application(conn: sqlite3.Connection, application: Application) -> None:
     """A new application (feed, CLI). Fails on an existing id: an edit is not a creation."""
     conn.execute(
-        f"INSERT INTO applications ({_COLUMNS}) VALUES ({', '.join('?' * 16)})",
+        f"INSERT INTO applications ({_COLUMNS}) VALUES ({_PLACEHOLDERS})",
         _values(application, utc_now().isoformat()),
     )
     _write_events(conn, application.application_id, application.events)
@@ -133,7 +137,7 @@ def import_application(conn: sqlite3.Connection, application: Application) -> bo
     now = utc_now().isoformat()
     cursor = conn.execute(
         f"""
-        INSERT INTO applications ({_COLUMNS}) VALUES ({", ".join("?" * 16)})
+        INSERT INTO applications ({_COLUMNS}) VALUES ({_PLACEHOLDERS})
         ON CONFLICT (application_id) DO UPDATE SET
             company = excluded.company, company_slug = excluded.company_slug,
             title = excluded.title, location = excluded.location,
@@ -229,6 +233,33 @@ def update_application(conn: sqlite3.Connection, application_id: str, **columns:
     _touch(conn, application_id, **columns)
 
 
+def set_application_cv(
+    conn: sqlite3.Connection,
+    application_id: str,
+    cv_id: str | None,
+    source: CvSource = CvSource.CONFIRMED,
+) -> None:
+    """The CV sent, as a hand edit (None: unknown after all)."""
+    _touch(
+        conn,
+        application_id,
+        cv_id=cv_id,
+        cv_source=source.value if cv_id is not None else None,
+    )
+
+
+def infer_application_cv(
+    conn: sqlite3.Connection, application_id: str, cv_id: str, source: CvSource
+) -> None:
+    """The backfill's link: only on an application without a CV, and without moving
+    `updated_at` — it is no hand edit, so the row stays the import's to refresh."""
+    conn.execute(
+        "UPDATE applications SET cv_id = ?, cv_source = ? "
+        "WHERE application_id = ? AND cv_id IS NULL",
+        (cv_id, source.value, application_id),
+    )
+
+
 def delete_application(conn: sqlite3.Connection, application_id: str) -> None:
     posting_id = _posting_of(conn, application_id)
     conn.execute("DELETE FROM applications WHERE application_id = ?", (application_id,))
@@ -275,6 +306,8 @@ def _from_row(row: sqlite3.Row, events: list[ApplicationEvent]) -> Application:
         origin=ApplicationOrigin(row["origin"]),
         note=row["note"],
         events=tuple(events),
+        cv_id=row["cv_id"],
+        cv_source=CvSource(row["cv_source"]) if row["cv_source"] else None,
     )
 
 

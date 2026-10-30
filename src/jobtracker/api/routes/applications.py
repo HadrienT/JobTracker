@@ -12,9 +12,10 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 
-from jobtracker.api.deps import Conn
+from jobtracker.api.deps import Conn, read_upload
 from jobtracker.api.schemas import (
     ApplicationCreate,
+    ApplicationCvRequest,
     ApplicationDetailOut,
     ApplicationEditRequest,
     ApplicationEventOut,
@@ -24,7 +25,9 @@ from jobtracker.api.schemas import (
     OfferTextRequest,
 )
 from jobtracker.api.tracking import (
+    adopt_attached_cv,
     application_files,
+    assume_current_cv,
     ensure_folder,
     manual_application,
     offer_pdf_for,
@@ -35,7 +38,7 @@ from jobtracker.api.tracking import (
 from jobtracker.career import offer
 from jobtracker.career.names import company_key
 from jobtracker.core.clock import utc_now
-from jobtracker.core.enums import ApplicationOrigin
+from jobtracker.core.enums import ApplicationOrigin, CvSource
 from jobtracker.core.errors import RenderError
 from jobtracker.core.models import Application
 from jobtracker.store.applications import (
@@ -44,15 +47,14 @@ from jobtracker.store.applications import (
     get_application,
     list_applications,
     record_status,
+    set_application_cv,
     update_application,
 )
 from jobtracker.store.companies import list_companies
+from jobtracker.store.cvs import get_cv
 from jobtracker.store.postings import get_posting_row, posting_id_by_url
 
 router = APIRouter(tags=["applications"])
-
-# An attached file is a CV, a letter, a screenshot: a few MB at most.
-_MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 
 def _found(conn: Conn, application_id: str) -> Application:
@@ -60,6 +62,12 @@ def _found(conn: Conn, application_id: str) -> Application:
     if application is None:
         raise HTTPException(status_code=404, detail=f"no such application: {application_id!r}")
     return application
+
+
+def _known_cv(conn: Conn, cv_id: str) -> str:
+    if get_cv(conn, cv_id) is None:
+        raise HTTPException(status_code=422, detail=f"no such CV: {cv_id!r}")
+    return cv_id
 
 
 def _detail(conn: Conn, request: Request, application: Application) -> ApplicationDetailOut:
@@ -117,6 +125,7 @@ def post_application(
     (else that posting) is archived as offer.pdf once the response is sent."""
     today = utc_now().date()
     posting_id = posting_id_by_url(conn, body.url) if body.url else None
+    chosen = body.cv_id and _known_cv(conn, body.cv_id)
     application = manual_application(
         company=body.company,
         title=body.title,
@@ -128,6 +137,12 @@ def post_application(
         origin=ApplicationOrigin.CLI,
         posting_id=posting_id,
     )
+    if "cv_id" not in body.model_fields_set:
+        application = assume_current_cv(conn, application)
+    elif chosen:
+        application = application.model_copy(
+            update={"cv_id": chosen, "cv_source": CvSource.CONFIRMED}
+        )
     create_application(conn, application)
     conn.commit()
     pending = offer_pdf_for(
@@ -174,6 +189,18 @@ def post_application_edit(
     return _detail(conn, request, _found(conn, application_id))
 
 
+@router.post("/applications/{application_id}/cv")
+def post_application_cv(
+    application_id: str, body: ApplicationCvRequest, conn: Conn, request: Request
+) -> ApplicationDetailOut:
+    """The CV sent, as the user says: this also confirms one that was only assumed."""
+    application = _found(conn, application_id)
+    cv_id = body.cv_id and _known_cv(conn, body.cv_id)
+    set_application_cv(conn, application.application_id, cv_id)
+    conn.commit()
+    return _detail(conn, request, _found(conn, application_id))
+
+
 @router.post("/applications/{application_id}/delete", status_code=204)
 def post_application_delete(application_id: str, conn: Conn) -> Response:
     """The row goes; its folder stays on disk."""
@@ -211,20 +238,14 @@ async def post_application_file(
 ) -> ApplicationFileOut:
     """Attach a file (the CV sent, a letter, a screenshot): the raw body, named by `name`."""
     application = _found(conn, application_id)
-    declared = int(request.headers.get("content-length") or 0)
-    if declared > _MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="file too large (20 MB at most)")
-    data = await request.body()
-    if not data:
-        raise HTTPException(status_code=422, detail="empty file")
-    if len(data) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="file too large (20 MB at most)")
+    data = await read_upload(request)
     career_root = request.app.state.career_root
     folder = ensure_folder(conn, career_root, application)
     try:
         target = store_file(folder, name, data)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    adopt_attached_cv(conn, career_root, _found(conn, application_id), target)
     updated = _found(conn, application_id)
     listed = {f.name: f for f in application_files(career_root, updated)}
     stored = listed[target.name]

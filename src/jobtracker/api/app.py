@@ -13,7 +13,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from jobtracker.api.routes import applications, companies, export, facets, health, postings
+from jobtracker.api.routes import applications, companies, cvs, export, facets, health, postings
 from jobtracker.api.routes import map as map_routes
 from jobtracker.career.names import alias_map
 from jobtracker.core.config import load_settings, load_yaml
@@ -59,3 +59,4 @@ app.include_router(health.router)
 app.include_router(map_routes.router)
 app.include_router(export.router)
 app.include_router(applications.router)
+app.include_router(cvs.router)

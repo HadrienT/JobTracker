@@ -1,4 +1,4 @@
-import type { ApplicationOut, ApplicationStatus } from '@/api/queries'
+import type { ApplicationOut, ApplicationStatus, CvOut } from '@/api/queries'
 
 /**
  * The Applications tab's views, filters, sort and numbers (blueprint/wp/WP21-applications.md §6)
@@ -25,6 +25,8 @@ export interface ApplicationFilter {
   year: number | null
   /** ISO code; an application in several countries matches each of them. */
   country: string | null
+  /** Only the applications whose CV is not recorded: what is left to fill in. */
+  noCv: boolean
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -79,6 +81,7 @@ export function filterApplications(applications: ApplicationOut[], filter: Appli
     if (!inView(application, filter.view)) return false
     if (filter.year !== null && application.applied_on?.slice(0, 4) !== String(filter.year)) return false
     if (filter.country !== null && !application.countries.includes(filter.country)) return false
+    if (filter.noCv && application.cv_id !== null) return false
     if (needle === '') return true
     const haystack = fold([application.company, application.title ?? '', application.location ?? ''].join(' '))
     return haystack.includes(needle)
@@ -180,6 +183,36 @@ export function applicationStats(applications: ApplicationOut[]): ApplicationSta
     responseRate: applications.length === 0 ? null : answered / applications.length,
     medianDaysToRejection: median(delays),
   }
+}
+
+export interface CvStats {
+  cv: CvOut
+  sent: number
+  /** Links only assumed, not confirmed: the rate below is as good as they are. */
+  inferred: number
+  interviews: number
+  responseRate: number | null
+}
+
+/**
+ * The versions in use, newest first, with what became of the applications sent with each. The
+ * same definition of an answer as `applicationStats`; the offers aimed at differ from one version
+ * to the next, so this tells a trend, not a cause.
+ */
+export function cvStats(cvs: CvOut[], applications: ApplicationOut[]): CvStats[] {
+  return cvs.flatMap((cv) => {
+    const sent = applications.filter((a) => a.cv_id === cv.cv_id)
+    if (!cv.pinned || sent.length === 0) return []
+    return [
+      {
+        cv,
+        sent: sent.length,
+        inferred: sent.filter((a) => a.cv_source === 'inferred').length,
+        interviews: sent.filter((a) => a.reached_interview).length,
+        responseRate: applicationStats(sent).responseRate,
+      },
+    ]
+  })
 }
 
 /** Today as `YYYY-MM-DD`, in the viewer's own calendar. */

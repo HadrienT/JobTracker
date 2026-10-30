@@ -46,6 +46,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{application_id}/cv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Application Cv
+         * @description The CV sent, as the user says: this also confirms one that was only assumed.
+         */
+        post: operations["post_application_cv_applications__application_id__cv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{application_id}/delete": {
         parameters: {
             query?: never;
@@ -169,6 +189,67 @@ export interface paths {
         };
         /** Get Companies */
         get: operations["get_companies_companies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cvs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cvs
+         * @description Every CV, newest first; `pinned` are the versions, `current` the one to assume next.
+         */
+        get: operations["get_cvs_cvs_get"];
+        put?: never;
+        /**
+         * Post Cv
+         * @description Add a version: the raw PDF, named by `name`.
+         */
+        post: operations["post_cv_cvs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cvs/{cv_id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Cv Edit */
+        post: operations["post_cv_edit_cvs__cv_id__edit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cvs/{cv_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cv File
+         * @description The PDF itself, shown inline. The id comes from the table, never from the path as given.
+         */
+        get: operations["get_cv_file_cvs__cv_id__file_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -408,13 +489,16 @@ export interface components {
         /**
          * ApplicationCreate
          * @description An application typed in. `url` of a collected posting links it; `offer_text` (the offer
-         *     pasted) is typeset into the archived offer.pdf.
+         *     pasted) is typeset into the archived offer.pdf. `cv_id` left out assumes the current version
+         *     (inferred); given, even `null`, it is the user's answer.
          */
         ApplicationCreate: {
             /** Applied On */
             applied_on?: string | null;
             /** Company */
             company: string;
+            /** Cv Id */
+            cv_id?: string | null;
             /** Location */
             location?: string | null;
             /**
@@ -430,6 +514,14 @@ export interface components {
             title: string;
             /** Url */
             url?: string | null;
+        };
+        /**
+         * ApplicationCvRequest
+         * @description The CV sent, as the user says: `null` when it is unknown after all.
+         */
+        ApplicationCvRequest: {
+            /** Cv Id */
+            cv_id: string | null;
         };
         /** ApplicationDetailOut */
         ApplicationDetailOut: {
@@ -449,6 +541,9 @@ export interface components {
             company_slug: string | null;
             /** Countries */
             countries: string[];
+            /** Cv Id */
+            cv_id: string | null;
+            cv_source: components["schemas"]["CvSource"] | null;
             /** Dossier */
             dossier: string | null;
             /** Events */
@@ -537,6 +632,9 @@ export interface components {
             company_slug: string | null;
             /** Countries */
             countries: string[];
+            /** Cv Id */
+            cv_id: string | null;
+            cv_source: components["schemas"]["CvSource"] | null;
             /** Last News On */
             last_news_on: string | null;
             /** Location */
@@ -604,6 +702,44 @@ export interface components {
             /** Raw */
             raw: string | null;
         };
+        /**
+         * CvEditRequest
+         * @description Only the fields given change.
+         */
+        CvEditRequest: {
+            /** Label */
+            label?: string | null;
+            /** Pinned */
+            pinned?: boolean | null;
+        };
+        /** CvOut */
+        CvOut: {
+            /** Applications */
+            applications: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Current */
+            current: boolean;
+            /** Cv Id */
+            cv_id: string;
+            /** File Name */
+            file_name: string;
+            /** Label */
+            label: string;
+            /** Pinned */
+            pinned: boolean;
+            /** Size */
+            size: number;
+        };
+        /**
+         * CvSource
+         * @description How an application's CV is known (blueprint/wp/WP22-cvs.md §2).
+         * @enum {string}
+         */
+        CvSource: "confirmed" | "inferred";
         /** FacetCounts */
         FacetCounts: {
             /** Cities */
@@ -1068,6 +1204,41 @@ export interface operations {
             };
         };
     };
+    post_application_cv_applications__application_id__cv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationCvRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     post_application_delete_applications__application_id__delete_post: {
         parameters: {
             query?: never;
@@ -1286,6 +1457,123 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompanyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cvs_cvs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CvOut"][];
+                };
+            };
+        };
+    };
+    post_cv_cvs_post: {
+        parameters: {
+            query: {
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CvOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_cv_edit_cvs__cv_id__edit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cv_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CvEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CvOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cv_file_cvs__cv_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cv_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
                 };
             };
             /** @description Validation Error */

@@ -23,11 +23,12 @@ from pathlib import Path
 
 from ulid import ULID
 
+from jobtracker.career.cvs import is_pdf, save_cv
 from jobtracker.career.dossier import FileKind, classify
 from jobtracker.career.feedlink import FeedPosting, link_postings
 from jobtracker.career.offer import OfferSheet, location_label, sheet_for_posting, write_offer_pdf
 from jobtracker.core.clock import utc_now
-from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus
+from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus, CvSource
 from jobtracker.core.errors import RenderError
 from jobtracker.core.logging import get_logger
 from jobtracker.core.models import Application, ApplicationEvent
@@ -39,8 +40,10 @@ from jobtracker.store.applications import (
     link_posting,
     list_applications,
     record_status,
+    set_application_cv,
     update_application,
 )
+from jobtracker.store.cvs import add_cv, current_cv_id
 from jobtracker.store.postings import PostingRow, get_posting_row, set_application_status
 from jobtracker.store.search import get_description
 
@@ -96,6 +99,14 @@ def _find_recorded(
     )
     found = link_postings([posting], candidates, aliases=aliases).links.get(row.posting_id)
     return next((a for a in candidates if a.application_id == found), None)
+
+
+def assume_current_cv(conn: sqlite3.Connection, application: Application) -> Application:
+    """A new application, with the version in use until the user says otherwise (WP22 §5)."""
+    cv_id = current_cv_id(conn)
+    if cv_id is None:
+        return application
+    return application.model_copy(update={"cv_id": cv_id, "cv_source": CvSource.INFERRED})
 
 
 def new_application(row: PostingRow, status: ApplicationStatus, today: date) -> Application:
@@ -161,7 +172,7 @@ def track_posting(
     application = new_application(row, status, today)
     if origin is not ApplicationOrigin.FEED:
         application = application.model_copy(update={"origin": origin})
-    create_application(conn, application)
+    create_application(conn, assume_current_cv(conn, application))
     conn.commit()
     assert application.dossier is not None
     pending = PendingPdf(
@@ -319,6 +330,50 @@ def safe_file_name(name: str) -> str:
     if not cleaned:
         raise ValueError(f"not a usable file name: {name!r}")
     return cleaned
+
+
+def register_cv(
+    conn: sqlite3.Connection,
+    career_root: Path,
+    data: bytes,
+    file_name: str,
+    *,
+    label: str | None = None,
+    pinned: bool = True,
+) -> str:
+    """Into the registry, by content; a CV already there stays as named. No commit."""
+    if not is_pdf(data):
+        raise ValueError(f"not a PDF: {file_name!r}")
+    cv_id = save_cv(career_root, data)
+    add_cv(
+        conn,
+        cv_id,
+        label=label or Path(file_name).stem,
+        file_name=file_name,
+        size=len(data),
+        pinned=pinned,
+        created_at=utc_now(),
+    )
+    return cv_id
+
+
+def adopt_attached_cv(
+    conn: sqlite3.Connection, career_root: Path, application: Application, path: Path
+) -> bool:
+    """A CV attached to an application by hand is the one it was sent with: the registry learns
+    it, unless the user had already chosen. It is written for this offer, so it is no version."""
+    if application.cv_source is CvSource.CONFIRMED or path.suffix.lower() != ".pdf":
+        return False
+    if classify(path, frozenset(p.name for p in path.parent.iterdir())) is not FileKind.CV:
+        return False
+    data = path.read_bytes()
+    if not is_pdf(data):
+        return False
+    label = f"{application.company} — {application.title or 'application'}"
+    cv_id = register_cv(conn, career_root, data, path.name, label=label[:200], pinned=False)
+    set_application_cv(conn, application.application_id, cv_id)
+    conn.commit()
+    return True
 
 
 def store_file(folder: Path, name: str, data: bytes) -> Path:

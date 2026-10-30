@@ -27,7 +27,7 @@ l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 | API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
 | Exploitation | `src/jobtracker/runtime/` | ordonnanceur, disjoncteur par source, chien de garde inversé, CLI |
 | Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Swiss tech** (piste `ch_tech`, `/ch`), **Tech** (piste `tech`, `/tech` : les mêmes compétences dans les pays bien payés), **Applications** (`/applications` : toutes les candidatures, historique, pièces, saisie à la main — `blueprint/wp/WP21-applications.md` §6), **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
-| Candidatures | `src/jobtracker/career/` | l'historique tenu à la main (Sheet + dossier de captures) rapproché en `Application` ; n'importe que `core` (D11). **Données personnelles sous `data/career/`, jamais dans le dépôt (public)** — `blueprint/wp/WP21-applications.md` |
+| Candidatures | `src/jobtracker/career/` | l'historique tenu à la main (Sheet + dossier de captures) rapproché en `Application` ; n'importe que `core` (D11). **Données personnelles sous `data/career/`, jamais dans le dépôt (public)** — `blueprint/wp/WP21-applications.md` ; registre des CV par contenu (`data/career/cvs/`) — `blueprint/wp/WP22-cvs.md` |
 
 Le LLM d'inférence est **local** : `llama-server` sur `127.0.0.1:8000`, partagé
 avec OpenHands (`~/AgenticEnv`). JobTracker s'y greffe en second, jamais en
@@ -52,6 +52,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just llm-revert --field F` | annule les corrections du LLM sur un champ : valeur d'avant restaurée, score recalculé, offre relue |
 | `just import-applications <csv> <dossier>` | historique de candidatures : export CSV de la Sheet + dossier `Société/Poste/` (captures, CV envoyé) → table `applications`, pièces copiées sous `data/career/` ; dry-run par défaut, `--apply`, `--report f.jsonl` (`blueprint/wp/WP21-applications.md`) |
 | `just app …` | candidatures **à la main**, sans le pipeline : `app add --company X --title Y --url U` (ou `--text offre.txt`, `--posting <id>`, `--attach cv.pdf`), `app status <id> interview`, `app list --open` (5 mois sans nouvelles = abandonnée, rien n'est stocké), `app show/edit/link/attach/pdf/rm` ; `app adopt-feed --apply` reprend les statuts posés dans le feed avant WP21 |
+| `just app cv …` | le registre des CV (`blueprint/wp/WP22-cvs.md`) : `app cv list`, `add <pdf> --label v3`, `label <id> <nom> [--pin\|--unpin]`, `set <candidature> <cv\|none>` ; `backfill` lie les candidatures au CV de leur dossier, dry-run par défaut, `--apply`, `--report f.jsonl` |
 | `just backup` | sauvegarde à chaud de `./data/jobtracker.db` dans `./backups` |
 | `just timers-install` / `timers-remove` | collecte 3×/jour + sauvegarde quotidienne, minuteries systemd **utilisateur** (`deploy/local/`) |
 | `just loop` | ordonnanceur continu |

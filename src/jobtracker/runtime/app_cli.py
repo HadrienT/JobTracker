@@ -9,6 +9,7 @@ Ids are long; any unique prefix will do, as with git.
 """
 
 import argparse
+import json
 import shutil
 import sqlite3
 import sys
@@ -17,10 +18,13 @@ from pathlib import Path
 
 from jobtracker.api.tracking import (
     OFFER_PDF,
+    adopt_attached_cv,
+    assume_current_cv,
     ensure_folder,
     manual_application,
     manual_sheet,
     offer_pdf_for,
+    register_cv,
     render_pending,
     track_posting,
 )
@@ -32,10 +36,11 @@ from jobtracker.collect.registry import load_registry
 from jobtracker.core.clock import utc_now
 from jobtracker.core.config import Settings, load_settings, load_yaml
 from jobtracker.core.db import apply_migrations, connect
-from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus
+from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus, CvSource
 from jobtracker.core.errors import CollectError, RenderError
-from jobtracker.core.models import Application
+from jobtracker.core.models import Application, Cv
 from jobtracker.runtime.applications import adopt_feed_statuses, registry_keys
+from jobtracker.runtime.cv_backfill import apply_backfill, plan_backfill
 from jobtracker.store.applications import (
     create_application,
     delete_application,
@@ -44,8 +49,10 @@ from jobtracker.store.applications import (
     list_applications,
     match_application_ids,
     record_status,
+    set_application_cv,
     update_application,
 )
+from jobtracker.store.cvs import current_cv_id, edit_cv, get_cv, list_cvs, match_cv_ids
 from jobtracker.store.postings import PostingRow, get_posting_row, posting_id_by_url
 from jobtracker.store.schema import MIGRATIONS_DIR
 
@@ -72,6 +79,17 @@ def _resolve(conn: sqlite3.Connection, prefix: str) -> Application:
     application = get_application(conn, ids[0])
     assert application is not None
     return application
+
+
+def _resolve_cv(conn: sqlite3.Connection, prefix: str) -> Cv:
+    ids = match_cv_ids(conn, prefix)
+    if not ids:
+        raise _Fail(f"no CV id starts with {prefix!r}")
+    if len(ids) > 1:
+        raise _Fail(f"{prefix!r} is ambiguous: {', '.join(i[:12] for i in ids[:8])}")
+    cv = get_cv(conn, ids[0])
+    assert cv is not None
+    return cv
 
 
 def _folder(settings: Settings, application: Application) -> Path | None:
@@ -189,6 +207,9 @@ def cmd_show(args: argparse.Namespace) -> int:
         print("          no news for 5+ months: counted as abandoned")
     print(f"posting   {a.posting_id or '—'}")
     print(f"origin    {a.origin.value}")
+    cv = get_cv(conn, a.cv_id) if a.cv_id else None
+    source = f" ({a.cv_source.value})" if a.cv_source else ""
+    print(f"cv        {cv.label + source if cv else '—'}")
     for event in a.events:
         when = event.on_date.isoformat() if event.on_date else "?"
         print(f"  {when:10}  {event.status.value}" + (f" — {event.reason}" if event.reason else ""))
@@ -247,6 +268,8 @@ def cmd_add(args: argparse.Namespace) -> int:
             company_slug=_company_slug(args.company),
             origin=ApplicationOrigin.CLI,
         )
+        if args.cv is None:
+            application = assume_current_cv(conn, application)
         create_application(conn, application)
         conn.commit()
         folder = _folder(settings, application)
@@ -261,9 +284,13 @@ def cmd_add(args: argparse.Namespace) -> int:
     if args.note and row is not None:
         update_application(conn, application.application_id, note=args.note)
         conn.commit()
+    if args.cv is not None:
+        cv_id = _resolve_cv(conn, args.cv).cv_id
+        set_application_cv(conn, application.application_id, cv_id)
+        conn.commit()
     folder = _folder(settings, application)
     if args.attach and folder is not None:
-        for path in _copy_in(folder, args.attach):
+        for path in _attach(conn, settings, application, folder, args.attach):
             print(f"attached → {path}", file=sys.stderr)
     print(application.application_id)
     return 0
@@ -319,11 +346,26 @@ def cmd_link(args: argparse.Namespace) -> int:
     return 0
 
 
+def _attach(
+    conn: sqlite3.Connection,
+    settings: Settings,
+    application: Application,
+    folder: Path,
+    files: list[str],
+) -> list[Path]:
+    copied = _copy_in(folder, files)
+    for path in copied:
+        current = get_application(conn, application.application_id)
+        assert current is not None
+        adopt_attached_cv(conn, settings.career_root, current, path)
+    return copied
+
+
 def cmd_attach(args: argparse.Namespace) -> int:
     settings, conn = _open()
     application = _resolve(conn, args.id)
     folder = ensure_folder(conn, settings.career_root, application)
-    for path in _copy_in(folder, args.files):
+    for path in _attach(conn, settings, application, folder, args.files):
         print(f"attached → {path}")
     return 0
 
@@ -401,6 +443,88 @@ def _guarded(command: object) -> object:
     return run
 
 
+def cmd_cv_list(_args: argparse.Namespace) -> int:
+    _, conn = _open()
+    current = current_cv_id(conn)
+    for cv in list_cvs(conn):
+        marks = ("pinned" if cv.pinned else "") + (" current" if cv.cv_id == current else "")
+        print(
+            f"{cv.cv_id[:10]}  {cv.created_at.date().isoformat()}  {cv.applications:3} sent  "
+            f"{marks.strip():14} {cv.label}"
+        )
+    return 0
+
+
+def cmd_cv_add(args: argparse.Namespace) -> int:
+    settings, conn = _open()
+    source = Path(args.file).expanduser()
+    if not source.is_file():
+        raise _Fail(f"no such file: {source}")
+    try:
+        cv_id = register_cv(
+            conn, settings.career_root, source.read_bytes(), source.name, label=args.label
+        )
+    except ValueError as exc:
+        raise _Fail(str(exc)) from exc
+    conn.commit()
+    print(cv_id)
+    return 0
+
+
+def cmd_cv_label(args: argparse.Namespace) -> int:
+    _, conn = _open()
+    cv = _resolve_cv(conn, args.id)
+    edit_cv(conn, cv.cv_id, label=args.label, pinned=args.pin)
+    conn.commit()
+    print(f"{cv.cv_id[:10]} → {args.label}")
+    return 0
+
+
+def cmd_cv_set(args: argparse.Namespace) -> int:
+    _, conn = _open()
+    application = _resolve(conn, args.id)
+    cv_id = None if args.cv == "none" else _resolve_cv(conn, args.cv).cv_id
+    source = CvSource.INFERRED if args.inferred else CvSource.CONFIRMED
+    set_application_cv(conn, application.application_id, cv_id, source)
+    conn.commit()
+    print(f"{application.application_id[:10]} → {cv_id[:10] if cv_id else 'no CV'}")
+    return 0
+
+
+def cmd_cv_backfill(args: argparse.Namespace) -> int:
+    """Dry run by default, like the import: the links are shown, written only with --apply."""
+    settings, conn = _open()
+    plan = plan_backfill(conn, settings.career_root, inferred_names=args.inferred_name or ())
+    print(
+        f"{len(plan.links)} applications → {len({link.cv_id for link in plan.links})} distinct "
+        f"CVs ({sum(link.source is CvSource.INFERRED for link in plan.links)} inferred); "
+        f"{len(plan.ambiguous)} ambiguous, {len(plan.unreadable)} with an unreadable CV, "
+        f"{len(plan.without_cv)} without any"
+    )
+    if args.report:
+        with Path(args.report).open("w", encoding="utf-8") as report:
+            for link in plan.links:
+                entry: dict[str, object] = {
+                    "kind": "link",
+                    "application": link.application.application_id,
+                    "company": link.application.company,
+                    "title": link.application.title,
+                    "applied_on": str(link.application.applied_on),
+                    "cv": link.cv_id,
+                    "file": link.file_name,
+                    "source": link.source.value,
+                }
+                report.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            for kind, found in (("ambiguous", plan.ambiguous), ("unreadable", plan.unreadable)):
+                for application_id, names in found.items():
+                    entry = {"kind": kind, "application": application_id, "files": list(names)}
+                    report.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    if args.apply:
+        stored = apply_backfill(conn, settings.career_root, plan)
+        print(f"{stored} CVs in the registry, {len(plan.links)} applications linked")
+    return 0
+
+
 def add_app_parser(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     app = subparsers.add_parser("app", help="applications, by hand (WP21)")
     commands = app.add_subparsers(dest="app_command", required=True)
@@ -427,6 +551,7 @@ def add_app_parser(subparsers: "argparse._SubParsersAction[argparse.ArgumentPars
     add.add_argument("--status", default="applied")
     add.add_argument("--note")
     add.add_argument("--attach", nargs="+", help="files to copy in: the CV sent, a letter…")
+    add.add_argument("--cv", help="the CV sent (id prefix); default: the current version")
     add.set_defaults(func=_guarded(cmd_add))
 
     status = commands.add_parser("status", help="move an application along")
@@ -452,6 +577,43 @@ def add_app_parser(subparsers: "argparse._SubParsersAction[argparse.ArgumentPars
     attach.add_argument("id")
     attach.add_argument("files", nargs="+")
     attach.set_defaults(func=_guarded(cmd_attach))
+
+    cv = commands.add_parser("cv", help="the CV registry (WP22)")
+    cv_commands = cv.add_subparsers(dest="cv_command", required=True)
+
+    cv_list = cv_commands.add_parser("list", help="every CV, newest first")
+    cv_list.set_defaults(func=_guarded(cmd_cv_list))
+
+    cv_add = cv_commands.add_parser("add", help="add a version")
+    cv_add.add_argument("file")
+    cv_add.add_argument("--label")
+    cv_add.set_defaults(func=_guarded(cmd_cv_add))
+
+    cv_label = cv_commands.add_parser("label", help="name a CV")
+    cv_label.add_argument("id")
+    cv_label.add_argument("label")
+    pinning = cv_label.add_mutually_exclusive_group()
+    pinning.add_argument("--pin", dest="pin", action="store_true", default=None)
+    pinning.add_argument("--unpin", dest="pin", action="store_false")
+    cv_label.set_defaults(func=_guarded(cmd_cv_label))
+
+    cv_set = cv_commands.add_parser("set", help="the CV an application used ('none' clears)")
+    cv_set.add_argument("id", help="the application")
+    cv_set.add_argument("cv")
+    cv_set.add_argument("--inferred", action="store_true", help="deduced, not known for sure")
+    cv_set.set_defaults(func=_guarded(cmd_cv_set))
+
+    backfill = cv_commands.add_parser(
+        "backfill", help="link applications to the CV in their folder"
+    )
+    backfill.add_argument("--apply", action="store_true", help="write; the default is a dry run")
+    backfill.add_argument("--report", help="JSONL of every link and every case left aside")
+    backfill.add_argument(
+        "--inferred-name",
+        action="append",
+        help="a file name put in folders after the fact: its links are marked inferred",
+    )
+    backfill.set_defaults(func=_guarded(cmd_cv_backfill))
 
     pdf = commands.add_parser("pdf", help="(re)archive the offer as offer.pdf")
     pdf.add_argument("id")

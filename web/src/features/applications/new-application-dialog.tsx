@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { type ApplicationStatus, useCreateApplication } from '@/api/queries'
+import { type ApplicationStatus, useCreateApplication, useCvs } from '@/api/queries'
 import { todayIso } from '@/features/applications/model'
 import { STATUS_OPTIONS } from '@/features/filters/defaults'
 import { useModal } from '@/shared/lib/use-modal'
@@ -29,6 +29,11 @@ export function NewApplicationDialog({ onClose, onCreated }: NewApplicationDialo
   const [status, setStatus] = useState<ApplicationStatus>('applied')
   const [note, setNote] = useState('')
   const [offerText, setOfferText] = useState('')
+  const cvs = useCvs()
+  const versions = (cvs.data ?? []).filter((cv) => cv.pinned)
+  // Untouched, the menu shows the version in use: that is what the user sends by submitting.
+  const [chosenCv, setChosenCv] = useState<string | null>(null)
+  const cvId = chosenCv ?? versions.find((cv) => cv.current)?.cv_id ?? ''
 
   return (
     <div
@@ -56,6 +61,8 @@ export function NewApplicationDialog({ onClose, onCreated }: NewApplicationDialo
               status,
               note,
               offer_text: offerText.trim() || null,
+              // Still loading: left out, the server assumes the version in use.
+              ...(cvs.data && { cv_id: cvId || null }),
             },
             {
               onSuccess: (detail) => {
@@ -147,6 +154,23 @@ export function NewApplicationDialog({ onClose, onCreated }: NewApplicationDialo
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={LABEL}>
+            CV sent
+            <select
+              value={cvId}
+              onChange={(e) => {
+                setChosenCv(e.target.value)
+              }}
+              className={FIELD}
+            >
+              <option value="">Not recorded</option>
+              {versions.map((cv) => (
+                <option key={cv.cv_id} value={cv.cv_id}>
+                  {cv.label}
                 </option>
               ))}
             </select>

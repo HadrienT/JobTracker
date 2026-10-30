@@ -15,6 +15,7 @@ from pydantic import BaseModel, model_validator
 from jobtracker.core.enums import (
     ApplicationOrigin,
     ApplicationStatus,
+    CvSource,
     RemoteMode,
     RoleFamily,
     SalaryPeriod,
@@ -223,3 +224,17 @@ class Application(BaseModel, frozen=True):
     origin: ApplicationOrigin
     note: str = ""
     events: tuple[ApplicationEvent, ...] = ()
+    cv_id: str | None = None  # the CV sent (WP22); None when unknown
+    cv_source: CvSource | None = None
+
+
+class Cv(BaseModel, frozen=True):
+    """One CV, by content (blueprint/wp/WP22-cvs.md §2)."""
+
+    cv_id: str  # the SHA-256 of the file
+    label: str
+    file_name: str  # as it was first seen
+    size: int
+    pinned: bool  # a version, offered in the menus
+    created_at: datetime
+    applications: int = 0  # how many used it

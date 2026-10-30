@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { ApplicationOut } from '@/api/queries'
+import type { ApplicationOut, CvOut } from '@/api/queries'
 import {
   answerDelay,
   applicationStats,
   countryCounts,
+  cvStats,
   filterApplications,
   sortApplications,
   todayIso,
@@ -29,6 +30,8 @@ function application(overrides: Partial<ApplicationOut> & Pick<ApplicationOut, '
     last_news_on: '2026-10-01',
     reached_interview: false,
     countries: ['GB'],
+    cv_id: null,
+    cv_source: null,
     ...overrides,
   }
 }
@@ -61,7 +64,7 @@ const ALL = [OPEN, OLD, REJECTED, QUICK_NO]
 describe('applications model', () => {
   it('views follow what the API derived — open excludes the abandoned', () => {
     const ids = (view: Parameters<typeof filterApplications>[1]['view']) =>
-      filterApplications(ALL, { view, query: '', year: null, country: null }).map((a) => a.application_id)
+      filterApplications(ALL, { view, query: '', year: null, country: null, noCv: false }).map((a) => a.application_id)
     expect(ids('open')).toEqual(['open'])
     expect(ids('abandoned')).toEqual(['old'])
     expect(ids('interviews')).toEqual(['rejected'])
@@ -70,8 +73,8 @@ describe('applications model', () => {
   })
 
   it('search ignores case and accents; year narrows on the application date', () => {
-    expect(filterApplications(ALL, { view: 'all', query: 'societe', year: null, country: null })).toEqual([OPEN])
-    expect(filterApplications(ALL, { view: 'all', query: '', year: 2024, country: null })).toEqual([OLD])
+    expect(filterApplications(ALL, { view: 'all', query: 'societe', year: null, country: null, noCv: false })).toEqual([OPEN])
+    expect(filterApplications(ALL, { view: 'all', query: '', year: 2024, country: null, noCv: false })).toEqual([OLD])
   })
 
   it('answer delay: days to the answer, or days spent waiting', () => {
@@ -111,11 +114,43 @@ describe('applications model', () => {
       { code: 'GB', count: 3 },
       { code: 'CH', count: 1 },
     ])
-    expect(filterApplications(ALL, { view: 'all', query: '', year: null, country: 'CH' })).toEqual([OPEN])
+    expect(filterApplications(ALL, { view: 'all', query: '', year: null, country: 'CH', noCv: false })).toEqual([OPEN])
   })
 
   it('years, newest first; today in the local calendar', () => {
     expect(yearsOf(ALL)).toEqual([2026, 2024])
     expect(todayIso(new Date(2026, 0, 5))).toBe('2026-01-05')
+  })
+})
+
+describe('CVs', () => {
+  const cv = (cvId: string, pinned: boolean): CvOut => ({
+    cv_id: cvId,
+    label: cvId,
+    file_name: `${cvId}.pdf`,
+    size: 1,
+    pinned,
+    created_at: '2026-10-01T00:00:00Z',
+    applications: 0,
+    current: false,
+  })
+  const SENT = [
+    application({ application_id: 'a', cv_id: 'v1', cv_source: 'confirmed', status: 'rejected' }),
+    application({ application_id: 'b', cv_id: 'v1', cv_source: 'inferred', reached_interview: true }),
+    application({ application_id: 'c', cv_id: 'v1', cv_source: 'inferred' }),
+    application({ application_id: 'd', cv_id: 'v1', cv_source: 'confirmed' }),
+    application({ application_id: 'e', cv_id: 'tailored', cv_source: 'confirmed' }),
+    application({ application_id: 'f' }),
+  ]
+
+  it('finds what is left to fill in', () => {
+    const missing = filterApplications(SENT, { view: 'all', query: '', year: null, country: null, noCv: true })
+    expect(missing.map((a) => a.application_id)).toEqual(['f'])
+  })
+
+  it('tells what became of each version, and how much of it is assumed', () => {
+    const [v1, ...others] = cvStats([cv('v1', true), cv('tailored', false), cv('unused', true)], SENT)
+    expect(others).toEqual([])
+    expect(v1).toMatchObject({ sent: 4, inferred: 2, interviews: 1, responseRate: 0.5 })
   })
 })

@@ -77,6 +77,13 @@ class ApplicationOrigin(StrEnum):
     CLI = "cli"  # `jobtracker apply`, after a tailored CV
 
 
+class CvSource(StrEnum):
+    """How an application's CV is known (blueprint/wp/WP22-cvs.md §2)."""
+
+    CONFIRMED = "confirmed"  # chosen by the user, or kept in the folder when it was sent
+    INFERRED = "inferred"  # assumed: the current version, or deduced from the dates
+
+
 class Triage(StrEnum):
     """The user's verdict on a posting they do not want in the main feed any more.
 
