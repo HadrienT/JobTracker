@@ -24,7 +24,6 @@ from jobtracker.core.models import Application
 from jobtracker.store.applications import infer_application_cv, list_applications
 from jobtracker.store.cvs import add_cv
 
-
 # Named as one: alone in a folder, an offer typeset in LaTeX looks like a CV to `classify`.
 _NAMED_CV = re.compile(r".*cv.*\.pdf", re.IGNORECASE)
 
