@@ -1846,12 +1846,13 @@
 
 - slug: wintermute
   name: Wintermute
-  source: smartrecruiters  # [À CONFIRMER] board vide au sondage du 2026-09-17
-  token: "wintermute"
+  source: custom  # verified 2026-10-31 — its own site
+  token: "https://www.wintermute.com/company/opportunities"
+  extra: { link: "wintermute\\.com/company/opportunities/([^/?#]+)", title_line: "2" }
   sector: crypto
   hq_country: GB
   priority: 3
-  enabled: false
+  enabled: true
 
 - slug: b2c2
   name: B2C2
@@ -3430,4 +3431,14 @@
   sector: tech
   hq_country: CH
   priority: 2
+  enabled: true
+
+- slug: psi
+  name: Paul Scherrer Institute
+  source: custom  # verified 2026-10-31
+  token: "https://www.psi.ch/en/hr/job-opportunities"
+  extra: { link: "psi\\.ch/en/hr/job-opportunities/(\\d+)-", title: heading }
+  sector: tech
+  hq_country: CH
+  priority: 3
   enabled: true
