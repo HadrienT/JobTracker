@@ -140,6 +140,22 @@ def test_the_backfill_guesses_nothing_and_never_overwrites(
     assert set(plan.without_cv) == {"broken", "none"}
 
 
+def test_an_offer_typeset_in_latex_is_not_taken_for_a_cv(
+    api_conn: sqlite3.Connection, tmp_path: Path
+) -> None:
+    career = tmp_path / "career"
+    _folder(career, "alone", Acme_QD__pdf=b"%PDF offer", Acme_QD__tex=b"x")
+    _folder(career, "beside", Acme_QD__pdf=b"%PDF offer", Acme_QD__tex=b"x", CV_Name__pdf=V1)
+    create_application(api_conn, _application("alone", "alone"))
+    create_application(api_conn, _application("beside", "beside"))
+    plan = plan_backfill(api_conn, career)
+    assert plan.ambiguous == {}
+    assert [(link.application.application_id, link.cv_id) for link in plan.links] == [
+        ("beside", cv_id_of(V1))
+    ]
+    assert plan.without_cv == ["alone"]
+
+
 def test_a_folder_own_cv_wins_over_the_one_of_its_parent(
     api_conn: sqlite3.Connection, tmp_path: Path
 ) -> None:

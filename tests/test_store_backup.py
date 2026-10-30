@@ -1,6 +1,7 @@
 """Online backups — blueprint/wp/WP15-deploy.md §5, §7."""
 
 import sqlite3
+import tarfile
 import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -11,7 +12,7 @@ from factories_store import make_board, make_posting, make_verdict
 from jobtracker.core.db import connect
 from jobtracker.core.errors import StorageError
 from jobtracker.store import backup as backup_module
-from jobtracker.store.backup import backup_database, prune_backups
+from jobtracker.store.backup import backup_career, backup_database, prune_backups
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import upsert_posting
 
@@ -97,3 +98,52 @@ def test_a_backup_that_fails_its_integrity_check_is_removed_not_kept(
     with pytest.raises(StorageError):
         backup_database(store_conn, tmp_path, now=_NOW)
     assert list(tmp_path.glob("jobtracker-*.db")) == []
+
+
+def _career(root: Path) -> Path:
+    career = root / "career"
+    (career / "cvs").mkdir(parents=True)
+    (career / "cvs" / "abc.pdf").write_bytes(b"%PDF-1.5")
+    (career / "applications" / "Acme").mkdir(parents=True)
+    (career / "applications" / "Acme" / "1.png").write_bytes(b"x")
+    return career
+
+
+def test_the_career_folder_is_archived_restorable_and_private(tmp_path: Path) -> None:
+    path = backup_career(_career(tmp_path), tmp_path / "backups", now=_NOW)
+    assert path is not None
+    assert path.name == "career-20260918-030000.tar.gz"
+    assert path.stat().st_mode & 0o077 == 0
+    assert list(path.parent.iterdir()) == [path]  # no `.part` left
+    with tarfile.open(path) as archive:
+        archive.extractall(tmp_path / "restored", filter="data")
+    restored = tmp_path / "restored" / "career"
+    assert (restored / "cvs" / "abc.pdf").read_bytes() == b"%PDF-1.5"
+    assert (restored / "applications" / "Acme" / "1.png").read_bytes() == b"x"
+
+
+def test_no_career_folder_is_said_not_archived(tmp_path: Path) -> None:
+    assert backup_career(tmp_path / "absent", tmp_path / "backups", now=_NOW) is None
+    assert not (tmp_path / "backups").exists()
+
+
+def test_a_career_archive_that_does_not_read_back_is_removed_not_kept(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(backup_module, "_archived_files", lambda path: 1)
+    with pytest.raises(StorageError, match="holds 1 files of 2"):
+        backup_career(_career(tmp_path), tmp_path / "backups", now=_NOW)
+    assert list((tmp_path / "backups").iterdir()) == []
+
+
+def test_career_archives_are_kept_a_week_apart_from_the_databases(tmp_path: Path) -> None:
+    career = _career(tmp_path)
+    dest = tmp_path / "backups"
+    dest.mkdir()
+    (dest / "career-20260901-030000.tar.gz").write_bytes(b"old")
+    (dest / "jobtracker-20260901-030000.db").write_bytes(b"old")
+    backup_career(career, dest, now=_NOW)
+    assert sorted(p.name for p in dest.iterdir()) == [
+        "career-20260918-030000.tar.gz",
+        "jobtracker-20260901-030000.db",
+    ]

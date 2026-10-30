@@ -49,7 +49,7 @@ from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.tracks import TrackPass, score_tracks
 from jobtracker.runtime.watchdog import full_health_snapshot
 from jobtracker.store import llm_queue, llm_reviews
-from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_database
+from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_career, backup_database
 from jobtracker.store.companies import list_discovered, sync_companies
 from jobtracker.store.retention import run_retention
 from jobtracker.store.schema import MIGRATIONS_DIR
@@ -475,6 +475,11 @@ def cmd_backup(args: argparse.Namespace) -> int:
     path = backup_database(conn, Path(args.dest), now=utc_now(), keep_days=args.keep_days)
     conn.close()
     print(f"backup written: {path}", file=sys.stderr)
+    career = backup_career(settings.career_root, Path(args.dest), now=utc_now())
+    if career is None:
+        print(f"no folder to archive at {settings.career_root}", file=sys.stderr)
+    else:
+        print(f"backup written: {career}", file=sys.stderr)
     return 0
 
 

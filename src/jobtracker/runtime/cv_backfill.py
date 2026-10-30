@@ -7,6 +7,7 @@ stays unlinked. Only applications without a CV are looked at, so a choice made b
 overwritten and the backfill can run again after an import. Files stay where they are.
 """
 
+import re
 import sqlite3
 from collections import defaultdict
 from collections.abc import Collection
@@ -22,6 +23,10 @@ from jobtracker.core.enums import CvSource
 from jobtracker.core.models import Application
 from jobtracker.store.applications import infer_application_cv, list_applications
 from jobtracker.store.cvs import add_cv
+
+
+# Named as one: alone in a folder, an offer typeset in LaTeX looks like a CV to `classify`.
+_NAMED_CV = re.compile(r".*cv.*\.pdf", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -57,7 +62,7 @@ def plan_backfill(
         files = [
             f
             for f in application_files(career_root, application)
-            if f.kind is FileKind.CV and f.name.lower().endswith(".pdf")
+            if f.kind is FileKind.CV and _NAMED_CV.fullmatch(f.name)
         ]
         own = [f for f in files if f.relative.startswith(f"{application.dossier}/")]
         by_id: dict[str, str] = {}

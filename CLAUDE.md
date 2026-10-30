@@ -53,7 +53,7 @@ priorité, concurrence 1, décodage contraint par schéma.
 | `just import-applications <csv> <dossier>` | historique de candidatures : export CSV de la Sheet + dossier `Société/Poste/` (captures, CV envoyé) → table `applications`, pièces copiées sous `data/career/` ; dry-run par défaut, `--apply`, `--report f.jsonl` (`blueprint/wp/WP21-applications.md`) |
 | `just app …` | candidatures **à la main**, sans le pipeline : `app add --company X --title Y --url U` (ou `--text offre.txt`, `--posting <id>`, `--attach cv.pdf`), `app status <id> interview`, `app list --open` (5 mois sans nouvelles = abandonnée, rien n'est stocké), `app show/edit/link/attach/pdf/rm` ; `app adopt-feed --apply` reprend les statuts posés dans le feed avant WP21 |
 | `just app cv …` | le registre des CV (`blueprint/wp/WP22-cvs.md`) : `app cv list`, `add <pdf> --label v3`, `label <id> <nom> [--pin\|--unpin]`, `set <candidature> <cv\|none>` ; `backfill` lie les candidatures au CV de leur dossier, dry-run par défaut, `--apply`, `--report f.jsonl` |
-| `just backup` | sauvegarde à chaud de `./data/jobtracker.db` dans `./backups` |
+| `just backup` | sauvegarde à chaud de `./data/jobtracker.db` et archive de `./data/career` dans `./backups` |
 | `just timers-install` / `timers-remove` | collecte 3×/jour + sauvegarde quotidienne, minuteries systemd **utilisateur** (`deploy/local/`) |
 | `just loop` | ordonnanceur continu |
 | `just score-tracks` | note les offres stockées contre chaque piste de `configs/tracks.yaml` (`collect` et `loop` le font seuls) |

@@ -33,6 +33,7 @@ import. Règles :
 | aucun CV dans le dossier, un dans le parent | celui du parent |
 | plusieurs contenus dans le dossier | **ambigu** : rapporté, pas lié |
 | un `CV*.pdf` qui n'est pas un PDF | rapporté, pas lié |
+| PDF sans « cv » dans son nom | ignoré : c'est souvent une offre mise en page en LaTeX, `.tex` compris |
 
 Une candidature qui a déjà un CV n'est jamais touchée. Un CV envoyé plusieurs fois devient une
 version (nommée d'après son fichier, à renommer) ; envoyé une fois, il prend le nom de l'offre.
@@ -61,6 +62,12 @@ que 4 Mo. Si on le fait un jour, c'est un lot à part, une fois les liens vérif
 - Le filtre **No CV** de l'onglet Applications liste ce qui reste à remplir ; le `?` de la colonne CV
   signale un lien supposé, confirmé d'un clic dans la fiche.
 
-## 6. Hors périmètre
+## 6. Sauvegarde
+
+La base pointe vers des fichiers qu'elle ne contient pas : `jobtracker backup` archive aussi
+`data/career/` (`career-*.tar.gz`, relue avant d'être gardée, 7 jours). Sans cette archive, restaurer
+la base seule laisserait des `cv_id` sans fichier.
+
+## 7. Hors périmètre
 
 CV ciblé généré (WP21 §5, #6), plusieurs CV par candidature, suppression d'un CV, purge des copies.
