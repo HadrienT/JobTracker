@@ -8,7 +8,9 @@ import pytest
 from conftest import _API_TEST_ENV
 from factories_store import make_board, make_posting, make_verdict
 from jobtracker.core.db import apply_migrations, connect
-from jobtracker.runtime.cli import main
+from jobtracker.core.enums import Source
+from jobtracker.core.models import BREAKER_OPEN, SourceRun
+from jobtracker.runtime.cli import _is_degraded, main
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import upsert_posting
 from jobtracker.store.schema import MIGRATIONS_DIR
@@ -77,3 +79,36 @@ def test_llm_enqueue_on_an_empty_database_queues_nothing(
 
     assert main(["llm-enqueue"]) == 0
     assert "queued=0" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("status", "error_kind", "degraded"),
+    [
+        ("ok", None, False),
+        ("skipped", None, False),  # no board was due: a weekly board must not fail the pass
+        ("skipped", BREAKER_OPEN, True),
+        ("empty", None, True),
+        ("blocked", "SourceBlocked", True),
+        ("error", "SourceUnavailable", True),
+    ],
+)
+def test_a_cycle_is_degraded_unless_it_worked_or_had_nothing_due(
+    status: str, error_kind: str | None, degraded: bool
+) -> None:
+    now = datetime(2026, 10, 31, tzinfo=UTC)
+    run = SourceRun(
+        run_id="r",
+        source=Source.RECRUITEE,
+        company_slug=None,
+        started_at=now,
+        ended_at=now,
+        fetched=0,
+        new=0,
+        updated=0,
+        aliased=0,
+        rejected=0,
+        requests_made=0,
+        status=status,
+        error_kind=error_kind,
+    )
+    assert _is_degraded(run) is degraded

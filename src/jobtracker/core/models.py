@@ -61,6 +61,9 @@ class Company(BaseModel, frozen=True):
     discovered: bool = False  # seen at an aggregator, absent from configs/companies.yaml
 
 
+BREAKER_OPEN = "BreakerOpen"
+
+
 class SourceRun(BaseModel, frozen=True):
     """A `source_runs` row — blueprint/04-DATA-MODEL.md §2.
 
@@ -82,7 +85,9 @@ class SourceRun(BaseModel, frozen=True):
     rejected: int
     requests_made: int
     status: str  # "ok" | "empty" | "error" | "blocked" | "skipped"
-    error_kind: str | None  # a core.errors class name, when status is "error"/"blocked"
+    # A core.errors class name when status is "error"/"blocked"; BREAKER_OPEN on a "skipped"
+    # run the breaker refused, None on one where no board was due.
+    error_kind: str | None
 
 
 class RawPosting(BaseModel, frozen=True):
