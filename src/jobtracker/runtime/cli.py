@@ -22,7 +22,7 @@ from jobtracker.core.db import apply_migrations, connect
 from jobtracker.core.enums import Source
 from jobtracker.core.geo import load_geo_index
 from jobtracker.core.logging import bound_run_id, configure_logging, get_logger
-from jobtracker.core.models import Board
+from jobtracker.core.models import Board, SourceRun
 from jobtracker.match.profile import load_profile, load_tracks
 from jobtracker.normalize.taxonomy import load_taxonomy
 from jobtracker.runtime.aggregator_loader import load_aggregators
@@ -157,7 +157,7 @@ def cmd_collect(args: argparse.Namespace) -> int:
         source_boards = boards_for_source(boards, source)
         with bound_run_id(str(ULID())):
             run = run_source_cycle(conn, source, source_boards, ctx=ctx, force=args.force)
-        degraded = degraded or run.status != "ok"
+        degraded = degraded or _is_degraded(run)
         print(
             f"source={run.source.value} status={run.status} boards={len(source_boards)} "
             f"fetched={run.fetched} new={run.new} updated={run.updated} aliased={run.aliased} "
@@ -184,6 +184,11 @@ def cmd_collect(args: argparse.Namespace) -> int:
         _print_tracks(score_tracks(conn, ctx.tracks))
     conn.close()
     return 1 if degraded else 0
+
+
+def _is_degraded(run: SourceRun) -> bool:
+    """Whether a cycle deserves a failing exit: no board being due is not a failure."""
+    return run.status != "ok" and not (run.status == "skipped" and run.error_kind is None)
 
 
 def _print_tracks(passes: tuple[TrackPass, ...]) -> None:

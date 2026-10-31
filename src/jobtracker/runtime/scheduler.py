@@ -35,7 +35,7 @@ from jobtracker.core.errors import BoardNotFound, CollectError, SourceBlocked, S
 from jobtracker.core.geo import GeoIndex
 from jobtracker.core.hashing import content_hash
 from jobtracker.core.logging import get_logger
-from jobtracker.core.models import Board, RawPosting, SourceRun
+from jobtracker.core.models import BREAKER_OPEN, Board, RawPosting, SourceRun
 from jobtracker.match.profile import Profile
 from jobtracker.normalize.taxonomy import Taxonomy
 from jobtracker.runtime.breaker import BreakerStatus, compute_state
@@ -166,7 +166,9 @@ def run_source_cycle(
 
     if breaker.status == BreakerStatus.OPEN:
         _logger.info("scheduler_source_skipped", source=source.value, run_id=run_id)
-        run = _make_run(run_id, source, None, now, _Stats(), 0, status="skipped", error_kind=None)
+        run = _make_run(
+            run_id, source, None, now, _Stats(), 0, status="skipped", error_kind=BREAKER_OPEN
+        )
         record_run(conn, run)
         conn.commit()
         return run
