@@ -111,3 +111,7 @@ and incident procedures.
 The design documentation is in [`blueprint/`](blueprint/README.md) and is written in
 French. It covers the architecture, data model, interfaces, testing strategy and
 architecture decisions.
+
+## License
+
+[MIT](LICENSE)

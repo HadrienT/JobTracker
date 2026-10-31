@@ -1,152 +1,144 @@
-# JobTracker — notes pour Claude Code
+# JobTracker — notes for Claude Code
 
-Agent de veille sur le **marché de l'emploi quant**. Il collecte les offres de
-~400 sociétés de finance (hedge funds, prop shops, banques, asset managers,
-éditeurs), les normalise, les qualifie contre un profil cible — **quant
-developer junior, 0-2 ans, mobile à l'international** — et les sert dans un
-front web dense où l'on scrolle, trie et filtre par pays, ville, société,
-séniorité, stack et statut de sponsorship visa.
+Monitoring agent for the **quant job market**. It collects postings from ~400 finance
+companies (hedge funds, prop shops, banks, asset managers, vendors), normalizes them,
+qualifies them against a target profile, **junior quant developer, 0-2 years, internationally
+mobile**, and serves them in a dense web front end where you scroll, sort and filter by
+country, city, company, seniority, stack and visa sponsorship status.
 
-La chaîne : `collect` → `normalize` → `match` → `store` → API FastAPI → front
-React. Un processus Python, un fichier SQLite, un front statique.
+The chain: `collect` → `normalize` → `match` → `store` → FastAPI API → React front end. One
+Python process, one SQLite file, one static front end.
 
-**Le produit, c'est le registre d'entreprises et le normaliseur, pas le
-scraper.** Un collecteur Greenhouse fait trente lignes et sert deux cents
-sociétés ; savoir *quelles* sociétés existent et *quel* ATS chacune utilise est
-l'actif du projet. Voir [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
+**The product is the company registry and the normalizer, not the scraper.** A Greenhouse
+collector is thirty lines and serves two hundred companies; knowing *which* companies exist
+and *which* ATS each one uses is the project's asset. See
+[`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) §2.
 
-## La chaîne, couche par couche
+## The chain, layer by layer
 
-| Couche | Où | Ce qu'elle contient |
+| Layer | Where | What it contains |
 |---|---|---|
-| Noyau | `src/jobtracker/core/` | config, logging, erreurs, base SQLite, DTO pydantic, horloge, monnaie, hachage, référentiel géographique |
-| Persistance | `src/jobtracker/store/` | dépôts par agrégat (`postings`, `companies`, `runs`), requêtes de facettes, FTS5 |
-| Collecte | `src/jobtracker/collect/` | un collecteur par **famille d'ATS** (`ats/`), un par agrégateur (`aggregators/`), politique HTTP commune ; `custom.py` + `browser.py` lisent en **page rendue** (Chromium sans tête) les portails sans API : une entrée `source: custom` du registre = l'URL de la liste (`token`) + la forme d'un lien d'offre (`extra.link`), ou l'endpoint JSON du portail lui-même (`extra.api` + les chemins des champs : Oracle HCM, Eightfold, BrassRing, portails maison), aucun code par société ; `prefilter.py` décide quels intitulés valent une requête de description |
-| Normalisation | `src/jobtracker/normalize/` | `RawPosting` → `Posting` : lieu, séniorité, stack, rémunération, visa, empreinte de dédoublonnage. **Zéro I/O**, testable hors ligne |
-| Qualification | `src/jobtracker/match/` | score déterministe contre le profil cible ; `match.llm` = préfiltre + LLM local pour le seul résidu ambigu ; **pistes** (`configs/tracks.yaml`) : d'autres recherches notées contre leur propre profil — `ch_tech` = C++ / CUDA / ML en Suisse, `tech` = idem + data science dans les pays bien payés (US, UK, DE, CH, JP…), `blueprint/wp/WP20-tracks.md` |
-| API | `src/jobtracker/api/` | FastAPI : `/postings` (filtres + tri + pagination keyset), `/facets`, `/map/pins`, `/companies`, `/health` |
-| Exploitation | `src/jobtracker/runtime/` | ordonnanceur, disjoncteur par source, chien de garde inversé, CLI |
-| Front | `web/src/` | React 19 + Vite + TypeScript strict + Tailwind v4 + TanStack Query/Virtual ; onglets Feed, **Swiss tech** (piste `ch_tech`, `/ch`), **Tech** (piste `tech`, `/tech` : les mêmes compétences dans les pays bien payés), **Applications** (`/applications` : toutes les candidatures, historique, pièces, saisie à la main — `blueprint/wp/WP21-applications.md` §6), **Map** (SVG local, `blueprint/wp/WP17-map.md`), Companies, Health ; suivi de candidature (`blueprint/wp/WP18-tracking.md`) |
-| Candidatures | `src/jobtracker/career/` | l'historique tenu à la main (Sheet + dossier de captures) rapproché en `Application` ; n'importe que `core` (D11). **Données personnelles sous `data/career/`, jamais dans le dépôt (public)** — `blueprint/wp/WP21-applications.md` ; registre des CV par contenu (`data/career/cvs/`) — `blueprint/wp/WP22-cvs.md` |
+| Kernel | `src/jobtracker/core/` | config, logging, errors, SQLite database, pydantic DTOs, clock, money, hashing, geographic reference data |
+| Persistence | `src/jobtracker/store/` | repositories per aggregate (`postings`, `companies`, `runs`), facet queries, FTS5 |
+| Collection | `src/jobtracker/collect/` | one collector per **ATS family** (`ats/`), one per aggregator (`aggregators/`), shared HTTP policy; `custom.py` + `browser.py` read portals without an API as a **rendered page** (headless Chromium): a `source: custom` registry entry is the list URL (`token`) + the shape of a posting link (`extra.link`), or the portal's own JSON endpoint (`extra.api` + the field paths: Oracle HCM, Eightfold, BrassRing, in-house portals), no per-company code; `prefilter.py` decides which titles are worth a description request |
+| Normalization | `src/jobtracker/normalize/` | `RawPosting` → `Posting`: location, seniority, stack, compensation, visa, deduplication fingerprint. **Zero I/O**, testable offline |
+| Qualification | `src/jobtracker/match/` | deterministic score against the target profile; `match.llm` = prefilter + local LLM for the ambiguous residue only; **tracks** (`configs/tracks.yaml`): other searches scored against their own profile; `ch_tech` = C++ / CUDA / ML in Switzerland, `tech` = same + data science in well-paid countries (US, UK, DE, CH, JP…), `blueprint/wp/WP20-tracks.md` |
+| API | `src/jobtracker/api/` | FastAPI: `/postings` (filters + sort + keyset pagination), `/facets`, `/map/pins`, `/companies`, `/health` |
+| Operations | `src/jobtracker/runtime/` | scheduler, per-source circuit breaker, inverted watchdog, CLI |
+| Front end | `web/src/` | React 19 + Vite + strict TypeScript + Tailwind v4 + TanStack Query/Virtual; tabs Feed, **Swiss tech** (track `ch_tech`, `/ch`), **Tech** (track `tech`, `/tech`: the same skills in well-paid countries), **Applications** (`/applications`: all applications, history, attachments, manual entry, `blueprint/wp/WP21-applications.md` §6), **Map** (local SVG, `blueprint/wp/WP17-map.md`), Companies, Health; application tracking (`blueprint/wp/WP18-tracking.md`) |
+| Applications | `src/jobtracker/career/` | the history kept by hand (Sheet + screenshots folder) reconciled into `Application`; imports only `core` (D11). **Personal data under `data/career/`, never in the (public) repository**, `blueprint/wp/WP21-applications.md`; CV registry by content (`data/career/cvs/`), `blueprint/wp/WP22-cvs.md` |
 
-Le LLM d'inférence est **local** : `llama-server` sur `127.0.0.1:8000`, partagé
-avec OpenHands (`~/AgenticEnv`). JobTracker s'y greffe en second, jamais en
-priorité, concurrence 1, décodage contraint par schéma.
+The inference LLM is **local**: `llama-server` on `127.0.0.1:8000`, shared with OpenHands
+(`~/AgenticEnv`). JobTracker attaches second, never with priority, concurrency 1,
+schema-constrained decoding.
 
-## Commandes
+## Commands
 
 | | |
 |---|---|
 | `just sync` | `uv sync --all-extras` |
-| `just lint` | ruff check + format check + `mypy --strict` — **vert avant tout commit** |
-| `just arch` | `import-linter` : contrats D1→D9 de `blueprint/01-ARCHITECTURE.md` |
-| `just test` | pytest, hors marqueur `live` |
-| `just test-golden` | corpus doré du normaliseur, hors ligne, avec taux de résolution par étage |
-| `just migrate` | applique `migrations/*.sql` |
-| `just run-once greenhouse` | un cycle de collecte sur une famille de sources |
-| `just browser-install` | installe Chromium pour les boards `source: custom` — **une fois par machine**, après `just sync` |
-| `just collect` | **un passage** sur toutes les sources activées de `configs/sources.yaml`, puis la file LLM et la relecture LLM des nouvelles offres ; écrit dans `./data/jobtracker.db` (code 1 si dégradé) |
-| `just up` / `just down` | l'interface en local : API + front dans docker (`docker-compose.yml`), sur `http://127.0.0.1:5190`, lit `./data/jobtracker.db` |
-| `just llm-enqueue` | met en file les offres **déjà stockées** que le LLM peut encore aider (à faire une fois, serveur allumé) ; puis `just llm-drain --all` les traite jusqu'au bout |
-| `just llm-review` | le LLM **relit toutes les offres** et corrige salaire, lieux, séniorité, visa, doctorat, date limite — chaque correction exige une citation retrouvée dans le texte ; `--dry-run` n'écrit rien, `--limit N`, `--report f.jsonl` (`blueprint/wp/WP19-llm-review.md`) |
-| `just llm-revert --field F` | annule les corrections du LLM sur un champ : valeur d'avant restaurée, score recalculé, offre relue |
-| `just import-applications <csv> <dossier>` | historique de candidatures : export CSV de la Sheet + dossier `Société/Poste/` (captures, CV envoyé) → table `applications`, pièces copiées sous `data/career/` ; dry-run par défaut, `--apply`, `--report f.jsonl` (`blueprint/wp/WP21-applications.md`) |
-| `just app …` | candidatures **à la main**, sans le pipeline : `app add --company X --title Y --url U` (ou `--text offre.txt`, `--posting <id>`, `--attach cv.pdf`), `app status <id> interview`, `app list --open` (5 mois sans nouvelles = abandonnée, rien n'est stocké), `app show/edit/link/attach/pdf/rm` ; `app adopt-feed --apply` reprend les statuts posés dans le feed avant WP21 |
-| `just app cv …` | le registre des CV (`blueprint/wp/WP22-cvs.md`) : `app cv list`, `add <pdf> --label v3`, `label <id> <nom> [--pin\|--unpin]`, `set <candidature> <cv\|none>` ; `backfill` lie les candidatures au CV de leur dossier, dry-run par défaut, `--apply`, `--report f.jsonl` |
-| `just backup` | sauvegarde à chaud de `./data/jobtracker.db` et archive de `./data/career` dans `./backups` |
-| `just timers-install` / `timers-remove` | collecte 3×/jour + sauvegarde quotidienne, minuteries systemd **utilisateur** (`deploy/local/`) |
-| `just loop` | ordonnanceur continu |
-| `just score-tracks` | note les offres stockées contre chaque piste de `configs/tracks.yaml` (`collect` et `loop` le font seuls) |
-| `just discover-employers` | employeurs vus chez les agrégateurs et absents de `companies.yaml` (alimente WP00) |
-| `just replay <date>` | rejeu du normaliseur sur les entrées archivées, **dry-run** : delta par étage, régression signalée |
-| `just report` | rapport hebdomadaire markdown dans `docs/reports/` |
-| `./scripts/deploy.sh` · `backup.sh` · `restore.sh` | déploiement de la stack de prod, sauvegarde à chaud, restauration — voir `deploy/RUNBOOK.md` |
-| `just llm-drain` | un passage (20 offres) sur la file LLM différée ; `--all` = jusqu'à vider la file ou perdre le serveur |
-| `just status` | santé : sources muettes, sources en erreur, fraîcheur du flux (code retour 1 si dégradé) |
-| `just api` | `uvicorn` sur `127.0.0.1:8100` |
-| `just web` | front seul, Vite sur `127.0.0.1:5190` |
-| `just types` | régénère `web/openapi.json` + `web/src/api/schema.gen.ts` depuis FastAPI |
-| `just web-check` / `just types-check` | front (typecheck, lint, vitest, build + budget) / contrat d'API commité = celui de FastAPI |
-| `just e2e` | Playwright (parcours, axe, captures) sur la stack compose + base de démo figée ; `just e2e --update-snapshots` réécrit les captures |
-| `just ci` | reproduit les jobs `backend`, `frontend`, `api-contract` : `lint arch test web-check types-check` |
+| `just lint` | ruff check + format check + `mypy --strict`: **green before any commit** |
+| `just arch` | `import-linter`: contracts D1→D9 of `blueprint/01-ARCHITECTURE.md` |
+| `just test` | pytest, excluding the `live` marker |
+| `just test-golden` | normalizer golden corpus, offline, with resolution rate per stage |
+| `just migrate` | applies `migrations/*.sql` |
+| `just run-once greenhouse` | one collection cycle on a family of sources |
+| `just browser-install` | installs Chromium for `source: custom` boards: **once per machine**, after `just sync` |
+| `just collect` | **one pass** over all enabled sources of `configs/sources.yaml`, then the LLM queue and the LLM review of new postings; writes to `./data/jobtracker.db` (exit code 1 if degraded) |
+| `just up` / `just down` | the interface locally: API + front end in Docker (`docker-compose.yml`), on `http://127.0.0.1:5190`, reads `./data/jobtracker.db` |
+| `just llm-enqueue` | queues the **already stored** postings the LLM can still help with (to do once, with the server on); then `just llm-drain --all` processes them to the end |
+| `just llm-review` | the LLM **reviews all postings** and corrects salary, locations, seniority, visa, PhD, deadline; each correction requires a quotation found in the text; `--dry-run` writes nothing, `--limit N`, `--report f.jsonl` (`blueprint/wp/WP19-llm-review.md`) |
+| `just llm-revert --field F` | cancels the LLM's corrections on a field: previous value restored, score recomputed, posting reread |
+| `just import-applications <csv> <folder>` | application history: CSV export of the Sheet + `Company/Position/` folder (screenshots, CV sent) → `applications` table, attachments copied under `data/career/`; dry-run by default, `--apply`, `--report f.jsonl` (`blueprint/wp/WP21-applications.md`) |
+| `just app …` | **manual** applications, without the pipeline: `app add --company X --title Y --url U` (or `--text posting.txt`, `--posting <id>`, `--attach cv.pdf`), `app status <id> interview`, `app list --open` (5 months without news = abandoned, nothing is stored), `app show/edit/link/attach/pdf/rm`; `app adopt-feed --apply` takes over the statuses set in the feed before WP21 |
+| `just app cv …` | the CV registry (`blueprint/wp/WP22-cvs.md`): `app cv list`, `add <pdf> --label v3`, `label <id> <name> [--pin\|--unpin]`, `set <application> <cv\|none>`; `backfill` links applications to the CV in their folder, dry-run by default, `--apply`, `--report f.jsonl` |
+| `just backup` | hot backup of `./data/jobtracker.db` and archive of `./data/career` in `./backups` |
+| `just timers-install` / `timers-remove` | collection 3×/day + daily backup, **user** systemd timers (`deploy/local/`) |
+| `just loop` | continuous scheduler |
+| `just score-tracks` | scores stored postings against each track of `configs/tracks.yaml` (`collect` and `loop` do it on their own) |
+| `just discover-employers` | employers seen on aggregators and absent from `companies.yaml` (feeds WP00) |
+| `just replay <date>` | replay of the normalizer on archived inputs, **dry-run**: delta per stage, regression flagged |
+| `just report` | weekly markdown report in `docs/reports/` |
+| `./scripts/deploy.sh` · `backup.sh` · `restore.sh` | deployment of the production stack, hot backup, restore; see `deploy/RUNBOOK.md` |
+| `just llm-drain` | one pass (20 postings) over the deferred LLM queue; `--all` = until the queue is empty or the server is lost |
+| `just status` | health: silent sources, failing sources, feed freshness (exit code 1 if degraded) |
+| `just api` | `uvicorn` on `127.0.0.1:8100` |
+| `just web` | front end only, Vite on `127.0.0.1:5190` |
+| `just types` | regenerates `web/openapi.json` + `web/src/api/schema.gen.ts` from FastAPI |
+| `just web-check` / `just types-check` | front end (typecheck, lint, vitest, build + budget) / committed API contract = FastAPI's |
+| `just e2e` | Playwright (journeys, axe, screenshots) on the compose stack + frozen demo database; `just e2e --update-snapshots` rewrites the screenshots |
+| `just ci` | reproduces the `backend`, `frontend`, `api-contract` jobs: `lint arch test web-check types-check` |
 | `just ci-full` | `ci` + `e2e` |
 
-`just types` est à relancer **après tout changement de route ou de schéma API** :
-les deux fichiers sont commités et le job CI `api-contract` échoue si le diff
-n'est pas vide.
+Rerun `just types` **after any API route or schema change**: both files are committed and the
+CI job `api-contract` fails if the diff is not empty.
 
-## Suivi du travail — GitHub Issues, pas de markdown de handoff
+## Tracking work: GitHub Issues, no handoff markdown
 
-Le « JIRA » du projet, ce sont les **GitHub Issues du repo**. `gh` est
-authentifié (compte `HadrienT`).
+The project's "JIRA" is the repository's **GitHub Issues**. `gh` is authenticated (account
+`HadrienT`).
 
-- **Au démarrage d'une session** : `gh issue list --state open`.
-- **Issue traitée** → `gh issue close <n> --comment "fait dans <sha>"`.
-- **Jamais** de fichier markdown de passation entre sessions. Une tâche qui
-  survit à la session est une issue.
-- Les gros morceaux de **conception** vivent dans `blueprint/wp/*.md` ; l'issue
-  y renvoie, elle ne les remplace pas.
-- `blueprint/dependencies.md` porte la matrice de parallélisation : **le
-  consulter avant de démarrer un lot**, pour vérifier que ses prérequis sont
-  faits et qu'aucune autre session ne tient les mêmes fichiers.
+- **At the start of a session**: `gh issue list --state open`.
+- **Issue handled** → `gh issue close <n> --comment "done in <sha>"`.
+- **Never** a markdown handoff file between sessions. A task that outlives the session is an
+  issue.
+- Large pieces of **design** live in `blueprint/wp/*.md`; the issue points to them, it does not
+  replace them.
+- `blueprint/dependencies.md` holds the parallelization matrix: **consult it before starting a
+  work package**, to check that its prerequisites are done and that no other session holds the
+  same files.
 
-## Documents de référence
+## Reference documents
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| [`blueprint/README.md`](blueprint/README.md) | Index, table des lots de travail, graphe de dépendances |
-| [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) | Contexte minimal complet. **Lu par tout agent, sans exception** |
-| [`blueprint/09-CONVENTIONS.md`](blueprint/09-CONVENTIONS.md) | Conventions, unités, Definition of Done. **Lu avant de coder** |
-| [`blueprint/10-PROFILE-TARGET.md`](blueprint/10-PROFILE-TARGET.md) | **La cible** : le profil quant dev junior, la grille de scoring, la taxonomie des rôles |
-| [`blueprint/11-SOURCES.md`](blueprint/11-SOURCES.md) | Catalogue des sources : familles d'ATS, endpoints, seed d'entreprises, statut légal |
-| [`blueprint/dependencies.md`](blueprint/dependencies.md) | Qui peut coder quoi en parallèle, et sur quels fichiers on se marche dessus |
-| [`blueprint/decisions.md`](blueprint/decisions.md) | ADR : arbitrages techniques et alternatives rejetées |
+| [`blueprint/README.md`](blueprint/README.md) | Index, table of work packages, dependency graph |
+| [`blueprint/00-PRIMER.md`](blueprint/00-PRIMER.md) | Minimal complete context. **Read by every agent, without exception** |
+| [`blueprint/09-CONVENTIONS.md`](blueprint/09-CONVENTIONS.md) | Conventions, units, Definition of Done. **Read before coding** |
+| [`blueprint/10-PROFILE-TARGET.md`](blueprint/10-PROFILE-TARGET.md) | **The target**: the junior quant dev profile, the scoring grid, the role taxonomy |
+| [`blueprint/11-SOURCES.md`](blueprint/11-SOURCES.md) | Source catalogue: ATS families, endpoints, company seed, legal status |
+| [`blueprint/dependencies.md`](blueprint/dependencies.md) | Who can code what in parallel, and on which files people step on each other |
+| [`blueprint/decisions.md`](blueprint/decisions.md) | ADRs: technical trade-offs and rejected alternatives |
 
 ## Conventions
 
-- **Conversation avec le mainteneur : en français.** Code, identifiants,
-  commentaires, messages de commit, **interface du front** : en anglais.
-  `blueprint/` et `docs/` sont en français.
-- **Commits : passer par une branche, jamais directement sur `main`.** Terminer
-  les messages par `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`.
-- **Python 3.13**, `uv`, `ruff` (ligne 100), `mypy --strict`, DTO `pydantic` v2
-  `frozen=True`, journalisation `structlog` en JSON.
-- **Argent en `Decimal`**, jamais `float`. **Horodatages `datetime` aware UTC**,
-  jamais `datetime.now()` — `core.clock.utc_now()` uniquement.
-- Tout nouveau parseur arrive avec son cas dans le corpus doré
-  (`tests/fixtures/postings/`), et de préférence un test de **propriété** plutôt
-  qu'une simple égalité.
-- Une offre écartée porte toujours un **motif de rejet** persisté. On ne jette
-  jamais silencieusement.
-- La **charge utile brute** de chaque offre est archivée compressée. Sans elle,
-  aucune amélioration du normaliseur n'est mesurable par rejeu.
+- **Language: English by default.** Everything you produce is in English: code, identifiers, comments, commit messages, PRs, issues, documentation and interface text. The only exception is the conversation: reply in the language the maintainer writes in, so in French when they write in French. `blueprint/` and `docs/` are historically in French: new content there is in English too.
+- **Commits: go through a branch, never directly on `main`.** End messages with
+  `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`.
+- **Python 3.13**, `uv`, `ruff` (line length 100), `mypy --strict`, pydantic v2 DTOs with
+  `frozen=True`, `structlog` JSON logging.
+- **Money in `Decimal`**, never `float`. **Timezone-aware UTC `datetime` timestamps**, never
+  `datetime.now()`: `core.clock.utc_now()` only.
+- Any new parser comes with its case in the golden corpus (`tests/fixtures/postings/`), and
+  preferably a **property** test rather than a simple equality.
+- A discarded posting always carries a persisted **rejection reason**. Nothing is ever dropped
+  silently.
+- The **raw payload** of each posting is archived compressed. Without it, no normalizer
+  improvement can be measured by replay.
 
-## Le piège permanent du projet : la panne silencieuse
+## The project's permanent trap: the silent failure
 
-Un jeton de board qui passe en 404 ne lève pas d'erreur : il renvoie zéro offre,
-et zéro offre ressemble exactement à « cette société ne recrute pas en ce
-moment ». Tout étage capable de se taire porte un compteur, et l'absence de
-résultat déclenche une alerte technique — pas un silence. Voir
+A board token that turns 404 does not raise an error: it returns zero postings, and zero
+postings looks exactly like "this company is not hiring right now". Every stage capable of going
+quiet carries a counter, and the absence of results triggers a technical alert, not silence. See
 [`blueprint/07-ERRORS-AND-LOGGING.md`](blueprint/07-ERRORS-AND-LOGGING.md) §4.
 
-## Sources fragiles — règle non négociable
+## Fragile sources: non-negotiable rule
 
-LinkedIn, Indeed et consorts sont collectés en **dernier lot**, isolés dans
-`collect/aggregators/`, derrière un interrupteur de configuration, et **le
-système doit rester pleinement fonctionnel avec ces sources désactivées**. Leurs
-CGU interdisent le scraping et leur anti-bot est agressif : elles deviendront la
-source n°1 de maintenance du projet. Elles n'apportent que de la couverture
-marginale — les ATS officiels portent l'essentiel du marché quant. Voir
+LinkedIn, Indeed and the like are collected in the **last work package**, isolated in
+`collect/aggregators/`, behind a configuration switch, and **the system must remain fully
+functional with these sources disabled**. Their terms forbid scraping and their anti-bot
+protection is aggressive: they would become the project's number one maintenance burden. They
+bring only marginal coverage, as official ATSs carry most of the quant market. See
 [`blueprint/wp/WP13-aggregators.md`](blueprint/wp/WP13-aggregators.md).
 
-## Déploiement
+## Deployment
 
-Auto-hébergé sur le serveur perso, comme `quant-modeling` : `docker compose`
-(collecteur + API + front nginx), exposé en HTTPS par un **tunnel Cloudflare**,
-aucun port ouvert. Les ports hôte sont paramétrables — `JT_API_PORT` (défaut
-8100) et `JT_WEB_PORT` (défaut 5190) — parce que plusieurs projets tournent sur
-la même machine. Copier `.env.example` en `.env`.
+Self-hosted on the personal server, like `quant-modeling`: `docker compose` (collector + API +
+nginx front end), exposed over HTTPS by a **Cloudflare tunnel**, no open port. Host ports are
+configurable, `JT_API_PORT` (default 8100) and `JT_WEB_PORT` (default 5190), because several
+projects run on the same machine. Copy `.env.example` to `.env`.
 
-Piège Vite classique : les variables `VITE_*` sont **inlinées au build**, pas
-lues au runtime. Le front lit sa configuration depuis un `/config.js` injecté
-par nginx au démarrage — ne pas réintroduire de `VITE_API_BASE` inliné.
+Classic Vite trap: `VITE_*` variables are **inlined at build time**, not read at runtime. The
+front end reads its configuration from a `/config.js` injected by nginx at startup; do not
+reintroduce an inlined `VITE_API_BASE`.
