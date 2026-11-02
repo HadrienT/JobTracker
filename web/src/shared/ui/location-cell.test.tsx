@@ -42,6 +42,40 @@ describe('LocationCell', () => {
     expect(screen.getByText('See job description')).toBeInTheDocument()
   })
 
+  it('shows the country rather than a multi-site raw list when only the country resolved', () => {
+    const raw = 'Remote - Texas, US; Remote - Utah, US; Remote - Ohio, US'
+    renderWithProvider(
+      <LocationCell locations={[{ city: null, country: 'US', region: 'amer', remote_mode: 'remote', raw }]} />,
+    )
+    expect(screen.getByText('US')).toBeInTheDocument()
+    expect(screen.queryByText(raw)).not.toBeInTheDocument()
+  })
+
+  it('truncates the label so a long one stays in its column', () => {
+    renderWithProvider(
+      <LocationCell
+        locations={[{ city: null, country: null, region: null, remote_mode: 'unknown', raw: 'See job description' }]}
+      />,
+    )
+    expect(screen.getByText('See job description')).toHaveClass('truncate')
+  })
+
+  it('lists a raw string shared by several sites once on hover', async () => {
+    const user = userEvent.setup()
+    const raw = 'London, UK; Paris, FR'
+    renderWithProvider(
+      <LocationCell
+        locations={[
+          { city: 'London', country: 'GB', region: 'emea', remote_mode: 'hybrid', raw },
+          { city: 'Paris', country: 'FR', region: 'emea', remote_mode: 'hybrid', raw },
+        ]}
+      />,
+    )
+    await user.hover(screen.getByText('London GB'))
+    expect((await screen.findAllByText(raw)).length).toBeGreaterThan(0)
+    expect(screen.queryByText(`${raw} · ${raw}`)).not.toBeInTheDocument()
+  })
+
   it('reveals the raw source string on hover', async () => {
     const user = userEvent.setup()
     renderWithProvider(
