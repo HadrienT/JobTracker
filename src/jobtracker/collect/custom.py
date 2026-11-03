@@ -20,9 +20,12 @@ Three ways in, tried in this order:
    anchor matching `link` is a posting and the linked page is the description. A
    card's first line of text is the title and what follows it the location
    (`extra.title_line: 2` when the card leads with a badge, `extra.title: heading`
-   to take the detail page's `<h1>` instead). `extra.pages` walks a paginated listing whose URL
-   carries a `{page}` placeholder (`extra.page_start` if it does not count from 1,
-   `extra.page_step` if the placeholder is an offset).
+   to take the detail page's `<h1>` instead). When the link holds the title alone,
+   `extra.location_class` names the class of the card element that shows the place, read
+   after the link (`extra.location_parts: "2,1"` reorders its text nodes into "city,
+   country"). `extra.pages` walks a paginated listing whose URL carries a `{page}`
+   placeholder (`extra.page_start` if it does not count from 1, `extra.page_step` if the
+   placeholder is an offset).
 
 A description that costs a request of its own is only fetched for a title that could
 matter (collect/prefilter.py) — a bank lists thousands of roles — and never twice: a
@@ -41,7 +44,7 @@ import json
 import re
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from html import unescape
 from html.parser import HTMLParser
 from typing import Any
@@ -97,6 +100,10 @@ _MIN_MAIN_TEXT = 200
 _BLOCK_ELEMENTS = frozenset(
     {"p", "div", "br", "li", "ul", "ol", "tr", "section", "article", "h1", "h2", "h3", "h4", "h5"}
 )
+_VOID_ELEMENTS = frozenset(
+    {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "wbr"}
+)
+_SCREEN_READER_ONLY = "sr-only"
 _DEFAULT_API_PAGE_SIZE = 100
 # A total drifts while a listing is walked, and two ids can share a posting: short of
 # this share of the announced total, the walk did not reach the end.
@@ -140,6 +147,8 @@ class _Anchor:
     url: str
     # The anchor's text, one entry per text node: a card's title, location, team...
     parts: tuple[str, ...]
+    # What the card shows beside the link (`extra.location_class`), when it is not inside it.
+    location: str | None = None
 
     @property
     def named_parts(self) -> tuple[str, ...]:
@@ -147,14 +156,53 @@ class _Anchor:
 
 
 class _AnchorExtractor(HTMLParser):
-    def __init__(self, base_url: str) -> None:
+    """Every anchor of a page, and — with `location_class` — the text of the first element
+    carrying that class after each one: where a card keeps its place when the link holds
+    only the title (Société Générale, Talentsoft's `ts-offer-card-content__list`,
+    SuccessFactors' `location` field). Text a screen reader alone is meant to read
+    (`sr-only`, a field's "Location" label) is left out. `location_parts` picks and orders
+    the element's text nodes when the card does not read "city, country" — Talentsoft lists
+    contract, country, city."""
+
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        link: re.Pattern[str] | None = None,
+        location_class: str | None = None,
+        location_parts: tuple[int, ...] | None = None,
+    ) -> None:
         super().__init__(convert_charrefs=True)
         self._base_url = base_url
+        self._link = link
+        self._location_class = location_class
+        self._location_order = location_parts
         self._href: str | None = None
         self._parts: list[str] = []
         self.anchors: list[_Anchor] = []
+        # The last anchor that is a posting: a card's place belongs to it, not to the
+        # "Apply" or favourite link that may sit between the two.
+        self._card: int | None = None
+        # Inside a location element: its nesting depth, and the depth of a hidden label in it.
+        self._location_depth = 0
+        self._hidden_depth = 0
+        self._location_parts: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        classes = (dict(attrs).get("class") or "").split()
+        if self._location_depth:
+            if tag not in _VOID_ELEMENTS:
+                self._location_depth += 1
+                if not self._hidden_depth and _SCREEN_READER_ONLY in classes:
+                    self._hidden_depth = self._location_depth
+        elif (
+            self._location_class in classes
+            and self._card is not None
+            and self.anchors[self._card].location is None
+            and tag not in _VOID_ELEMENTS
+        ):
+            self._location_depth = 1
+            self._location_parts = []
         if tag != "a":
             return
         self._close_anchor()
@@ -166,17 +214,37 @@ class _AnchorExtractor(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag == "a":
             self._close_anchor()
+        if self._location_depth and tag not in _VOID_ELEMENTS:
+            if self._hidden_depth == self._location_depth:
+                self._hidden_depth = 0
+            self._location_depth -= 1
+            if not self._location_depth:
+                self._close_location()
 
     def handle_data(self, data: str) -> None:
         if self._href is not None:
             self._parts.append(data)
+        if self._location_depth and not self._hidden_depth:
+            self._location_parts.append(data)
 
     def _close_anchor(self) -> None:
         if self._href is not None:
             parts = (_SPACES.sub(" ", p.replace("\n", " ")).strip() for p in self._parts)
             self.anchors.append(_Anchor(self._href, tuple(p for p in parts if p)))
+            if self._link is not None and self._link.search(self._href) is not None:
+                self._card = len(self.anchors) - 1
         self._href = None
         self._parts = []
+
+    def _close_location(self) -> None:
+        cleaned = (_SPACES.sub(" ", p.replace("\n", " ")).strip(" ,") for p in self._location_parts)
+        parts = [p for p in cleaned if p]
+        if self._location_order is not None:
+            parts = [parts[i] for i in self._location_order if i < len(parts)]
+        location = ", ".join(parts)
+        if location and self._card is not None:
+            self.anchors[self._card] = replace(self.anchors[self._card], location=location)
+        self._location_parts = []
 
 
 class _PageText(HTMLParser):
@@ -266,8 +334,17 @@ def _listing_page(session: HttpSession, url: str, *, first: bool) -> str:
         return session.get_text(url)
 
 
-def _matching_anchors(listing_url: str, html: str, pattern: re.Pattern[str]) -> list[_Anchor]:
-    extractor = _AnchorExtractor(listing_url)
+def _matching_anchors(
+    listing_url: str,
+    html: str,
+    pattern: re.Pattern[str],
+    *,
+    location_class: str | None = None,
+    location_parts: tuple[int, ...] | None = None,
+) -> list[_Anchor]:
+    extractor = _AnchorExtractor(
+        listing_url, link=pattern, location_class=location_class, location_parts=location_parts
+    )
     extractor.feed(html)
     extractor.close()
     return [anchor for anchor in extractor.anchors if pattern.search(anchor.url) is not None]
@@ -297,6 +374,17 @@ def _fetch_rendered_listing(
         raise ConfigError(
             f"custom board {board.company_slug!r}: extra.link is not a valid regex ({exc})"
         ) from exc
+    location_class = board.extra.get("location_class") or None
+    try:
+        location_parts = (
+            tuple(int(i) for i in board.extra["location_parts"].split(","))
+            if board.extra.get("location_parts")
+            else None
+        )
+    except ValueError as exc:
+        raise ConfigError(
+            f"custom board {board.company_slug!r}: extra.location_parts must be indices, e.g. '2,1'"
+        ) from exc
 
     requests_made = 0
     truncated = False
@@ -318,7 +406,9 @@ def _fetch_rendered_listing(
             truncated = True  # a spent budget reads as an empty body (collect/http.py)
             break
         requests_made += 1
-        anchors = _matching_anchors(listing_url, html, pattern)
+        anchors = _matching_anchors(
+            listing_url, html, pattern, location_class=location_class, location_parts=location_parts
+        )
         if found and not _new_postings(anchors, pattern, found):
             # Past the first page, a page that adds nothing is the end of the listing — or
             # a render read too early: no card yet, or still the cards of the first page
@@ -329,7 +419,13 @@ def _fetch_rendered_listing(
                 truncated = True
                 break
             requests_made += 1
-            anchors = _matching_anchors(listing_url, html, pattern)
+            anchors = _matching_anchors(
+                listing_url,
+                html,
+                pattern,
+                location_class=location_class,
+                location_parts=location_parts,
+            )
         before = len(found)
         for anchor in anchors:
             job_id = _job_id(pattern, anchor.url)
@@ -337,6 +433,8 @@ def _fetch_rendered_listing(
             # A card often links the same posting twice (title, then "Apply"): keep the named one.
             if previous is None or not previous.named_parts:
                 found[job_id] = anchor
+            elif previous.location is None and anchor.location is not None:
+                found[job_id] = replace(previous, location=anchor.location)
         if len(found) == before:
             break  # twice nothing new: past the end of the listing
 
@@ -363,14 +461,16 @@ def _fetch_rendered_listing(
         stored = known.get((board.company_slug, job_id))
         if stored is not None:
             title: str = stored.title_raw
-            location: str | None = stored.location_raw
+            # A posting stored before its board named a `location_class` takes the card's place.
+            location: str | None = stored.location_raw or anchor.location
             description: str = stored.description_raw
         else:
             named = anchor.named_parts[max(title_at, 0) :]
             card_names_it = bool(named) and not use_heading
             if card_names_it and not looks_relevant(named[0]):
                 _log_detail_skipped(board)
-                title, location, description = named[0], ", ".join(named[1:]) or None, ""
+                title, description = named[0], ""
+                location = anchor.location or ", ".join(named[1:]) or None
             else:
                 try:
                     detail_html = session.get_text(anchor.url)
@@ -392,10 +492,10 @@ def _fetch_rendered_listing(
                 page.close()
                 if card_names_it:
                     title = named[0]
-                    location = ", ".join(named[1:]) or None
+                    location = anchor.location or ", ".join(named[1:]) or None
                 else:
                     title = page.heading or (named[0] if named else "")
-                    location = None
+                    location = anchor.location
                 description = page.text()
         if not title:
             _logger.info(

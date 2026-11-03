@@ -585,7 +585,7 @@
   name: Capital Fund Management (CFM)
   source: custom  # verified 2026-10-31 — SuccessFactors RMK
   token: "https://jobs.cfm.com/search/?q=&startrow={page}"
-  extra: { link: "jobs\\.cfm\\.com/job/[^/]+/(\\d+)/", pages: "3", page_start: "0", page_step: "25" }
+  extra: { link: "jobs\\.cfm\\.com/job/[^/]+/(\\d+)/", pages: "3", page_start: "0", page_step: "25", location_class: location }
   sector: hedge_fund
   hq_country: FR
   priority: 1
@@ -888,7 +888,7 @@
   name: Société Générale
   source: custom  # verified 2026-10-13 — rendered listing, ten cards a page over ~110 pages; English and French postings carry two link shapes
   token: "https://careers.societegenerale.com/en/search?page={page}"
-  extra: { link: "^https://careers\\.societegenerale\\.com/(?:en/job-offers|offres-d-emploi)/([^/?#]+)", pages: "130" }
+  extra: { link: "^https://careers\\.societegenerale\\.com/(?:en/job-offers|offres-d-emploi)/([^/?#]+)", pages: "130", location_class: mask-location-check }
   sector: bank
   hq_country: FR
   priority: 2
@@ -918,7 +918,7 @@
   name: Crédit Agricole CIB
   source: custom  # verified 2026-10-08 — rendered listing (Talentsoft)
   token: "https://jobs.ca-cib.com/job/list-of-jobs.aspx?page={page}&LCID=2057"
-  extra: { link: "jobs\\.ca-cib\\.com/job/job-[^/]*_(\\d+)\\.aspx", pages: "40" }
+  extra: { link: "jobs\\.ca-cib\\.com/job/job-[^/]*_(\\d+)\\.aspx", pages: "40", location_class: ts-offer-card-content__list, location_parts: "2,1" }  # contract, country, city
   sector: bank
   hq_country: FR
   priority: 2
@@ -959,7 +959,7 @@
   name: Nomura
   source: custom  # verified 2026-10-13 — rendered listing (SuccessFactors), a hundred rows a page
   token: "https://careers.nomura.com/Nomura/search/?q=&startrow={page}"
-  extra: { link: "^https://careers\\.nomura\\.com/Nomura/job/[^/]+/(\\d+)", pages: "20", page_start: "0", page_step: "100" }
+  extra: { link: "^https://careers\\.nomura\\.com/Nomura/job/[^/]+/(\\d+)", pages: "20", page_start: "0", page_step: "100", location_class: jobLocation }
   sector: bank
   hq_country: JP
   priority: 2
@@ -1019,7 +1019,7 @@
   name: Scotiabank
   source: custom  # verified 2026-10-08 — rendered listing (SuccessFactors)
   token: "https://jobs.scotiabank.com/search/?q=&startrow={page}"
-  extra: { link: "jobs\\.scotiabank\\.com/job/[^/]+/(\\d+)", pages: "40", page_start: "0", page_step: "25" }
+  extra: { link: "jobs\\.scotiabank\\.com/job/[^/]+/(\\d+)", pages: "40", page_start: "0", page_step: "25", location_class: jobLocation }
   sector: bank
   hq_country: CA
   priority: 2
@@ -1127,7 +1127,7 @@
   name: Intesa Sanpaolo
   source: custom  # verified 2026-10-08 — rendered listing (SuccessFactors)
   token: "https://jobs.intesasanpaolo.com/search/?q=&startrow={page}"
-  extra: { link: "jobs\\.intesasanpaolo\\.com/job/[^/]+/(\\d+)", pages: "20", page_start: "0", page_step: "25" }
+  extra: { link: "jobs\\.intesasanpaolo\\.com/job/[^/]+/(\\d+)", pages: "20", page_start: "0", page_step: "25", location_class: jobLocation }
   sector: bank
   hq_country: IT
   priority: 2
@@ -1290,7 +1290,7 @@
   name: Amundi
   source: custom  # verified 2026-10-08 — rendered listing (Talentsoft)
   token: "https://jobs.amundi.com/job/list-of-jobs.aspx?page={page}&LCID=2057"
-  extra: { link: "jobs\\.amundi\\.com/job/job-[^/]*_(\\d+)\\.aspx", pages: "20" }
+  extra: { link: "jobs\\.amundi\\.com/job/job-[^/]*_(\\d+)\\.aspx", pages: "20", location_class: ts-offer-list-item__description, location_parts: "3,2" }  # contract, entity, country, city
   sector: asset_manager
   hq_country: FR
   priority: 2
@@ -2908,7 +2908,7 @@
   name: Temasek
   source: custom  # verified 2026-10-28 — rendered listing, 87 postings
   token: "https://jobs.temasek.com.sg/search/?q=&startrow={page}"
-  extra: { link: "jobs\\.temasek\\.com\\.sg/job/[^/]+/(\\d+)/", pages: "6", page_start: "0", page_step: "25" }
+  extra: { link: "jobs\\.temasek\\.com\\.sg/job/[^/]+/(\\d+)/", pages: "6", page_start: "0", page_step: "25", location_class: jobLocation }
   sector: asset_manager
   hq_country: SG
   priority: 2
@@ -2918,7 +2918,7 @@
   name: SGX Group
   source: custom  # verified 2026-10-28 — rendered listing, 30 postings
   token: "https://careers.sgx.com/search/?q=&startrow={page}"
-  extra: { link: "careers\\.sgx\\.com/job/[^/]+/(\\d+)/", pages: "6", page_start: "0", page_step: "25" }
+  extra: { link: "careers\\.sgx\\.com/job/[^/]+/(\\d+)/", pages: "6", page_start: "0", page_step: "25", location_class: jobLocation }
   sector: vendor
   hq_country: SG
   priority: 2
@@ -2928,7 +2928,7 @@
   name: SIX Group
   source: custom  # verified 2026-10-28 — rendered listing, 90 postings
   token: "https://jobs.six-group.com/search/?q=&startrow={page}"
-  extra: { link: "jobs\\.six-group\\.com/job/[^/]+/(\\d+)/", pages: "12", page_start: "0", page_step: "25" }
+  extra: { link: "jobs\\.six-group\\.com/job/[^/]+/(\\d+)/", pages: "12", page_start: "0", page_step: "25", location_class: jobLocation }
   sector: vendor
   hq_country: CH
   priority: 2
@@ -3014,7 +3014,7 @@
   name: Swiss Re
   source: custom  # verified 2026-10-28 — rendered listing, 241 postings
   token: "https://careers.swissre.com/search/?q=&startrow={page}"
-  extra: { link: "careers\\.swissre\\.com/job/[^/]+/(\\d+)/", pages: "12", page_start: "0", page_step: "25" }
+  extra: { link: "careers\\.swissre\\.com/job/[^/]+/(\\d+)/", pages: "12", page_start: "0", page_step: "25", location_class: jobLocation }
   sector: bank_other
   hq_country: CH
   priority: 3
@@ -3024,7 +3024,7 @@
   name: Zurich Insurance
   source: custom  # verified 2026-10-28 — rendered listing, 733 postings
   token: "https://www.careers.zurich.com/search/?q=&startrow={page}"
-  extra: { link: "careers\\.zurich\\.com/job/[^/]+/(\\d+)/", pages: "40", page_start: "0", page_step: "25" }
+  extra: { link: "careers\\.zurich\\.com/job/[^/]+/(\\d+)/", pages: "40", page_start: "0", page_step: "25", location_class: jobLocation }
   sector: bank_other
   hq_country: CH
   priority: 3
@@ -3173,7 +3173,7 @@
   name: GIC
   source: custom  # verified 2026-10-28 — rendered listing, 146 postings
   token: "https://careers.gic.com.sg/search/?q=&startrow={page}"
-  extra: { link: "careers\\.gic\\.com\\.sg/job/[^/]+/(\\d+)/", pages: "8", page_start: "0", page_step: "20" }
+  extra: { link: "careers\\.gic\\.com\\.sg/job/[^/]+/(\\d+)/", pages: "8", page_start: "0", page_step: "20", location_class: jobLocation }
   sector: asset_manager
   hq_country: SG
   priority: 2

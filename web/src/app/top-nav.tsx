@@ -5,6 +5,7 @@ const LINKS: { route: RouteName; path: string; label: string }[] = [
   { route: 'feed', path: '/', label: 'Feed' },
   { route: 'swiss', path: '/ch', label: 'Swiss tech' },
   { route: 'tech', path: '/tech', label: 'Tech' },
+  { route: 'paris', path: '/paris', label: 'Paris' },
   { route: 'applications', path: '/applications', label: 'Applications' },
   { route: 'map', path: '/map', label: 'Map' },
   { route: 'companies', path: '/companies', label: 'Companies' },
@@ -18,7 +19,7 @@ interface TopNavProps {
 
 export function TopNav({ route, navigate }: TopNavProps) {
   return (
-    // On a phone the seven tabs don't fit: the row scrolls sideways rather than wrapping.
+    // On a phone the eight tabs don't fit: the row scrolls sideways rather than wrapping.
     <nav aria-label="Main" className="flex items-center gap-4 border-b border-border px-4 py-2">
       {/* A full reload, not a refetch: the one way to pick up a freshly deployed front on a phone. */}
       <button

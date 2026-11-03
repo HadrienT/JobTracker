@@ -164,3 +164,168 @@ tracks:
       tech_niche: 10
       # Visa keeps the quant weights: across the US, the UK, Japan or Singapore a "no
       # sponsorship" line does close the door for an EU national.
+
+  paris:
+    # Quant finance in France — Paris and its business districts in practice (La Défense,
+    # Montrouge, Saint-Quentin-en-Yvelines…): the banks' pricing, model and strats teams, the
+    # vendors (Murex, Numerix…), the funds (CFM, QRT, Squarepoint…). Requested 2026-11-03:
+    # the maintainer is French, so there is no visa to win and no low-salary market to leave
+    # out, and half these postings are written in French. The quant feed's exclusion of
+    # `tech` employers is inherited: Mistral or Helsing have nothing to do in this tab.
+    version: 2
+
+    scope:
+      countries: [FR]
+
+    # A title keyword (English or French, on word edges: "quant" does not match "quantitative")
+    # or C++ in the stack puts a posting in. Not "research" alone: the sell side's equity
+    # research associates are not quants.
+    topic:
+      titles:
+        [
+          "quant",
+          "quants",
+          "quantitative",
+          "quantitatif",
+          "quantitative analyst",
+          "strat",
+          "strats",
+          "pricing",
+          "valuation",
+          "valorisation",
+          "xva",
+          "cva",
+          "derivatives",
+          "dérivés",
+          "structurer",
+          "structuration",
+          "trader",
+          "trading",
+          "front office",
+          "front-office",
+          "c++",
+          "c#",
+          "non linear", # CA-CIB's derivatives IT: "FO Booking & Risk (Non Linear IT)"
+          "fo",
+          "rates",
+          "model validation",
+          "validation de modèles",
+          "model risk",
+          "risk model",
+          "modélisation",
+          "modèle",
+          "modèles",
+          "ingénieur marché",
+          "financial engineering",
+          "ingénierie financière",
+          "market risk",
+          "risque de marché",
+          "risques de marché",
+          "counterparty",
+          "contrepartie",
+          "monte carlo",
+        ]
+      tech: [cpp]
+
+    titles:
+      strong:
+        [
+          "quantitative developer",
+          "quant developer",
+          "quantitative software engineer",
+          "quant dev",
+          "développeur quant",
+          "quantitative analyst",
+          "analyste quantitatif",
+          "ingénieur marché",
+          "ingénieur modèle",
+          "pricing",
+          "valorisation",
+          "xva",
+          "strats",
+          "financial engineering",
+          "ingénierie financière",
+          "front office software engineer",
+          "core developer",
+          "trading systems engineer",
+        ]
+      possible:
+        [
+          "quantitative researcher",
+          "quant researcher",
+          "quantitative",
+          "quantitatif",
+          "model validation",
+          "validation de modèles",
+          "model risk",
+          "modélisation",
+          "risque de contrepartie",
+          "counterparty",
+          "market risk",
+          "risque de marché",
+          "c++ developer",
+          "développeur c++",
+          "front office",
+          "front-office",
+          "software engineer",
+          "développeur",
+          "developpeur",
+          "c#",
+          "python developer",
+          "structurer",
+        ]
+      # The quant list, plus what a French posting calls it — and internships: a French
+      # internship needs a school's agreement (convention de stage), out of reach once
+      # graduated. A V.I.E. is not one and stays in.
+      excluded:
+        [
+          "sales",
+          "recruiter",
+          "compliance",
+          "audit",
+          "hr business partner",
+          "account manager",
+          "client relationship",
+          "coordinator",
+          "executive assistant",
+          "commercial",
+          "chargé d'affaires",
+          "conseiller",
+          "internship",
+          "intern",
+          "stage",
+          "stagiaire",
+          "alternance",
+          "alternant",
+          "apprenti",
+          "apprentice",
+          "apprenticeship",
+          "summer analyst",
+        ]
+
+    seniority:
+      reject:
+        [
+          "senior",
+          "lead",
+          "principal",
+          "staff",
+          "vp",
+          "director",
+          "head of",
+          "directeur",
+          "directrice",
+          "expert",
+          "confirmé",
+          "confirmée",
+          "expérimenté",
+          "expérimentée",
+        ]
+
+    weights:
+      # A French posting rarely states its seniority, so `seniority_match` seldom applies:
+      # a possible title alone has to reach the stretch tier (25), or the tab is near empty.
+      title_possible: 26
+      # A French national in France: no permit to win, none to lose.
+      visa_sponsors: 0
+      visa_no: 0

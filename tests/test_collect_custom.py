@@ -298,6 +298,7 @@ def test_a_listing_with_no_matching_link_is_empty_not_an_error() -> None:
         _board(token="not-a-url", extra={"link": _LINK}),
         _board(token=_LISTING, extra={"link": "("}),
         _board(token=_LISTING + "?p={page}", extra={"link": _LINK, "pages": "many"}),
+        _board(token=_LISTING, extra={"link": _LINK, "location_parts": "city"}),
     ],
 )
 def test_a_malformed_entry_is_a_config_error(board: Board) -> None:
@@ -333,6 +334,92 @@ def test_title_line_skips_the_badge_a_card_leads_with() -> None:
         "Quantitative Developer",
         "Paris",
     )
+
+
+@pytest.mark.parametrize(
+    ("css_class", "card", "location"),
+    [
+        # Société Générale: the place is a sibling of the link, the next field is not read.
+        (
+            "mask-location-check",
+            '<div><a href="/careers/details/quant-dev/"><div>Quantitative Developer</div></a>'
+            '<div class="flex mask-location-check">Paris, France</div>'
+            '<div class="mask-home">Hybrid</div></div>',
+            "Paris, France",
+        ),
+        # Talentsoft: a favourite link between the title and a list of contract, country, city.
+        (
+            "list",
+            '<div class="ts-offer-card"><h3><a href="/careers/details/quant-dev/">'
+            'Quantitative Developer</a></h3><a href="/basket/add">Add</a><ul class="list">'
+            "<li>Permanent</li><li>France</li><li>Montrouge</li></ul></div>",
+            "Permanent, France, Montrouge",
+        ),
+        # SuccessFactors: the field's label is for screen readers, not part of the place.
+        (
+            "location",
+            '<a href="/careers/details/quant-dev/">Quantitative Developer</a>'
+            '<div class="section-field location"><span class="label sr-only">Location</span>'
+            "<div>Paris, 75, FR<br></div></div>",
+            "Paris, 75, FR",
+        ),
+    ],
+)
+def test_location_class_reads_the_place_beside_the_link(
+    css_class: str, card: str, location: str
+) -> None:
+    pages = dict(_PAGES)
+    pages[_LISTING] = card
+    result = CustomCollector().fetch(_listing_board(location_class=css_class), _Pages(pages))
+
+    assert [(p.title_raw, p.location_raw) for p in result.postings] == [
+        ("Quantitative Developer", location)
+    ]
+
+
+def test_location_parts_reorder_the_card_into_city_then_country() -> None:
+    pages = dict(_PAGES)
+    pages[_LISTING] = (
+        '<h3><a href="/careers/details/quant-dev/">Quantitative Developer</a></h3>'
+        '<ul class="list"><li>Permanent</li><li>France</li><li>Montrouge</li></ul>'
+    )
+    board = _listing_board(location_class="list", location_parts="2,1")
+    result = CustomCollector().fetch(board, _Pages(pages))
+
+    assert result.postings[0].location_raw == "Montrouge, France"
+
+
+def test_location_class_belongs_to_the_card_it_follows() -> None:
+    pages = dict(_PAGES)
+    pages[_LISTING] = (
+        '<a href="/careers/details/quant-dev/">Quantitative Developer</a>'
+        '<a href="/careers/details/quant-dev/#apply">Apply now</a>'
+        '<span class="where">London</span>'
+        '<a href="/careers/details/trader/">Trader</a>'  # no place shown: none borrowed
+    )
+    result = CustomCollector().fetch(_listing_board(location_class="where"), _Pages(pages))
+
+    assert [(p.source_job_id, p.location_raw) for p in result.postings] == [
+        ("quant-dev", "London"),
+        ("trader", None),
+    ]
+
+
+def test_a_posting_stored_without_a_place_takes_the_cards() -> None:
+    pages = {
+        _LISTING: '<a href="/careers/details/quant-dev/">Quantitative Developer</a>'
+        '<p class="where">Paris</p>'
+    }
+    known = {
+        ("some_bespoke_shop", "quant-dev"): KnownCustomPosting(
+            title_raw="Quantitative Developer", location_raw=None, description_raw="C++."
+        )
+    }
+    session = _Pages(pages)
+    result = CustomCollector(known=known).fetch(_listing_board(location_class="where"), session)
+
+    assert result.postings[0].location_raw == "Paris"
+    assert session.calls == [_LISTING]  # still never opened again
 
 
 # --- extra.api: the portal's own JSON endpoint --------------------------------

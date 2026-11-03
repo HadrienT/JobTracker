@@ -122,6 +122,17 @@ role_families:
       - risk methodology
       - " alm "
       - asset liability
+      - model risk
+      # what a French bank calls the same desks
+      - analyste risque
+      - risque de marché
+      - risques de marché
+      - modélisation du risque
+      - modélisation risque
+      - modèles de risque
+      - modèle de risque
+      - modélisateur
+      - validation de modèle
 
   quant_dev:
     # a generic engineer/developer title becomes quant_dev when it also names
