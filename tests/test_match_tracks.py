@@ -235,3 +235,69 @@ def test_tech_takes_data_science_one_notch_below_ml_engineering(tech: Profile) -
 
 def test_tech_keeps_the_quant_visa_weights(tech: Profile, quant: Profile) -> None:
     assert tech.weights["visa_no"] == quant.weights["visa_no"]
+
+
+# --- the paris track --------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def paris(base: dict[str, Any]) -> Profile:
+    tracks = build_tracks(
+        base,
+        load_yaml(CONFIGS / "tracks.yaml"),
+        company_sectors={"mistral_ai": "tech", "acme": "bank"},
+    )
+    return tracks[Track.PARIS]
+
+
+def test_paris_scope_is_france(paris: Profile) -> None:
+    assert in_scope(make_posting(locations=_in("FR")), profile=paris)
+    assert not in_scope(make_posting(locations=_in("GB")), profile=paris)
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Ingénieur Marché Valorisation - Junior",
+        "Analyste Quantitatif - Risque de Contrepartie",
+        "Développeur(euse) XVA Front-Office",
+        "Junior Quantitative Developer",
+    ],
+)
+def test_paris_reads_a_french_bank_title_as_strong(paris: Profile, title: str) -> None:
+    posting = make_posting(title=title, role_family=RoleFamily.QUANT_DEV)
+    assert hard_reject(posting, profile=paris) is None
+    assert "title_strong" in {r.code for r in evaluate(posting, profile=paris).reasons}
+
+
+@pytest.mark.parametrize(
+    ("title", "reason"),
+    [
+        ("Stage - Quantitative Developer", "excluded_title"),  # needs a school's agreement
+        ("Internship - 6 months - IT Quant Equity Pricing", "excluded_title"),
+        ("Analyste Quantitatif Confirmé", "senior_only"),
+        ("Equity Research Associate", "off_topic"),  # the sell side's research is not quant
+    ],
+)
+def test_paris_leaves_out_what_a_graduate_cannot_take(
+    paris: Profile, title: str, reason: str
+) -> None:
+    posting = make_posting(title=title, role_family=RoleFamily.QUANT_RESEARCH)
+    assert hard_reject(posting, profile=paris) == reason
+
+
+def test_paris_a_vie_is_not_an_internship(paris: Profile) -> None:
+    posting = make_posting(
+        title="V.I.E. Quantitative Analyst", role_family=RoleFamily.QUANT_RESEARCH
+    )
+    assert hard_reject(posting, profile=paris) is None
+
+
+def test_paris_keeps_the_quant_feeds_exclusion_of_tech_employers(paris: Profile) -> None:
+    posting = make_posting(title="Research Engineer, C++", company_slug="mistral_ai")
+    assert hard_reject(posting, profile=paris) == "off_topic"
+
+
+def test_paris_visa_weighs_nothing_for_a_french_national(paris: Profile) -> None:
+    assert paris.weights["visa_no"] == 0
+    assert paris.weights["visa_sponsors"] == 0

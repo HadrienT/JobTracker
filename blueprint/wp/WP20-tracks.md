@@ -151,3 +151,24 @@ Une offre suisse est notée par les deux pistes et paraît dans les deux onglets
 sur la Suisse pour `ch_tech`, est désormais listée sur les pays du périmètre (facette Workday
 `locationHierarchy1`, ~1 650 offres) : la relecture LLM (WP19), qui saute les offres qu'aucune
 piste ne montre, a donc nettement plus à lire.
+
+## 9. The `paris` track — quant finance in France
+
+Requested on 2026-11-03: the maintainer is French and was getting no answer from the selective
+firms abroad; the Paris market (banks' pricing, model and strats teams, vendors, funds) needs
+no permit and has many more junior seats.
+
+| | `paris` |
+|---|---|
+| Scope | `FR` — Paris and its business districts in practice (La Défense, Montrouge, Saint-Quentin-en-Yvelines…) |
+| Topic | quant, pricing, valuation / valorisation, XVA, strats, model validation, model risk, front office, C++… **in English and in French**, or `cpp` in the stack |
+| Excluded | the quant list, plus French sales titles and **internships** (`stage`, `alternance`, `internship`…): a French internship needs a school's agreement, out of reach once graduated. A V.I.E. stays in |
+| Seniority | the quant keywords plus `directeur`, `expert`, `confirmé`, `expérimenté` |
+| Visa | weights at 0: a French national in France |
+| Sectors | the quant feed's exclusion of `tech` is inherited (Mistral, Helsing…) |
+| Tab | Paris, `/paris` |
+
+The track was useless until the big Paris banks had a place at all: Société Générale, CA-CIB and
+Amundi link the title alone on their listing cards and show the place in a sibling element.
+`extra.location_class` (collect/custom.py) now reads it — and `extra.location_parts` reorders
+Talentsoft's "contract, country, city" into "city, country".

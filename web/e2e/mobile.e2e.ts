@@ -11,7 +11,7 @@ const PHONE_WIDTH = 390
 
 test.use({ viewport: { width: PHONE_WIDTH, height: 844 }, isMobile: true, hasTouch: true })
 
-for (const path of ['/', '/ch', '/tech', '/applications', '/map', '/companies', '/health']) {
+for (const path of ['/', '/ch', '/tech', '/paris', '/applications', '/map', '/companies', '/health']) {
   test(`${path} fits a phone's width`, async ({ page }) => {
     await page.goto(path)
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
