@@ -172,3 +172,11 @@ The track was useless until the big Paris banks had a place at all: Société G�
 Amundi link the title alone on their listing cards and show the place in a sibling element.
 `extra.location_class` (collect/custom.py) now reads it — and `extra.location_parts` reorders
 Talentsoft's "contract, country, city" into "city, country".
+
+Measured on the stored feed (version 2): French bank postings rarely state a seniority, so
+`seniority_match` seldom applies and a `possible` title alone stopped at 18 points, under the
+stretch tier. On this track `title_possible` is 26. And the risk and model desks named in
+French ("Analyste risque", "Chargé de modélisation du risque de crédit", "Modélisateur") were
+`other`, which a track rejects before reading its topic: they are `risk` since taxonomy /
+`NORMALIZE_VERSION` 12. First pass on 2026-11-03: 47 postings shown, against 4 before the
+locations were read.

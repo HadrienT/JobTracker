@@ -301,3 +301,23 @@ def test_paris_keeps_the_quant_feeds_exclusion_of_tech_employers(paris: Profile)
 def test_paris_visa_weighs_nothing_for_a_french_national(paris: Profile) -> None:
     assert paris.weights["visa_no"] == 0
     assert paris.weights["visa_sponsors"] == 0
+
+
+def test_paris_a_possible_title_alone_reaches_stretch(paris: Profile) -> None:
+    # Seniority unstated, as most French bank postings leave it.
+    posting = make_posting(
+        title="Développeur(euse) Risque de Contrepartie Front-Office",
+        role_family=RoleFamily.SWE_PLATFORM,
+        seniority=Seniority.UNKNOWN,
+        tech=frozenset(),
+    )
+    assert evaluate(posting, profile=paris).tier is not Tier.REJECTED
+
+
+def test_paris_takes_the_derivatives_it_of_a_bank(paris: Profile) -> None:
+    posting = make_posting(
+        title="Développeur C# - Orchestrade Core Team (Non Linear Rates IT)",
+        role_family=RoleFamily.SWE_PLATFORM,
+        tech=frozenset(),
+    )
+    assert on_topic(posting, profile=paris)

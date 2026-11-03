@@ -127,6 +127,11 @@ def test_quantitative_in_a_non_quant_title_stays_other(taxonomy: Taxonomy, title
         ("Risk Modeller", RoleFamily.RISK),
         ("Credit Risk Model Developer", RoleFamily.RISK),
         ("ALM Analyst", RoleFamily.RISK),
+        ("Model risk management - Analyst", RoleFamily.RISK),
+        ("Analyste Risque de Crédit", RoleFamily.RISK),
+        ("Chargé de modélisation du risque de crédit : LGD IFRS 9 Retail", RoleFamily.RISK),
+        ("Modélisateur / Data Analyst Risque de Crédit", RoleFamily.RISK),
+        ("Analyste des modèles de risques financiers", RoleFamily.RISK),
         ("Model Developer", RoleFamily.QUANT_DEV),
         # ...but a finance title that names no model stays out.
         ("Investment Analyst", RoleFamily.OTHER),

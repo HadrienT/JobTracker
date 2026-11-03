@@ -172,7 +172,7 @@ tracks:
     # the maintainer is French, so there is no visa to win and no low-salary market to leave
     # out, and half these postings are written in French. The quant feed's exclusion of
     # `tech` employers is inherited: Mistral or Helsing have nothing to do in this tab.
-    version: 1
+    version: 2
 
     scope:
       countries: [FR]
@@ -204,6 +204,10 @@ tracks:
           "front office",
           "front-office",
           "c++",
+          "c#",
+          "non linear", # CA-CIB's derivatives IT: "FO Booking & Risk (Non Linear IT)"
+          "fo",
+          "rates",
           "model validation",
           "validation de modèles",
           "model risk",
@@ -265,6 +269,8 @@ tracks:
           "front-office",
           "software engineer",
           "développeur",
+          "developpeur",
+          "c#",
           "python developer",
           "structurer",
         ]
@@ -317,6 +323,9 @@ tracks:
         ]
 
     weights:
+      # A French posting rarely states its seniority, so `seniority_match` seldom applies:
+      # a possible title alone has to reach the stretch tier (25), or the tab is near empty.
+      title_possible: 26
       # A French national in France: no permit to win, none to lose.
       visa_sponsors: 0
       visa_no: 0
