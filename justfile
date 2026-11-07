@@ -132,7 +132,7 @@ types:
     uv run python tools/gen_openapi.py web/openapi.json
     cd web && npm run api:types:local
 
-# sauvegarde à chaud de ./data/jobtracker.db (VACUUM INTO, intégrité vérifiée, gzip ; 7 jours + 4 semaines gardés)
+# sauvegarde à chaud de ./data/jobtracker.db (VACUUM INTO, intégrité vérifiée, gzip ; seule la dernière est gardée)
 backup:
     uv run jobtracker backup --dest backups
 

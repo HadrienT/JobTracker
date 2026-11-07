@@ -8,10 +8,9 @@
 # The backup is written into the `jt_backups` volume (the container is non-root and
 # cannot write to a host directory), then copied to ${JT_BACKUP_DIR:-./backups} on the
 # host — point that at an off-machine mount (NAS, USB, rclone) for real protection.
-# Databases are compact (`VACUUM INTO`) and gzipped, `jobtracker-*.db.gz`. Kept: the newest
-# of each of the last 7 days and of the last 4 weeks (JT_BACKUP_KEEP_DAILY / _WEEKLY), and
-# 7 days of career archives. The host folder mirrors the volume: what the volume pruned
-# is pruned on the host too.
+# Databases are compact (`VACUUM INTO`) and gzipped, `jobtracker-*.db.gz`. One copy of each
+# is kept (JT_BACKUP_KEEP): the previous one is deleted once the new one is checked. The host
+# folder mirrors the volume: what the volume pruned is pruned on the host too.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 compose=(docker compose -f docker-compose.prod.yml)

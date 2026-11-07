@@ -2,9 +2,9 @@
 
 Deleting a `raw_payloads` row never cascades onto `postings` (the foreign key
 runs the other way): a purge only ever removes what it names, by
-construction, never the offer itself. `user_flags` is never purged here —
-that table has no retention window at all; a favorite survives the posting
-that earned it disappearing from the board.
+construction, never the offer itself. `user_flags` and `applications` are
+never purged here, and neither is a posting either of them points at: a
+favorite, a hide or an application outlives the offer closing on its board.
 
 The purge ends by compacting the full-text index. `postings_fts` is rewritten
 through triggers on every update of a posting's search text, and FTS5 only
@@ -21,6 +21,15 @@ DEFAULT_RAW_PAYLOAD_RETENTION_DAYS = 365
 DEFAULT_REJECTED_NOT_QUANT_RETENTION_DAYS = 90
 DEFAULT_INACTIVE_POSTING_RETENTION_DAYS = 180
 DEFAULT_SOURCE_RUN_RETENTION_DAYS = 90
+
+# What the user touched is never purged. `user_flags.posting_id` cascades from `postings`:
+# deleting a flagged posting would erase its favorite, hide or note (WP16 §5).
+# `applications.posting_id` is set to NULL instead: the application would survive but lose
+# the offer it answered, its text and its link (WP21). Either one exempts the posting.
+_KEPT_BY_USER = (
+    "posting_id NOT IN (SELECT posting_id FROM user_flags) "
+    "AND posting_id NOT IN (SELECT posting_id FROM applications WHERE posting_id IS NOT NULL)"
+)
 
 
 def purge_raw_payloads(
@@ -66,12 +75,8 @@ def purge_inactive_postings(
     left of its own retention window.
     """
     cutoff = (now - timedelta(days=retention_days)).isoformat()
-    # `user_flags.posting_id` cascades from `postings`: deleting a flagged posting would
-    # erase its favorite. A favorite survives the offer disappearing (WP16 §5), so a
-    # posting that carries any flag is exempt from the purge.
     cursor = conn.execute(
-        "DELETE FROM postings WHERE is_active = 0 AND last_seen_at < ? "
-        "AND posting_id NOT IN (SELECT posting_id FROM user_flags)",
+        f"DELETE FROM postings WHERE is_active = 0 AND last_seen_at < ? AND {_KEPT_BY_USER}",
         (cutoff,),
     )
     removed = cursor.rowcount
@@ -163,8 +168,8 @@ def run_retention(
     cutoff_inactive = (now - timedelta(days=DEFAULT_INACTIVE_POSTING_RETENTION_DAYS)).isoformat()
     postings = _delete_in_batches(
         conn,
-        "SELECT posting_id FROM postings WHERE is_active = 0 AND last_seen_at < :cutoff "
-        "AND posting_id NOT IN (SELECT posting_id FROM user_flags)",
+        f"SELECT posting_id FROM postings WHERE is_active = 0 AND last_seen_at < :cutoff "
+        f"AND {_KEPT_BY_USER}",
         "DELETE FROM postings WHERE posting_id IN ({placeholders})",
         {"cutoff": cutoff_inactive},
         batch_size=batch_size,

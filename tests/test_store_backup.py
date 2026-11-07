@@ -14,7 +14,7 @@ from factories_store import make_board, make_posting, make_verdict
 from jobtracker.core.db import connect
 from jobtracker.core.errors import StorageError
 from jobtracker.store import backup as backup_module
-from jobtracker.store.backup import Retention, backup_career, backup_database, prune_backups
+from jobtracker.store.backup import backup_career, backup_database, prune_backups
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import upsert_posting
 
@@ -116,52 +116,46 @@ def _stamps(dest: Path, *moments: datetime, suffix: str = ".db.gz") -> None:
         (dest / f"jobtracker-{moment:%Y%m%d-%H%M%S}{suffix}").write_bytes(b"x")
 
 
-def _kept(dest: Path) -> list[str]:
-    return sorted(p.name[len("jobtracker-") : len("jobtracker-YYYYMMDD")] for p in dest.iterdir())
+def test_a_new_backup_replaces_the_previous_one(
+    store_conn: sqlite3.Connection, tmp_path: Path
+) -> None:
+    dest = tmp_path / "backups"
+    first = backup_database(store_conn, dest, now=_NOW)
+    second = backup_database(store_conn, dest, now=_NOW + timedelta(days=1))
+    assert sorted(p.name for p in dest.iterdir()) == [second.name]
+    assert not first.exists()
 
 
-def test_a_week_of_daily_backups_and_a_month_of_weekly_ones_are_kept(tmp_path: Path) -> None:
-    _stamps(tmp_path, *(_NOW - timedelta(days=d) for d in range(60)))
+def test_a_failed_backup_leaves_the_previous_one_in_place(
+    store_conn: sqlite3.Connection, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dest = tmp_path / "backups"
+    previous = backup_database(store_conn, dest, now=_NOW)
+    monkeypatch.setattr(backup_module, "_integrity_check", lambda conn: "page 3 is corrupt")
+    with pytest.raises(StorageError):
+        backup_database(store_conn, dest, now=_NOW + timedelta(days=1))
+    assert sorted(p.name for p in dest.iterdir()) == [previous.name]
+
+
+def test_prune_keeps_the_newest_by_timestamp_and_leaves_other_files(tmp_path: Path) -> None:
+    _stamps(tmp_path, _NOW - timedelta(days=3), _NOW - timedelta(days=2), suffix=".db")
+    _stamps(tmp_path, _NOW, _NOW - timedelta(days=1))
     (tmp_path / "notes.txt").write_text("keep me")  # not a backup: never touched
 
-    prune_backups(tmp_path, retention=Retention(daily=7, weekly=4))
+    assert prune_backups(tmp_path, keep=2) == 2
 
-    assert (tmp_path / "notes.txt").exists()
-    (tmp_path / "notes.txt").unlink()
-    # 2026-09-18 is a Friday in ISO week 38. The last seven days, plus the newest of
-    # weeks 38 to 35; those of 38 (Friday 18) and 37 (Sunday 13) are already daily ones.
-    assert _kept(tmp_path) == [
-        "20260830",  # Sunday, week 35
-        "20260906",  # Sunday, week 36
-        *(f"202609{d:02d}" for d in range(12, 19)),
-    ]
-
-
-def test_only_the_newest_backup_of_a_day_is_kept(tmp_path: Path) -> None:
-    _stamps(tmp_path, _NOW, _NOW - timedelta(hours=2), _NOW - timedelta(days=1))
-    prune_backups(tmp_path, retention=Retention(daily=2))
     assert sorted(p.name for p in tmp_path.iterdir()) == [
         "jobtracker-20260917-030000.db.gz",
         "jobtracker-20260918-030000.db.gz",
+        "notes.txt",
     ]
 
 
-def test_a_month_without_backups_does_not_empty_the_folder(tmp_path: Path) -> None:
-    """Counting, not ageing: the last copies before a long outage are the ones left."""
-    old = _NOW - timedelta(days=45)
-    _stamps(tmp_path, *(old - timedelta(days=d) for d in range(10)))
-    prune_backups(tmp_path, retention=Retention(daily=3))
-    assert _kept(tmp_path) == ["20260802", "20260803", "20260804"]
-
-
-def test_uncompressed_backups_from_before_are_pruned_with_the_rest(tmp_path: Path) -> None:
-    _stamps(tmp_path, _NOW - timedelta(days=3), _NOW - timedelta(days=2), suffix=".db")
+def test_a_prune_never_empties_the_folder(tmp_path: Path) -> None:
     _stamps(tmp_path, _NOW)
-    prune_backups(tmp_path, retention=Retention(daily=2))
-    assert sorted(p.name for p in tmp_path.iterdir()) == [
-        "jobtracker-20260916-030000.db",
-        "jobtracker-20260918-030000.db.gz",
-    ]
+    with pytest.raises(ValueError):
+        prune_backups(tmp_path, keep=0)
+    assert len(list(tmp_path.iterdir())) == 1
 
 
 def test_a_backup_that_fails_its_integrity_check_is_removed_not_kept(
@@ -215,7 +209,7 @@ def test_career_archives_are_pruned_apart_from_the_databases(tmp_path: Path) -> 
     dest.mkdir()
     (dest / "career-20260901-030000.tar.gz").write_bytes(b"old")
     (dest / "jobtracker-20260901-030000.db.gz").write_bytes(b"old")
-    backup_career(career, dest, now=_NOW, retention=Retention(daily=1))
+    backup_career(career, dest, now=_NOW)
     assert sorted(p.name for p in dest.iterdir()) == [
         "career-20260918-030000.tar.gz",
         "jobtracker-20260901-030000.db.gz",

@@ -127,7 +127,7 @@ Un jeton d'ATS cassé ne lève pas d'erreur : il renvoie zéro offre (P3).
 | `jobtracker.db` | `./scripts/backup.sh` → `VACUUM INTO` (**jamais `cp`** sur une base WAL), copie compacte puis gzip : `jobtracker-*.db.gz` | quotidienne (timer systemd, 03:30) |
 | `data/career/` (CV, pièces de candidature) | archive `career-*.tar.gz` écrite par la même commande, relue avant d'être gardée | quotidienne |
 | `configs/` | dans git | à chaque commit |
-| Rétention | base : la plus récente de chacun des 7 derniers jours et des 4 dernières semaines (`JT_BACKUP_KEEP_DAILY`, `JT_BACKUP_KEEP_WEEKLY`) ; `data/career/` : 7 jours. On compte les copies, on ne mesure pas leur âge : une machine éteinte un mois garde ses dernières. Le dossier `JT_BACKUP_DIR` suit le volume `jt_backups` | |
+| Rétention | **une seule copie** de la base et de `data/career/` (`JT_BACKUP_KEEP=1`) : l'ancienne n'est supprimée qu'une fois la nouvelle écrite et vérifiée ; une sauvegarde qui échoue laisse la précédente en place. Conséquence : une erreur (suppression, mauvaise migration) découverte après la sauvegarde suivante n'est plus rattrapable — monter `JT_BACKUP_KEEP` pour garder plusieurs jours. Le dossier `JT_BACKUP_DIR` suit le volume `jt_backups` | |
 
 Chaque sauvegarde est vérifiée (`PRAGMA integrity_check`) juste après écriture, puis
 l'archive gzip est relue jusqu'au bout ; une sauvegarde qui échoue est supprimée, pas

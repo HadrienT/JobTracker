@@ -261,3 +261,47 @@ def test_retention_compacts_the_search_index_and_search_still_finds(
         "SELECT COUNT(*) FROM postings_fts WHERE postings_fts MATCH 'quant'"
     ).fetchone()[0]
     assert found == 30
+
+
+def test_an_application_keeps_its_offer_even_without_a_feed_flag(
+    store_conn: sqlite3.Connection,
+) -> None:
+    """`applications.posting_id` is SET NULL on delete: the purge would cut the link silently."""
+    from datetime import date
+
+    from jobtracker.core.enums import ApplicationOrigin, ApplicationStatus
+    from jobtracker.core.models import Application, ApplicationEvent
+    from jobtracker.store.applications import create_application, get_application
+
+    _old_inactive(store_conn, "answered")
+    _old_inactive(store_conn, "nobody-cared")
+    applied = ApplicationEvent(on_date=date(2025, 1, 2), status=ApplicationStatus.REJECTED)
+    create_application(
+        store_conn,
+        Application(
+            application_id="app-1",
+            company="Acme",
+            company_slug=None,
+            title="Quant Dev",
+            location=None,
+            applied_on=date(2025, 1, 2),
+            applied_on_estimated=False,
+            closed_on=None,
+            status=ApplicationStatus.REJECTED,
+            reason="Rejected",
+            posting_id="answered",
+            dossier=None,
+            origin=ApplicationOrigin.CLI,
+            events=(applied,),
+        ),
+    )
+    store_conn.execute("DELETE FROM user_flags")  # the feed flag cleared, the application kept
+    store_conn.commit()
+
+    result = run_retention(store_conn, now=_NOW)
+
+    assert result.inactive_postings == 1
+    application = get_application(store_conn, "app-1")
+    assert application is not None
+    assert application.posting_id == "answered"
+    assert purge_inactive_postings(store_conn, now=_NOW, retention_days=1) == 0

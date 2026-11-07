@@ -1,6 +1,6 @@
 # An online, integrity-checked, gzipped SQLite backup of ./data/jobtracker.db into ./backups,
-# plus an archive of ./data/career. Kept: the newest backup of each of the last 7 days and of
-# the last 4 weeks (JT_BACKUP_KEEP_DAILY / JT_BACKUP_KEEP_WEEKLY), 7 days of career archives.
+# plus an archive of ./data/career. Only the latest of each is kept (JT_BACKUP_KEEP=1): the
+# previous one is deleted once the new one has been written and checked.
 # Never `cp` a WAL database while it is open: this uses SQLite's `VACUUM INTO`.
 [Unit]
 Description=JobTracker: back up the database

@@ -16,9 +16,9 @@ The database points at files it does not hold: CVs and application folders live 
 `career/` (blueprint/wp/WP22-cvs.md). They are archived beside it, read back before the
 archive counts. They weigh far more and change far less, so fewer archives are kept.
 
-Retention counts backups instead of measuring age: the newest backup of each of the
-last `keep_daily` days that have one, plus the newest of each of the last `keep_weekly`
-ISO weeks. A machine that was off for a month still keeps its last copies.
+Retention counts copies, newest first, instead of measuring age, so a machine that was off
+for a month still has its last one. The default keeps a single copy of each: the previous
+one is deleted only after the new one has been written, checked and renamed.
 """
 
 import gzip
@@ -26,7 +26,6 @@ import re
 import shutil
 import sqlite3
 import tarfile
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -37,16 +36,7 @@ _CAREER_NAME = re.compile(r"^career-(\d{8}-\d{6})\.tar\.gz$")
 _CHUNK = 1 << 20
 
 
-@dataclass(frozen=True)
-class Retention:
-    """How many backups survive a prune: one per day, then one per ISO week."""
-
-    daily: int
-    weekly: int = 0
-
-
-DATABASE_RETENTION = Retention(daily=7, weekly=4)
-CAREER_RETENTION = Retention(daily=7)
+DEFAULT_KEEP = 1
 
 
 def backup_database(
@@ -54,7 +44,7 @@ def backup_database(
     dest_dir: Path,
     *,
     now: datetime,
-    retention: Retention = DATABASE_RETENTION,
+    keep: int = DEFAULT_KEEP,
 ) -> Path:
     """Write `jobtracker-YYYYMMDD-HHMMSS.db.gz` into `dest_dir`, then prune the old ones."""
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -85,7 +75,7 @@ def backup_database(
     finally:
         snapshot.unlink(missing_ok=True)
     partial.replace(target)
-    prune_backups(dest_dir, retention=retention)
+    prune_backups(dest_dir, keep=keep)
     return target
 
 
@@ -94,7 +84,7 @@ def backup_career(
     dest_dir: Path,
     *,
     now: datetime,
-    retention: Retention = CAREER_RETENTION,
+    keep: int = DEFAULT_KEEP,
 ) -> Path | None:
     """Write `career-YYYYMMDD-HHMMSS.tar.gz`, private to its owner, then prune the old ones.
     None when there is no `career/` at all. It only takes its name once read back whole."""
@@ -116,7 +106,7 @@ def backup_career(
         partial.unlink(missing_ok=True)
         raise StorageError(f"career backup holds {found} files of {expected}; removed")
     partial.replace(target)
-    _prune(dest_dir, _CAREER_NAME, retention)
+    _prune(dest_dir, _CAREER_NAME, keep)
     return target
 
 
@@ -139,32 +129,18 @@ def _integrity_check(conn: sqlite3.Connection) -> str:
     return str(conn.execute("PRAGMA integrity_check").fetchone()[0])
 
 
-def prune_backups(dest_dir: Path, *, retention: Retention = DATABASE_RETENTION) -> int:
-    """Delete the database backups `retention` does not keep, compressed or not."""
-    return _prune(dest_dir, _NAME, retention)
+def prune_backups(dest_dir: Path, *, keep: int = DEFAULT_KEEP) -> int:
+    """Delete all but the `keep` newest database backups, compressed or not."""
+    return _prune(dest_dir, _NAME, keep)
 
 
-def _prune(dest_dir: Path, name: re.Pattern[str], retention: Retention) -> int:
-    stamped: list[tuple[datetime, Path]] = []
-    for path in dest_dir.iterdir():
-        match = name.match(path.name)
-        if match:
-            stamped.append((datetime.strptime(match.group(1), "%Y%m%d-%H%M%S"), path))
-    stamped.sort(reverse=True)
-    keep: set[Path] = set()
-    days: set[object] = set()
-    weeks: set[object] = set()
-    for stamp, path in stamped:  # newest first: the first seen of a day or week is its newest
-        day, week = stamp.date(), stamp.isocalendar()[:2]
-        if day not in days and len(days) < retention.daily:
-            keep.add(path)
-        if week not in weeks and len(weeks) < retention.weekly:
-            keep.add(path)
-        days.add(day)
-        weeks.add(week)
-    removed = 0
-    for _stamp, path in stamped:
-        if path not in keep:
-            path.unlink()
-            removed += 1
-    return removed
+def _prune(dest_dir: Path, name: re.Pattern[str], keep: int) -> int:
+    """Delete all but the `keep` newest files matching `name`, judged by their timestamp."""
+    if keep < 1:
+        raise ValueError(f"keep must be at least 1, got {keep}: a prune never empties the folder")
+    stamped = sorted(
+        (match.group(1), path) for path in dest_dir.iterdir() if (match := name.match(path.name))
+    )
+    for _stamp, path in stamped[:-keep]:
+        path.unlink()
+    return max(len(stamped) - keep, 0)

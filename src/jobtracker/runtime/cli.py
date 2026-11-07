@@ -49,7 +49,7 @@ from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.tracks import TrackPass, score_tracks
 from jobtracker.runtime.watchdog import full_health_snapshot
 from jobtracker.store import llm_queue, llm_reviews
-from jobtracker.store.backup import Retention, backup_career, backup_database
+from jobtracker.store.backup import backup_career, backup_database
 from jobtracker.store.companies import list_discovered, sync_companies
 from jobtracker.store.postings import find_duplicates, merge_duplicates
 from jobtracker.store.retention import run_retention
@@ -503,14 +503,11 @@ def cmd_report(args: argparse.Namespace) -> int:
 def cmd_backup(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
-    retention = Retention(
-        daily=settings.backup_keep_daily if args.keep_daily is None else args.keep_daily,
-        weekly=settings.backup_keep_weekly if args.keep_weekly is None else args.keep_weekly,
-    )
-    path = backup_database(conn, Path(args.dest), now=utc_now(), retention=retention)
+    keep = settings.backup_keep if args.keep is None else args.keep
+    path = backup_database(conn, Path(args.dest), now=utc_now(), keep=keep)
     conn.close()
     print(f"backup written: {path}", file=sys.stderr)
-    career = backup_career(settings.career_root, Path(args.dest), now=utc_now())
+    career = backup_career(settings.career_root, Path(args.dest), now=utc_now(), keep=keep)
     if career is None:
         print(f"no folder to archive at {settings.career_root}", file=sys.stderr)
     else:
@@ -698,12 +695,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     backup.add_argument("--dest", required=True, help="directory to write the backup into")
     backup.add_argument(
-        "--keep-daily", type=int, help="days that keep their newest backup (JT_BACKUP_KEEP_DAILY)"
-    )
-    backup.add_argument(
-        "--keep-weekly",
-        type=int,
-        help="weeks that keep their newest backup (JT_BACKUP_KEEP_WEEKLY)",
+        "--keep", type=int, help="backups kept of each kind, newest first (JT_BACKUP_KEEP, 1)"
     )
     backup.set_defaults(func=cmd_backup)
 
