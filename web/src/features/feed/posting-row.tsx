@@ -135,12 +135,14 @@ export function PostingRow({
 
           <VisaBadge status={posting.visa_sponsorship} />
 
-          <Money
-            amountMin={posting.compensation.amount_min}
-            amountMax={posting.compensation.amount_max}
-            currency={posting.compensation.currency}
-            period={posting.compensation.period}
-          />
+          <span className="min-w-0 truncate">
+            <Money
+              amountMin={posting.compensation.amount_min}
+              amountMax={posting.compensation.amount_max}
+              currency={posting.compensation.currency}
+              period={posting.compensation.period}
+            />
+          </span>
 
           <Age postedAt={posting.posted_at} firstSeenAt={posting.first_seen_at} staleAfterDays={STALE_AFTER_DAYS} />
 
