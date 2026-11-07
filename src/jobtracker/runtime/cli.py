@@ -49,7 +49,7 @@ from jobtracker.runtime.scheduler import CycleContext, run_source_cycle
 from jobtracker.runtime.tracks import TrackPass, score_tracks
 from jobtracker.runtime.watchdog import full_health_snapshot
 from jobtracker.store import llm_queue, llm_reviews
-from jobtracker.store.backup import DEFAULT_KEEP_DAYS, backup_career, backup_database
+from jobtracker.store.backup import backup_career, backup_database
 from jobtracker.store.companies import list_discovered, sync_companies
 from jobtracker.store.postings import find_duplicates, merge_duplicates
 from jobtracker.store.retention import run_retention
@@ -182,6 +182,13 @@ def cmd_collect(args: argparse.Namespace) -> int:
         )
         # A correction rescored its posting: the tracks follow.
         _print_tracks(score_tracks(conn, ctx.tracks))
+    # The timers run `collect`, not `loop`: the daily purge has to run here too.
+    purged = run_retention(conn, now=utc_now())
+    print(
+        f"retention: raw_payloads={purged.raw_payloads} "
+        f"inactive_postings={purged.inactive_postings} source_runs={purged.source_runs}",
+        file=sys.stderr,
+    )
     conn.close()
     return 1 if degraded else 0
 
@@ -496,10 +503,11 @@ def cmd_report(args: argparse.Namespace) -> int:
 def cmd_backup(args: argparse.Namespace) -> int:
     settings = load_settings()
     conn = _connect_and_migrate(settings)
-    path = backup_database(conn, Path(args.dest), now=utc_now(), keep_days=args.keep_days)
+    keep = settings.backup_keep if args.keep is None else args.keep
+    path = backup_database(conn, Path(args.dest), now=utc_now(), keep=keep)
     conn.close()
     print(f"backup written: {path}", file=sys.stderr)
-    career = backup_career(settings.career_root, Path(args.dest), now=utc_now())
+    career = backup_career(settings.career_root, Path(args.dest), now=utc_now(), keep=keep)
     if career is None:
         print(f"no folder to archive at {settings.career_root}", file=sys.stderr)
     else:
@@ -682,9 +690,13 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument("--out-dir", default=str(REPO_ROOT / "docs" / "reports"))
     report.set_defaults(func=cmd_report)
 
-    backup = subparsers.add_parser("backup", help="online SQLite backup, integrity-checked")
+    backup = subparsers.add_parser(
+        "backup", help="online SQLite backup, compact, integrity-checked, gzipped"
+    )
     backup.add_argument("--dest", required=True, help="directory to write the backup into")
-    backup.add_argument("--keep-days", type=int, default=DEFAULT_KEEP_DAYS)
+    backup.add_argument(
+        "--keep", type=int, help="backups kept of each kind, newest first (JT_BACKUP_KEEP, 1)"
+    )
     backup.set_defaults(func=cmd_backup)
 
     status = subparsers.add_parser("status", help="health snapshot; exit 1 if degraded")

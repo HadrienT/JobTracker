@@ -1,5 +1,7 @@
 """Online backups — blueprint/wp/WP15-deploy.md §5, §7."""
 
+import gzip
+import shutil
 import sqlite3
 import tarfile
 import threading
@@ -19,6 +21,13 @@ from jobtracker.store.postings import upsert_posting
 pytestmark = pytest.mark.db
 
 _NOW = datetime(2026, 9, 18, 3, 0, tzinfo=UTC)
+
+
+def _unpack(path: Path, into: Path) -> Path:
+    """What restore.sh does: decompress the `.db.gz` before SQLite opens it."""
+    with gzip.open(path, "rb") as packed, into.open("wb") as raw:
+        shutil.copyfileobj(packed, raw)
+    return into
 
 
 def _posting(conn: sqlite3.Connection, i: int) -> None:
@@ -58,7 +67,7 @@ def test_a_backup_taken_during_a_collection_cycle_is_consistent_and_restorable(
         stop.set()
         thread.join()
 
-    restored = sqlite3.connect(path)
+    restored = sqlite3.connect(_unpack(path, tmp_path / "restored.db"))
     try:
         assert restored.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         count = restored.execute("SELECT COUNT(*) FROM postings").fetchone()[0]
@@ -76,19 +85,77 @@ def test_a_backup_taken_during_a_collection_cycle_is_consistent_and_restorable(
 def test_the_backup_is_named_by_its_timestamp(
     store_conn: sqlite3.Connection, tmp_path: Path
 ) -> None:
-    path = backup_database(store_conn, tmp_path, now=_NOW)
-    assert path.name == "jobtracker-20260918-030000.db"
+    path = backup_database(store_conn, tmp_path / "backups", now=_NOW)
+    assert path.name == "jobtracker-20260918-030000.db.gz"
+    assert path.stat().st_mode & 0o077 == 0
+    assert sorted(p.name for p in path.parent.iterdir()) == [path.name]  # no snapshot, no `.part`
 
 
-def test_backups_older_than_thirty_days_are_pruned(tmp_path: Path) -> None:
-    for days_ago in (1, 29, 31, 90):
-        stamp = (_NOW - timedelta(days=days_ago)).strftime("%Y%m%d-%H%M%S")
-        (tmp_path / f"jobtracker-{stamp}.db").write_bytes(b"x")
+def test_the_backup_skips_the_pages_the_live_database_has_freed(
+    store_conn: sqlite3.Connection, tmp_path: Path
+) -> None:
+    sync_companies(store_conn, [make_board()])
+    for i in range(200):
+        _posting(store_conn, i)
+    store_conn.commit()
+    store_conn.execute("DELETE FROM posting_search_text")
+    store_conn.commit()
+    assert store_conn.execute("PRAGMA freelist_count").fetchone()[0] > 0
+
+    path = backup_database(store_conn, tmp_path / "backups", now=_NOW)
+    restored = sqlite3.connect(_unpack(path, tmp_path / "restored.db"))
+    try:
+        assert restored.execute("PRAGMA freelist_count").fetchone()[0] == 0
+        assert restored.execute("SELECT COUNT(*) FROM postings").fetchone()[0] == 200
+    finally:
+        restored.close()
+
+
+def _stamps(dest: Path, *moments: datetime, suffix: str = ".db.gz") -> None:
+    for moment in moments:
+        (dest / f"jobtracker-{moment:%Y%m%d-%H%M%S}{suffix}").write_bytes(b"x")
+
+
+def test_a_new_backup_replaces_the_previous_one(
+    store_conn: sqlite3.Connection, tmp_path: Path
+) -> None:
+    dest = tmp_path / "backups"
+    first = backup_database(store_conn, dest, now=_NOW)
+    second = backup_database(store_conn, dest, now=_NOW + timedelta(days=1))
+    assert sorted(p.name for p in dest.iterdir()) == [second.name]
+    assert not first.exists()
+
+
+def test_a_failed_backup_leaves_the_previous_one_in_place(
+    store_conn: sqlite3.Connection, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dest = tmp_path / "backups"
+    previous = backup_database(store_conn, dest, now=_NOW)
+    monkeypatch.setattr(backup_module, "_integrity_check", lambda conn: "page 3 is corrupt")
+    with pytest.raises(StorageError):
+        backup_database(store_conn, dest, now=_NOW + timedelta(days=1))
+    assert sorted(p.name for p in dest.iterdir()) == [previous.name]
+
+
+def test_prune_keeps_the_newest_by_timestamp_and_leaves_other_files(tmp_path: Path) -> None:
+    _stamps(tmp_path, _NOW - timedelta(days=3), _NOW - timedelta(days=2), suffix=".db")
+    _stamps(tmp_path, _NOW, _NOW - timedelta(days=1))
     (tmp_path / "notes.txt").write_text("keep me")  # not a backup: never touched
 
-    assert prune_backups(tmp_path, now=_NOW) == 2
-    kept = [(_NOW - timedelta(days=d)).strftime("jobtracker-%Y%m%d-%H%M%S.db") for d in (29, 1)]
-    assert sorted(p.name for p in tmp_path.iterdir()) == sorted([*kept, "notes.txt"])
+    assert prune_backups(tmp_path, keep=2) == 2
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "jobtracker-20260917-030000.db.gz",
+        "jobtracker-20260918-030000.db.gz",
+        "notes.txt",
+    ]
+
+
+def test_a_prune_never_empties_the_folder(tmp_path: Path) -> None:
+    _stamps(tmp_path, _NOW)
+    with pytest.raises(ValueError):
+        prune_backups(tmp_path, keep=0)
+    assert len(list(tmp_path.iterdir())) == 1
 
 
 def test_a_backup_that_fails_its_integrity_check_is_removed_not_kept(
@@ -96,8 +163,8 @@ def test_a_backup_that_fails_its_integrity_check_is_removed_not_kept(
 ) -> None:
     monkeypatch.setattr(backup_module, "_integrity_check", lambda conn: "page 3 is corrupt")
     with pytest.raises(StorageError):
-        backup_database(store_conn, tmp_path, now=_NOW)
-    assert list(tmp_path.glob("jobtracker-*.db")) == []
+        backup_database(store_conn, tmp_path / "backups", now=_NOW)
+    assert list((tmp_path / "backups").iterdir()) == []  # neither the archive nor the snapshot
 
 
 def _career(root: Path) -> Path:
@@ -136,14 +203,14 @@ def test_a_career_archive_that_does_not_read_back_is_removed_not_kept(
     assert list((tmp_path / "backups").iterdir()) == []
 
 
-def test_career_archives_are_kept_a_week_apart_from_the_databases(tmp_path: Path) -> None:
+def test_career_archives_are_pruned_apart_from_the_databases(tmp_path: Path) -> None:
     career = _career(tmp_path)
     dest = tmp_path / "backups"
     dest.mkdir()
     (dest / "career-20260901-030000.tar.gz").write_bytes(b"old")
-    (dest / "jobtracker-20260901-030000.db").write_bytes(b"old")
+    (dest / "jobtracker-20260901-030000.db.gz").write_bytes(b"old")
     backup_career(career, dest, now=_NOW)
     assert sorted(p.name for p in dest.iterdir()) == [
         "career-20260918-030000.tar.gz",
-        "jobtracker-20260901-030000.db",
+        "jobtracker-20260901-030000.db.gz",
     ]

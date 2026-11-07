@@ -78,7 +78,7 @@ En-têtes de sécurité côté nginx : `Content-Security-Policy`,
 |---|---|---|
 | `jobtracker.db` | `sqlite3 .backup` — **jamais** `cp` sur une base en WAL | quotidienne |
 | `configs/` | dans git | à chaque commit |
-| Rétention des sauvegardes | 30 jours glissants | |
+| Rétention des sauvegardes | une seule copie, remplacée une fois la nouvelle vérifiée, gzip (`deploy/RUNBOOK.md` §5, #18) | |
 
 `cp` sur une base WAL active copie un fichier incohérent : le `-wal` n'est pas
 pris en compte. `.backup` est la seule méthode correcte, et elle fonctionne

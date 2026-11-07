@@ -124,13 +124,14 @@ Un jeton d'ATS cassé ne lève pas d'erreur : il renvoie zéro offre (P3).
 
 | Quoi | Comment | Fréquence |
 |---|---|---|
-| `jobtracker.db` | `./scripts/backup.sh` → API de sauvegarde SQLite (**jamais `cp`** sur une base WAL) | quotidienne (timer systemd, 03:30) |
+| `jobtracker.db` | `./scripts/backup.sh` → `VACUUM INTO` (**jamais `cp`** sur une base WAL), copie compacte puis gzip : `jobtracker-*.db.gz` | quotidienne (timer systemd, 03:30) |
 | `data/career/` (CV, pièces de candidature) | archive `career-*.tar.gz` écrite par la même commande, relue avant d'être gardée | quotidienne |
 | `configs/` | dans git | à chaque commit |
-| Rétention | 30 jours glissants pour la base, 7 pour `data/career/` (volume `jt_backups` et `JT_BACKUP_DIR`) | |
+| Rétention | **une seule copie** de la base et de `data/career/` (`JT_BACKUP_KEEP=1`) : l'ancienne n'est supprimée qu'une fois la nouvelle écrite et vérifiée ; une sauvegarde qui échoue laisse la précédente en place. Conséquence : une erreur (suppression, mauvaise migration) découverte après la sauvegarde suivante n'est plus rattrapable — monter `JT_BACKUP_KEEP` pour garder plusieurs jours. Le dossier `JT_BACKUP_DIR` suit le volume `jt_backups` | |
 
-Chaque sauvegarde est vérifiée (`PRAGMA integrity_check`) juste après écriture ; une
-sauvegarde qui échoue est supprimée, pas gardée comme fausse assurance. Elle est faite
+Chaque sauvegarde est vérifiée (`PRAGMA integrity_check`) juste après écriture, puis
+l'archive gzip est relue jusqu'au bout ; une sauvegarde qui échoue est supprimée, pas
+gardée comme fausse assurance. Elle est faite
 **à chaud** : elle est cohérente pendant un cycle de collecte.
 
 **Mettre `JT_BACKUP_DIR` sur un support hors de la machine** (NAS, USB, cible rclone).
@@ -140,16 +141,18 @@ disque mort.
 ### Restauration (procédure **testée**)
 
 ```bash
-./scripts/restore.sh backups/jobtracker-20260918-030000.db
+./scripts/restore.sh backups/jobtracker-20261108-023000.db.gz
 ```
 
-Le script : vérifie l'intégrité de la sauvegarde, **arrête** collecteur et API, garde la
+Le script : décompresse un `.db.gz` dans un fichier temporaire (un ancien `.db` est pris
+tel quel), vérifie l'intégrité de la sauvegarde, **arrête** collecteur et API, garde la
 base actuelle à côté (`jobtracker.db.pre-restore-<horodatage>`, jamais supprimée),
 supprime les `-wal`/`-shm` obsolètes, copie la sauvegarde, redémarre la stack.
 
 Avec les pièces : `./scripts/restore.sh <base> backups/career-….tar.gz` ; le dossier actuel
 est gardé à côté (`career.pre-restore-<horodatage>`). Sans la stack de prod : déplacer
-`data/career`, puis `tar -xzf backups/career-….tar.gz -C data`.
+`data/career`, puis `tar -xzf backups/career-….tar.gz -C data` ; pour la base, arrêter
+ce qui l'écrit, supprimer `-wal`/`-shm`, puis `gzip -dc backups/jobtracker-….db.gz > data/jobtracker.db`.
 
 **Test effectué le 2026-09-18** sur la stack réelle : sauvegarde à chaud pendant un
 cycle de collecte (1 060 offres, `integrity_check = ok`) → base vidée volontairement

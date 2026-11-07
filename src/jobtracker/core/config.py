@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     linkedin_cookie: str | None = None
     # The user's application files (WP21 §1); None = `career/` beside the database.
     career_dir: Path | None = None
+    # Backups kept of the database and of `career/`, newest first (1 = only the latest).
+    backup_keep: int = 1
 
     @property
     def career_root(self) -> Path:
