@@ -5,6 +5,8 @@ about 300 hedge funds, trading firms, banks, asset managers and financial softwa
 vendors, normalizes them into typed records, scores them against a target profile,
 and serves them through a dense web interface.
 
+**[How it works: interactive map](https://hadrient.github.io/atlas-pages/JobTracker/)**
+
 The system collects, qualifies and displays. It does not apply on anyone's behalf.
 
 ## How it works
@@ -111,3 +113,7 @@ and incident procedures.
 The design documentation is in [`blueprint/`](blueprint/README.md) and is written in
 French. It covers the architecture, data model, interfaces, testing strategy and
 architecture decisions.
+
+## License
+
+[MIT](LICENSE)
