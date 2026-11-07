@@ -5,6 +5,11 @@ runs the other way): a purge only ever removes what it names, by
 construction, never the offer itself. `user_flags` is never purged here —
 that table has no retention window at all; a favorite survives the posting
 that earned it disappearing from the board.
+
+The purge ends by compacting the full-text index. `postings_fts` is rewritten
+through triggers on every update of a posting's search text, and FTS5 only
+merges the resulting segments lazily: left alone, the index grew to twice the
+size of the text it indexes (543 MB for 283 MB of descriptions, 2026-11-07).
 """
 
 import sqlite3
@@ -183,4 +188,15 @@ def run_retention(
         batch_size=batch_size,
         on_batch=on_batch,
     )
+    optimize_search_index(conn)
     return RetentionResult(raw_payloads=payloads, inactive_postings=postings, source_runs=runs)
+
+
+def optimize_search_index(conn: sqlite3.Connection) -> None:
+    """Merge every FTS5 segment into one and drop the deleted entries they still hold.
+
+    One write transaction of a few seconds on ~100k postings; readers keep reading (WAL).
+    The freed pages are reused by later writes, and backups (`VACUUM INTO`) skip them.
+    """
+    conn.execute("INSERT INTO postings_fts (postings_fts) VALUES ('optimize')")
+    conn.commit()

@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     linkedin_cookie: str | None = None
     # The user's application files (WP21 §1); None = `career/` beside the database.
     career_dir: Path | None = None
+    # Database backups kept: the newest of each of the last N days, and of the last N weeks.
+    backup_keep_daily: int = 7
+    backup_keep_weekly: int = 4
 
     @property
     def career_root(self) -> Path:

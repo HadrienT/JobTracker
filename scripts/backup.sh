@@ -8,7 +8,10 @@
 # The backup is written into the `jt_backups` volume (the container is non-root and
 # cannot write to a host directory), then copied to ${JT_BACKUP_DIR:-./backups} on the
 # host — point that at an off-machine mount (NAS, USB, rclone) for real protection.
-# 30 rolling days of databases and 7 of career archives are kept, in the volume and on the host.
+# Databases are compact (`VACUUM INTO`) and gzipped, `jobtracker-*.db.gz`. Kept: the newest
+# of each of the last 7 days and of the last 4 weeks (JT_BACKUP_KEEP_DAILY / _WEEKLY), and
+# 7 days of career archives. The host folder mirrors the volume: what the volume pruned
+# is pruned on the host too.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 compose=(docker compose -f docker-compose.prod.yml)
@@ -24,6 +27,9 @@ fi
 mkdir -p "$dest"
 "${compose[@]}" create --no-recreate collector > /dev/null   # `cp` needs a container to exist
 "${compose[@]}" cp collector:/backups/. "$dest"
-find "$dest" -maxdepth 1 -name 'jobtracker-*.db' -mtime +30 -delete
-find "$dest" -maxdepth 1 -name 'career-*.tar.gz' -mtime +7 -delete
-echo "backups in $dest: $(find "$dest" -maxdepth 1 -name 'jobtracker-*.db' | wc -l) file(s), newest $(ls -1 "$dest"/jobtracker-*.db | tail -1)"
+kept="$("${compose[@]}" run --rm --no-deps --entrypoint ls collector -1 /backups)"
+for file in "$dest"/jobtracker-*.db "$dest"/jobtracker-*.db.gz "$dest"/career-*.tar.gz; do
+  [ -e "$file" ] || continue
+  grep -qxF "$(basename "$file")" <<< "$kept" || rm -f "$file"
+done
+echo "backups in $dest: $(find "$dest" -maxdepth 1 -name 'jobtracker-*.db*' | wc -l) file(s), newest $(ls -1 "$dest"/jobtracker-*.db* | tail -1)"

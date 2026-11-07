@@ -1,5 +1,7 @@
 """Online backups — blueprint/wp/WP15-deploy.md §5, §7."""
 
+import gzip
+import shutil
 import sqlite3
 import tarfile
 import threading
@@ -12,13 +14,20 @@ from factories_store import make_board, make_posting, make_verdict
 from jobtracker.core.db import connect
 from jobtracker.core.errors import StorageError
 from jobtracker.store import backup as backup_module
-from jobtracker.store.backup import backup_career, backup_database, prune_backups
+from jobtracker.store.backup import Retention, backup_career, backup_database, prune_backups
 from jobtracker.store.companies import sync_companies
 from jobtracker.store.postings import upsert_posting
 
 pytestmark = pytest.mark.db
 
 _NOW = datetime(2026, 9, 18, 3, 0, tzinfo=UTC)
+
+
+def _unpack(path: Path, into: Path) -> Path:
+    """What restore.sh does: decompress the `.db.gz` before SQLite opens it."""
+    with gzip.open(path, "rb") as packed, into.open("wb") as raw:
+        shutil.copyfileobj(packed, raw)
+    return into
 
 
 def _posting(conn: sqlite3.Connection, i: int) -> None:
@@ -58,7 +67,7 @@ def test_a_backup_taken_during_a_collection_cycle_is_consistent_and_restorable(
         stop.set()
         thread.join()
 
-    restored = sqlite3.connect(path)
+    restored = sqlite3.connect(_unpack(path, tmp_path / "restored.db"))
     try:
         assert restored.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         count = restored.execute("SELECT COUNT(*) FROM postings").fetchone()[0]
@@ -76,19 +85,83 @@ def test_a_backup_taken_during_a_collection_cycle_is_consistent_and_restorable(
 def test_the_backup_is_named_by_its_timestamp(
     store_conn: sqlite3.Connection, tmp_path: Path
 ) -> None:
-    path = backup_database(store_conn, tmp_path, now=_NOW)
-    assert path.name == "jobtracker-20260918-030000.db"
+    path = backup_database(store_conn, tmp_path / "backups", now=_NOW)
+    assert path.name == "jobtracker-20260918-030000.db.gz"
+    assert path.stat().st_mode & 0o077 == 0
+    assert sorted(p.name for p in path.parent.iterdir()) == [path.name]  # no snapshot, no `.part`
 
 
-def test_backups_older_than_thirty_days_are_pruned(tmp_path: Path) -> None:
-    for days_ago in (1, 29, 31, 90):
-        stamp = (_NOW - timedelta(days=days_ago)).strftime("%Y%m%d-%H%M%S")
-        (tmp_path / f"jobtracker-{stamp}.db").write_bytes(b"x")
+def test_the_backup_skips_the_pages_the_live_database_has_freed(
+    store_conn: sqlite3.Connection, tmp_path: Path
+) -> None:
+    sync_companies(store_conn, [make_board()])
+    for i in range(200):
+        _posting(store_conn, i)
+    store_conn.commit()
+    store_conn.execute("DELETE FROM posting_search_text")
+    store_conn.commit()
+    assert store_conn.execute("PRAGMA freelist_count").fetchone()[0] > 0
+
+    path = backup_database(store_conn, tmp_path / "backups", now=_NOW)
+    restored = sqlite3.connect(_unpack(path, tmp_path / "restored.db"))
+    try:
+        assert restored.execute("PRAGMA freelist_count").fetchone()[0] == 0
+        assert restored.execute("SELECT COUNT(*) FROM postings").fetchone()[0] == 200
+    finally:
+        restored.close()
+
+
+def _stamps(dest: Path, *moments: datetime, suffix: str = ".db.gz") -> None:
+    for moment in moments:
+        (dest / f"jobtracker-{moment:%Y%m%d-%H%M%S}{suffix}").write_bytes(b"x")
+
+
+def _kept(dest: Path) -> list[str]:
+    return sorted(p.name[len("jobtracker-") : len("jobtracker-YYYYMMDD")] for p in dest.iterdir())
+
+
+def test_a_week_of_daily_backups_and_a_month_of_weekly_ones_are_kept(tmp_path: Path) -> None:
+    _stamps(tmp_path, *(_NOW - timedelta(days=d) for d in range(60)))
     (tmp_path / "notes.txt").write_text("keep me")  # not a backup: never touched
 
-    assert prune_backups(tmp_path, now=_NOW) == 2
-    kept = [(_NOW - timedelta(days=d)).strftime("jobtracker-%Y%m%d-%H%M%S.db") for d in (29, 1)]
-    assert sorted(p.name for p in tmp_path.iterdir()) == sorted([*kept, "notes.txt"])
+    prune_backups(tmp_path, retention=Retention(daily=7, weekly=4))
+
+    assert (tmp_path / "notes.txt").exists()
+    (tmp_path / "notes.txt").unlink()
+    # 2026-09-18 is a Friday in ISO week 38. The last seven days, plus the newest of
+    # weeks 38 to 35; those of 38 (Friday 18) and 37 (Sunday 13) are already daily ones.
+    assert _kept(tmp_path) == [
+        "20260830",  # Sunday, week 35
+        "20260906",  # Sunday, week 36
+        *(f"202609{d:02d}" for d in range(12, 19)),
+    ]
+
+
+def test_only_the_newest_backup_of_a_day_is_kept(tmp_path: Path) -> None:
+    _stamps(tmp_path, _NOW, _NOW - timedelta(hours=2), _NOW - timedelta(days=1))
+    prune_backups(tmp_path, retention=Retention(daily=2))
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "jobtracker-20260917-030000.db.gz",
+        "jobtracker-20260918-030000.db.gz",
+    ]
+
+
+def test_a_month_without_backups_does_not_empty_the_folder(tmp_path: Path) -> None:
+    """Counting, not ageing: the last copies before a long outage are the ones left."""
+    old = _NOW - timedelta(days=45)
+    _stamps(tmp_path, *(old - timedelta(days=d) for d in range(10)))
+    prune_backups(tmp_path, retention=Retention(daily=3))
+    assert _kept(tmp_path) == ["20260802", "20260803", "20260804"]
+
+
+def test_uncompressed_backups_from_before_are_pruned_with_the_rest(tmp_path: Path) -> None:
+    _stamps(tmp_path, _NOW - timedelta(days=3), _NOW - timedelta(days=2), suffix=".db")
+    _stamps(tmp_path, _NOW)
+    prune_backups(tmp_path, retention=Retention(daily=2))
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "jobtracker-20260916-030000.db",
+        "jobtracker-20260918-030000.db.gz",
+    ]
 
 
 def test_a_backup_that_fails_its_integrity_check_is_removed_not_kept(
@@ -96,8 +169,8 @@ def test_a_backup_that_fails_its_integrity_check_is_removed_not_kept(
 ) -> None:
     monkeypatch.setattr(backup_module, "_integrity_check", lambda conn: "page 3 is corrupt")
     with pytest.raises(StorageError):
-        backup_database(store_conn, tmp_path, now=_NOW)
-    assert list(tmp_path.glob("jobtracker-*.db")) == []
+        backup_database(store_conn, tmp_path / "backups", now=_NOW)
+    assert list((tmp_path / "backups").iterdir()) == []  # neither the archive nor the snapshot
 
 
 def _career(root: Path) -> Path:
@@ -136,14 +209,14 @@ def test_a_career_archive_that_does_not_read_back_is_removed_not_kept(
     assert list((tmp_path / "backups").iterdir()) == []
 
 
-def test_career_archives_are_kept_a_week_apart_from_the_databases(tmp_path: Path) -> None:
+def test_career_archives_are_pruned_apart_from_the_databases(tmp_path: Path) -> None:
     career = _career(tmp_path)
     dest = tmp_path / "backups"
     dest.mkdir()
     (dest / "career-20260901-030000.tar.gz").write_bytes(b"old")
-    (dest / "jobtracker-20260901-030000.db").write_bytes(b"old")
-    backup_career(career, dest, now=_NOW)
+    (dest / "jobtracker-20260901-030000.db.gz").write_bytes(b"old")
+    backup_career(career, dest, now=_NOW, retention=Retention(daily=1))
     assert sorted(p.name for p in dest.iterdir()) == [
         "career-20260918-030000.tar.gz",
-        "jobtracker-20260901-030000.db",
+        "jobtracker-20260901-030000.db.gz",
     ]

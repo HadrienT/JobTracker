@@ -240,3 +240,24 @@ def test_retention_never_holds_the_write_lock_between_batches(
 
     assert result.inactive_postings == 6
     assert len(writes) >= 6  # one successful concurrent write per committed batch
+
+
+def test_retention_compacts_the_search_index_and_search_still_finds(
+    store_conn: sqlite3.Connection,
+) -> None:
+    for i in range(30):
+        pid = f"live-{i}"
+        posting = make_posting(posting_id=pid, source_job_id=pid).model_copy(
+            update={"fingerprint": f"fp-{pid}"}
+        )
+        upsert_posting(store_conn, posting, make_verdict(posting_id=pid))
+        store_conn.commit()  # one transaction each: one FTS segment each, like real cycles
+    segments = store_conn.execute("SELECT COUNT(*) FROM postings_fts_data").fetchone()[0]
+
+    run_retention(store_conn, now=_NOW)
+
+    assert store_conn.execute("SELECT COUNT(*) FROM postings_fts_data").fetchone()[0] < segments
+    found = store_conn.execute(
+        "SELECT COUNT(*) FROM postings_fts WHERE postings_fts MATCH 'quant'"
+    ).fetchone()[0]
+    assert found == 30

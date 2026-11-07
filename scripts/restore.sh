@@ -1,9 +1,10 @@
 #!/bin/bash
 # Restore jobtracker.db from a backup file — the procedure in deploy/RUNBOOK.md.
 #
-#   ./scripts/restore.sh backups/jobtracker-20260918-030000.db
-#   ./scripts/restore.sh backups/jobtracker-….db backups/career-….tar.gz   # the files too
+#   ./scripts/restore.sh backups/jobtracker-20261108-023000.db.gz
+#   ./scripts/restore.sh backups/jobtracker-….db.gz backups/career-….tar.gz   # the files too
 #
+# A `.db.gz` is decompressed to a temporary file first (an older plain `.db` is used as is).
 # The backup is integrity-checked first, the stack is stopped so nothing is writing,
 # the current database is kept aside (never deleted), and the stale -wal/-shm files
 # are removed so SQLite cannot replay them onto the restored file.
@@ -11,6 +12,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 backup="${1:?usage: scripts/restore.sh <backup-file> [career-archive]}"
 [ -f "$backup" ] || { echo "no such file: $backup" >&2; exit 1; }
+if [[ "$backup" == *.gz ]]; then
+  unpacked="$(mktemp -d)"
+  trap 'rm -rf "$unpacked"' EXIT
+  gzip -dc "$backup" > "$unpacked/backup.db" || { echo "refusing to restore: unreadable $backup" >&2; exit 1; }
+  backup="$unpacked/backup.db"
+fi
 career="${2:-}"
 career_mount=()
 if [ -n "$career" ]; then
@@ -35,7 +42,7 @@ PY
     fi
     rm -f /data/jobtracker.db-wal /data/jobtracker.db-shm
     cp /restore/backup.db /data/jobtracker.db
-    echo "restored $(basename /restore/backup.db) -> /data/jobtracker.db"
+    echo "restored the backup -> /data/jobtracker.db"
     if [ -f /restore/career.tar.gz ]; then
       if [ -d /data/career ]; then
         mv /data/career "/data/career.pre-restore-$(date +%Y%m%d-%H%M%S)"
